@@ -229,6 +229,253 @@ std::string cppNetworkUtil::getHeaderText(headerParameters parameter)
     return buffer;
 }
 
+// URL解码函数
+std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
+{
+    std::string decodedString;
+    char hex[3];
+    for (size_t i = 0; i < encodedString.length(); ++i)
+    {
+        if (encodedString[i] == '%')
+        {
+            if (i + 2 < encodedString.length())
+            {
+                hex[0] = encodedString[++i];
+                hex[1] = encodedString[++i];
+                hex[2] = '\0';
+                decodedString += static_cast<char>(strtol(hex, nullptr, 16));
+            }
+            else
+            {
+                // 错误：无效的百分号编码
+                decodedString += '%';
+            }
+        }
+        else if (encodedString[i] == '+')
+        {
+            decodedString += ' ';
+        }
+        else
+        {
+            decodedString += encodedString[i];
+        }
+    }
+    return decodedString;
+}
+
+// 解析url路径
+std::vector<std::string> cppNetworkUtil::GetURLParameterRestfulapi(std::string url)
+{
+    std::vector<std::string> parts;
+
+    // 如果路径以斜杠开头，则去除它
+    if (!url.empty() && url[0] == '/')
+    {
+        url = url.substr(1);
+    }
+
+    std::stringstream ss(url);
+    std::string segment;
+
+    // 使用 getline 分隔符 '/' 读取
+    while (getline(ss, segment, '/'))
+    {
+        if (!segment.empty()) // 确保不添加空字符串（例如，如果路径中有连续的斜杠）
+        {
+            parts.push_back(segment);
+        }
+    }
+
+    return parts;
+}
+
+std::map<std::string, std::string> cppNetworkUtil::ParseUrlQueryParameters(const std::string &url)
+{
+    std::map<std::string, std::string> params;
+    size_t question_pos = url.find('?');
+    if (question_pos == std::string::npos || question_pos + 1 >= url.length())
+        return params;
+
+    std::string query = url.substr(question_pos + 1);
+    std::stringstream ss(query);
+    std::string pair;
+    while (std::getline(ss, pair, '&'))
+    {
+        size_t eq_pos = pair.find('=');
+        if (eq_pos != std::string::npos)
+        {
+            std::string key = pair.substr(0, eq_pos);
+            std::string value = pair.substr(eq_pos + 1);
+            params[key] = cppNetworkUtil::urlDecode(value);
+        }
+        else if (!pair.empty())
+        {
+            params[pair] = "";
+        }
+    }
+    return params;
+}
+
+// 解析 multipart 数据
+std::vector<cppNetworkUtil::MultipartData> cppNetworkUtil::ParseMultipart(const std::string &boundary, const std::string &body)
+{
+    std::vector<cppNetworkUtil::MultipartData> parsedParts; // 存储所有解析出的部分
+    std::string delimiter = "--" + boundary;                // 每个部分的开始分隔符
+    std::string endDelimiter = delimiter + "--";            // 整个 multipart 结束的分隔符
+    size_t pos = 0;                                         // 当前在 body 字符串中的查找位置
+
+    // 跳过开头的空行，找到第一个有内容的位置
+    pos = body.find_first_not_of("\r\n");
+    if (pos == std::string::npos)
+    {
+        return parsedParts; // 如果 body 全是空行或为空，则返回空向量
+    }
+
+    // 循环查找每个数据部分
+    while ((pos = body.find(delimiter, pos)) != std::string::npos)
+    {
+        pos += delimiter.length(); // 跳过当前分隔符
+
+        // 检查是否是整个 multipart 数据的结束标记
+        if (pos + 2 <= body.length() && body.substr(pos, 2) == "--")
+        {
+            break; // 找到结束标记，退出循环
+        }
+
+        // 找到下一个分隔符或结束标记的位置
+        size_t nextPos = body.find(delimiter, pos);
+        if (nextPos == std::string::npos)
+        {
+            nextPos = body.find(endDelimiter, pos);
+            if (nextPos == std::string::npos)
+            {
+                break; // 既没有找到下一个分隔符，也没有找到结束分隔符，数据格式异常
+            }
+        }
+
+        // 提取当前数据部分的原始字符串（包含头部和数据）
+        std::string part = body.substr(pos, nextPos - pos);
+
+        // 查找头部和数据之间的空行分隔符 (CRLFCRLF 或 LFLF)
+        size_t headersEnd = part.find("\r\n\r\n");
+        if (headersEnd == std::string::npos)
+        {
+            headersEnd = part.find("\n\n"); // 尝试 Unix 风格换行符
+        }
+        if (headersEnd == std::string::npos)
+        {
+            continue; // 如果没有找到头部和数据的分隔符，则跳过此部分
+        }
+
+        std::string headers = part.substr(0, headersEnd);
+        std::string headers_lower = headers;
+        transform(headers_lower.begin(), headers_lower.end(), headers_lower.begin(), ::toupper);           // 提取头部字符串
+        std::string data = part.substr(headersEnd + (part.find("\r\n\r\n") != std::string::npos ? 4 : 2)); // 提取数据字符串，跳过分隔符长度
+
+        MultipartData currentPart; // 创建一个新的 ParsedPart 对象来存储当前部分的信息
+
+        // --- 提取 name 属性 ---
+        size_t namePos = headers.find("name=\"");
+        if (namePos != std::string::npos)
+        {
+            namePos += 6; // 跳过 "name=\"" 的长度
+            size_t nameEnd = headers.find("\"", namePos);
+            if (nameEnd != std::string::npos)
+            {
+                currentPart.name = headers.substr(namePos, nameEnd - namePos);
+            }
+        }
+
+        // --- 提取 filename 属性 ---
+        size_t filenamePos = headers.find("filename=\"");
+        if (filenamePos != std::string::npos)
+        {
+            filenamePos += 10; // 跳过 "filename=\"" 的长度
+            size_t filenameEnd = headers.find("\"", filenamePos);
+            if (filenameEnd != std::string::npos)
+            {
+                currentPart.filename = headers.substr(filenamePos, filenameEnd - filenamePos);
+            }
+        }
+
+        // --- 提取 Content-Type 属性 ---
+        // 不区分大小写查找
+        size_t contentTypePos = headers_lower.find("content-type:");
+        if (contentTypePos != std::string::npos)
+        {
+            contentTypePos += 13; // 跳过 "content-type:" 的长度
+            size_t contentTypeEnd = headers_lower.find("\r\n", contentTypePos);
+            if (contentTypeEnd == std::string::npos)
+            {
+                contentTypeEnd = headers_lower.find("\n", contentTypePos); // 尝试 Unix 风格换行符
+            }
+
+            if (contentTypeEnd != std::string::npos)
+            {
+                // 提取 Content-Type 值，并去除前后的空白字符
+                std::string typeStr = headers_lower.substr(contentTypePos, contentTypeEnd - contentTypePos);
+                size_t firstChar = typeStr.find_first_not_of(" \t");
+                if (firstChar != std::string::npos)
+                {
+                    size_t lastChar = typeStr.find_last_not_of(" \t");
+                    currentPart.content_type = typeStr.substr(firstChar, lastChar - firstChar + 1);
+                }
+            }
+        }
+
+        // --- 检查是否有 Content-Length 头并根据其截取数据 ---
+        // Content-Length 并不常用在 multipart 的单个部分中，但如果存在，则遵守它
+        size_t contentLengthPos = headers.find("Content-Length:");
+        int contentLength = -1; // 默认值为 -1 表示未知或无效
+        if (contentLengthPos != std::string::npos)
+        {
+            contentLengthPos += 15; // 跳过 "Content-Length: " 的长度
+            size_t lengthEnd = headers.find("\r\n", contentLengthPos);
+            if (lengthEnd == std::string::npos)
+            {
+                lengthEnd = headers.find("\n", contentLengthPos);
+            }
+
+            if (lengthEnd != std::string::npos)
+            {
+                std::string lengthStr = headers.substr(contentLengthPos, lengthEnd - contentLengthPos);
+                try
+                {
+                    contentLength = std::stoi(lengthStr); // 尝试将字符串转换为整数
+                }
+                catch (...)
+                {
+                    contentLength = -1; // 转换失败，视为无效长度
+                }
+            }
+        }
+
+        // 根据解析到的 Content-Length 来截取数据
+        if (contentLength >= 0 && contentLength < data.length())
+        {
+            currentPart.data = data.substr(0, contentLength);
+        }
+        else
+        {
+            // 如果没有 Content-Length 或其值无效，尝试修剪数据尾部的空白字符
+            size_t lastNonSpace = data.find_last_not_of(" \t\r\n");
+            if (lastNonSpace != std::string::npos)
+            {
+                currentPart.data = data.substr(0, lastNonSpace + 1);
+            }
+            else
+            {
+                currentPart.data = ""; // 如果数据全是空白，则数据为空
+            }
+        }
+
+        parsedParts.push_back(currentPart); // 将解析出的当前部分添加到结果向量中
+        pos = nextPos;                      // 更新查找位置，继续查找下一个分隔符
+    }
+
+    return parsedParts; // 返回所有解析出的部分
+}
+
 void cppNetworkUtil::sendData(const std::string data, SOCKET client_socket)
 {
     send(client_socket, data.c_str(), data.size(), 0);
