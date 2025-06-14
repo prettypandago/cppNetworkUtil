@@ -3,13 +3,14 @@
 #include "init.h"
 #include "cppNetworkUtil.h"
 
-int port = 80;
+int port = DEFAULT_SERVER_PORT;
 
 void process(std::string recv_data, SOCKET client_socket)
 {
     cppNetworkUtil client;
 
-    client.sendData(recv_data, client_socket);
+    client.sendData(client.getHeaderText(client.header_parameters), client_socket);
+    client.sendData("Hello World!", client_socket);
 }
 
 int main(int argc, char **argv)

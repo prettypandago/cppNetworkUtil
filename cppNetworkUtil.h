@@ -31,7 +31,10 @@ typedef int SOCKET;
 
 #endif
 
+#include <unordered_map>
+#include <ctime>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <thread>
 #include <mutex>
@@ -42,6 +45,16 @@ typedef int SOCKET;
 class cppNetworkUtil
 {
 public:
+    struct headerParameters
+    {
+        int status;                   // status code
+        std::string mime_type;        // mime type
+        std::string content_language; // content language
+        std::string cookie;           // cookie
+
+        headerParameters(int in_status = 200, std::string in_mime_type = "*/*", std::string in_content_language = "en-us", std::string in_cookie = "") : status(in_status), mime_type(in_mime_type), content_language(in_content_language), cookie(in_cookie) {}
+    } header_parameters;
+
     /**
      * @brief Get the method in the GET request header
      *
@@ -110,6 +123,15 @@ public:
      * @return content body
      */
     std::string getPostContentBody(const std::string buffer);
+
+    /**
+     * @brief Make a request header
+     *
+     * @param parameters (headerParameters) parameter
+     *
+     * @return header
+     */
+    std::string getHeaderText(headerParameters parameter);
 
     /**
      * @brief Send data to the client

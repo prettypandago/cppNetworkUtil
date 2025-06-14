@@ -174,6 +174,61 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
     return body;
 }
 
+std::string cppNetworkUtil::getHeaderText(headerParameters parameter)
+{
+    std::string buffer;
+
+    std::string title = "Unknown";
+    if (parameter.status == 200)
+        title = "OK";
+    else if (parameter.status == 404)
+        title = "Not Found";
+
+    char *timebuf = new char[100];
+    time_t now_date = time((time_t *)0);
+    strftime(timebuf, sizeof(timebuf), RFC1123FMT, gmtime(&now_date));
+
+    buffer += PROTOCOL;
+    buffer += " ";
+    buffer += std::to_string(parameter.status);
+    buffer += " ";
+    buffer += title;
+    buffer += "\r\n";
+
+    buffer += "Server: ";
+    buffer += NAME;
+    buffer += "\r\n";
+
+    if (!parameter.mime_type.empty())
+    {
+        buffer += "Content-Type: ";
+        buffer += parameter.mime_type;
+        buffer += "\r\n";
+    }
+
+    if (!parameter.content_language.empty())
+    {
+        buffer += "Content-Language: ";
+        buffer += parameter.content_language;
+        buffer += "\r\n";
+    }
+
+    if (!parameter.cookie.empty())
+    {
+        buffer += "Set-Cookie: ";
+        buffer += parameter.cookie;
+        buffer += "\r\n";
+    }
+
+    buffer += "Connection: close\r\n";
+
+    buffer += "\r\n";
+
+    delete[] timebuf;
+
+    return buffer;
+}
+
 void cppNetworkUtil::sendData(const std::string data, SOCKET client_socket)
 {
     send(client_socket, data.c_str(), data.size(), 0);
