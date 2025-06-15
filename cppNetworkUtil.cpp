@@ -1,5 +1,81 @@
 #include "cppNetworkUtil.h"
 
+// threadPool
+// 构造函数实现（模板函数通常需要在头文件中定义）
+inline ThreadPool::ThreadPool(size_t numThreads) : stop(false)
+{
+    if (numThreads == 0)
+    {
+        throw std::invalid_argument("Number of threads cannot be zero.");
+    }
+    for (size_t i = 0; i < numThreads; ++i)
+    {
+        workers.emplace_back([this]
+                             {
+			while (true)
+			{
+				std::function<void()> task;
+				{
+					std::unique_lock<std::mutex> lock(this->queueMutex);
+					this->condition.wait(lock, [this]
+					{
+						return !this->tasks.empty() || this->stop;
+					});
+
+					if (this->stop && this->tasks.empty())
+					{
+						return;
+					}
+					task = std::move(this->tasks.front());
+					this->tasks.pop();
+				}
+				task();
+			} });
+    }
+}
+
+// enqueue 模板函数的实现 (必须在头文件中)
+template <class F, class... Args>
+inline auto ThreadPool::enqueue(F &&f, Args &&...args) -> std::future<typename std::result_of<F(Args...)>::type>
+{
+    using return_type = typename std::result_of<F(Args...)>::type;
+
+    auto task = std::make_shared<std::packaged_task<return_type()>>(
+        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+
+    std::future<return_type> res = task->get_future();
+
+    {
+        std::unique_lock<std::mutex> lock(queueMutex);
+        if (stop)
+        {
+            throw std::runtime_error("enqueue on stopped ThreadPool");
+        }
+        tasks.emplace([task]()
+                      { (*task)(); });
+    }
+    condition.notify_one();
+    return res;
+}
+
+// 析构函数实现
+inline ThreadPool::~ThreadPool()
+{
+    {
+        std::unique_lock<std::mutex> lock(queueMutex);
+        stop = true;
+    }
+    condition.notify_all();
+    for (std::thread &worker : workers)
+    {
+        if (worker.joinable())
+        {
+            worker.join();
+        }
+    }
+}
+
+// cppNetworkUtil
 std::string cppNetworkUtil::getHeaderMethod(const std::string buffer)
 {
     std::string method;

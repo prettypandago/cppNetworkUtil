@@ -1,5 +1,21 @@
 #pragma once
 
+// init
+#define IS_DEBUG (1)
+// #define IS_DEBUG (0)
+
+#define NAME "cppNetworkUtil"
+#define PROTOCOL "HTTP/1.1"
+
+#define RFC1123FMT "%a, %d %b %Y %H:%M:%S GMT"
+
+#define DEFAULT_SERVER_PORT 80;
+
+#define INFINITY 2147483647
+#define BUFFERSIZE 4096
+
+// C++ standard library headers
+
 #include <iostream>
 
 #ifdef _WIN32
@@ -39,9 +55,41 @@ typedef int SOCKET;
 #include <thread>
 #include <mutex>
 #include <sstream>
+#include <queue>
+#include <condition_variable>
+#include <functional> // For std::function
+#include <future>     // For std::future, std::packaged_task
 
 #include "init.h"
-#include "threadPool.h"
+
+// ThreadPool 类定义
+class ThreadPool
+{
+public:
+    // 构造函数：初始化线程池，创建指定数量的工作线程
+    explicit ThreadPool(size_t numThreads);
+
+    // 提交任务到线程池
+    // 任务可以是任何可调用对象（函数、lambda、函数指针等）
+    // 返回一个 std::future，用于获取任务的返回值
+    template <class F, class... Args>
+    auto enqueue(F &&f, Args &&...args) -> std::future<typename std::result_of<F(Args...)>::type>;
+
+    // 析构函数：在线程池对象销毁时，停止所有工作线程并等待它们完成
+    ~ThreadPool();
+
+private:
+    // 禁止拷贝构造和拷贝赋值，因为线程池管理资源（线程）不适合拷贝
+    ThreadPool(const ThreadPool &) = delete;
+    ThreadPool &operator=(const ThreadPool &) = delete;
+
+    std::vector<std::thread> workers;        // 存储工作线程的容器
+    std::queue<std::function<void()>> tasks; // 存储待执行任务的队列
+
+    std::mutex queueMutex;             // 用于保护任务队列的互斥量
+    std::condition_variable condition; // 用于线程间通信的条件变量
+    bool stop;                         // 线程池停止标志
+};
 
 class cppNetworkUtil
 {

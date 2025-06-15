@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include "init.h"
 #include "cppNetworkUtil.h"
 
 int port = DEFAULT_SERVER_PORT;
