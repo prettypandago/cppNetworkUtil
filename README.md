@@ -1,14 +1,16 @@
 # cppNetworkUtil
 
-If you want to use Cplusplus for network programming, you have to go through complex codes to get started.
+**Read this in other languages: [English](README.md "Endlish Version"), [中文](README_zh-cn.md "Chinese (Simplified) Version").**
 
-However, if you use cppNetworkUtil, these are the only steps required:
+If you want to use Cplusplus for network programming, you have to go through **complex** codes to get started.
+
+However, if you use cppNetworkUtil, these are the **only steps** required:
 
 1. Download
 2. Reference it in your project
 3. Writing Code
-4. Run
+4. Run✅✅✅
 
 [This is a example](main.cpp "example")
 
-Thank you for your use!!!
+😊Thank you for your use!!!😊
