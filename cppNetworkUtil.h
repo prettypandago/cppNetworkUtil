@@ -60,8 +60,6 @@ typedef int SOCKET;
 #include <functional> // For std::function
 #include <future>     // For std::future, std::packaged_task
 
-#include "init.h"
-
 // ThreadPool 类定义
 class ThreadPool
 {

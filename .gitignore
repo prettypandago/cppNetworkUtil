@@ -1,2 +1,5 @@
-.vscode/*
+#Folder
+.vscode
+
+# Executables
 *.exe
