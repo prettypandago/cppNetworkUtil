@@ -59,6 +59,7 @@ typedef int SOCKET;
 #include <condition_variable>
 #include <functional> // For std::function
 #include <future>     // For std::future, std::packaged_task
+#include <algorithm>  // For std::min
 
 // ThreadPool 类定义
 class ThreadPool
@@ -92,25 +93,35 @@ private:
 class cppNetworkUtil
 {
 public:
-    struct headerParameters
+    struct responseHeaderParameters
     {
         int status;                   // status code
         std::string mime_type;        // mime type
         std::string content_language; // content language
         std::string cookie;           // cookie
 
-        headerParameters(int in_status = 200, std::string in_mime_type = "*/*", std::string in_content_language = "en-us", std::string in_cookie = "") : status(in_status), mime_type(in_mime_type), content_language(in_content_language), cookie(in_cookie) {}
-    } header_parameters;
+        responseHeaderParameters(int in_status = 200, std::string in_mime_type = "*/*", std::string in_content_language = "en-us", std::string in_cookie = "") : status(in_status), mime_type(in_mime_type), content_language(in_content_language), cookie(in_cookie) {}
+    } response_header_parameters;
+
+    struct requestHeaderParameters
+    {
+        std::string method;     // request method
+        std::string connection; // connection type
+        std::string host;       // host
+        int port;               // port
+
+        requestHeaderParameters(std::string in_method = "GET", std::string in_connection = "close", std::string in_host = "example.com", int in_port = 80) : method(in_method), connection(in_connection), host(in_host), port(in_port) {}
+    } request_header_parameters;
 
     // 用于存储解析过的post的multipart数据
-    struct MultipartData
+    struct multipartData
     {
         std::string name;
         std::string data;
         std::string filename;
         std::string content_type;
 
-        MultipartData() : name(""), data(""), filename(""), content_type("") {}
+        multipartData() : name(""), data(""), filename(""), content_type("") {}
 
         void print() const
         {
@@ -123,7 +134,7 @@ public:
             {
                 std::cout << "  Content-Type: " << content_type << "\n";
             }
-            std::cout << "  Data (partial): " << data.substr(0, std::min((size_t)50, data.length())) << (data.length() > 50 ? "..." : "") << "\n";
+            std::cout << "  Data: " << data << "\n";
             std::cout << "\n";
             //		std::std::cout << "name:" << name << "  Data (partial): " << data.substr(0, std::min((size_t)50, data.length())) << (data.length() > 50 ? "..." : "") << "\n" << "filename" << filename << "content_type=" << content_type << "\n";
         }
@@ -205,7 +216,16 @@ public:
      *
      * @return header
      */
-    std::string getHeaderText(headerParameters parameter);
+    std::string buildResponseHeader(responseHeaderParameters parameters);
+
+    /**
+     * @brief Make a request header
+     *
+     * @param parameter (requestHeaderParameters) parameter
+     *
+     * @return header
+     */
+    std::string buildRequestHeader(requestHeaderParameters parameter);
 
     /**
      * @brief Decode a URL-encoded string
@@ -223,7 +243,7 @@ public:
      *
      * @return A vector of strings representing the parameters in the URL
      */
-    std::vector<std::string> GetURLParameterRestfulapi(std::string url);
+    std::vector<std::string> getURLParameterRestfulapi(std::string url);
 
     /**
      * @brief Parse URL parameters from URL query string
@@ -234,7 +254,7 @@ public:
      *
      * @return A map of key-value pairs representing the query parameters
      */
-    std::map<std::string, std::string> ParseUrlQueryParameters(const std::string &url);
+    std::map<std::string, std::string> parseUrlQueryParameters(const std::string &url);
 
     /**
      * @brief Parse Multipart data from a POST request body
@@ -242,16 +262,36 @@ public:
      * @param boundary (const std::string &boundary) The boundary string used to separate parts in the multipart data
      * @param body (const std::string &body) The body of the POST request containing multipart data
      *
-     * @return A vector of MultipartData objects, each representing a part of the multipart data
+     * @return A vector of multipartData objects, each representing a part of the multipart data
      */
-    std::vector<MultipartData> ParseMultipart(const std::string &boundary, const std::string &body);
+    std::vector<multipartData> parseMultipart(const std::string &boundary, const std::string &body);
 
     /**
      * @brief Send data to the client
      *
      * @param data (const std::string) Data to be sent
+     * @param client_socket (SOCKET) Client socket to send data to
+     *
      */
-    void sendData(const std::string data, SOCKET client_socket);
+    void sendDataToClient(const std::string data, SOCKET client_socket);
+
+    /**
+     * @brief Send data to the host
+     *
+     * @param host (const std::string &) Host address
+     * @param port (int) Port number
+     * @param request (const std::string &) Request data to be sent
+     * @param header (std::string &) Header to be filled with the response header
+     * @param content (std::string &) Content to be filled with the response content
+     *
+     * @throws WSAStartup failed
+     * @throws getaddrinfo failed
+     * @throws Unable to connect to server
+     * @throws Send failed
+     * @throws shutdown failed
+     * @throws Invalid HTTP response format
+     */
+    void sendDataToHost(const std::string &host, int port, const std::string &request, std::string &header, std::string &content);
 
     /**
      * @brief start server

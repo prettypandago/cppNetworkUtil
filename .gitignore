@@ -1,5 +1,4 @@
 #Folder
-.vscode
 
 # my custom
 *.dat
@@ -39,3 +38,8 @@
 *.exe
 *.out
 *.app
+
+# scripts
+*.bat
+*.cmd
+*.sh

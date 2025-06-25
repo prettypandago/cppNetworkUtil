@@ -8,8 +8,14 @@ void process(std::string recv_data, SOCKET client_socket)
 {
     cppNetworkUtil client;
 
-    client.sendData(client.getHeaderText(client.header_parameters), client_socket);
-    client.sendData("Hello World!", client_socket);
+    std::string header;
+    std::string content;
+    client.sendDataToHost(client.request_header_parameters.host, client.request_header_parameters.port, client.buildRequestHeader(client.request_header_parameters), header, content);
+
+    client.response_header_parameters.mime_type = "text/html";
+
+    client.sendDataToClient(client.buildResponseHeader(client.response_header_parameters), client_socket);
+    client.sendDataToClient(content, client_socket);
 }
 
 int main(int argc, char **argv)

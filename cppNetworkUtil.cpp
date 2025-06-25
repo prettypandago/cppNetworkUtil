@@ -250,7 +250,7 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
     return body;
 }
 
-std::string cppNetworkUtil::getHeaderText(headerParameters parameter)
+std::string cppNetworkUtil::buildResponseHeader(responseHeaderParameters parameter)
 {
     std::string buffer;
 
@@ -305,6 +305,33 @@ std::string cppNetworkUtil::getHeaderText(headerParameters parameter)
     return buffer;
 }
 
+std::string cppNetworkUtil::buildRequestHeader(requestHeaderParameters parameter)
+{
+    std::string buffer;
+
+    buffer += parameter.method;
+    buffer += " / HTTP/1.1\r\n"; // 使用 HTTP/1.1 协议
+
+    buffer += "Host: ";
+    buffer += parameter.host;
+    buffer += "\r\n";
+
+    if (parameter.port != 80) // 如果端口不是默认的80，则添加端口号
+    {
+        buffer += "Port: ";
+        buffer += std::to_string(parameter.port);
+        buffer += "\r\n";
+    }
+
+    buffer += "Connection: ";
+    buffer += parameter.connection;
+    buffer += "\r\n";
+
+    buffer += "\r\n"; // 请求头结束
+
+    return buffer;
+}
+
 // URL解码函数
 std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
 {
@@ -340,7 +367,7 @@ std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
 }
 
 // 解析url路径
-std::vector<std::string> cppNetworkUtil::GetURLParameterRestfulapi(std::string url)
+std::vector<std::string> cppNetworkUtil::getURLParameterRestfulapi(std::string url)
 {
     std::vector<std::string> parts;
 
@@ -365,7 +392,7 @@ std::vector<std::string> cppNetworkUtil::GetURLParameterRestfulapi(std::string u
     return parts;
 }
 
-std::map<std::string, std::string> cppNetworkUtil::ParseUrlQueryParameters(const std::string &url)
+std::map<std::string, std::string> cppNetworkUtil::parseUrlQueryParameters(const std::string &url)
 {
     std::map<std::string, std::string> params;
     size_t question_pos = url.find('?');
@@ -393,9 +420,9 @@ std::map<std::string, std::string> cppNetworkUtil::ParseUrlQueryParameters(const
 }
 
 // 解析 multipart 数据
-std::vector<cppNetworkUtil::MultipartData> cppNetworkUtil::ParseMultipart(const std::string &boundary, const std::string &body)
+std::vector<cppNetworkUtil::multipartData> cppNetworkUtil::parseMultipart(const std::string &boundary, const std::string &body)
 {
-    std::vector<cppNetworkUtil::MultipartData> parsedParts; // 存储所有解析出的部分
+    std::vector<cppNetworkUtil::multipartData> parsedParts; // 存储所有解析出的部分
     std::string delimiter = "--" + boundary;                // 每个部分的开始分隔符
     std::string endDelimiter = delimiter + "--";            // 整个 multipart 结束的分隔符
     size_t pos = 0;                                         // 当前在 body 字符串中的查找位置
@@ -448,7 +475,7 @@ std::vector<cppNetworkUtil::MultipartData> cppNetworkUtil::ParseMultipart(const 
         transform(headers_lower.begin(), headers_lower.end(), headers_lower.begin(), ::toupper);           // 提取头部字符串
         std::string data = part.substr(headersEnd + (part.find("\r\n\r\n") != std::string::npos ? 4 : 2)); // 提取数据字符串，跳过分隔符长度
 
-        MultipartData currentPart; // 创建一个新的 ParsedPart 对象来存储当前部分的信息
+        multipartData currentPart; // 创建一个新的 ParsedPart 对象来存储当前部分的信息
 
         // --- 提取 name 属性 ---
         size_t namePos = headers.find("name=\"");
@@ -552,9 +579,123 @@ std::vector<cppNetworkUtil::MultipartData> cppNetworkUtil::ParseMultipart(const 
     return parsedParts; // 返回所有解析出的部分
 }
 
-void cppNetworkUtil::sendData(const std::string data, SOCKET client_socket)
+void cppNetworkUtil::sendDataToClient(const std::string data, SOCKET client_socket)
 {
     send(client_socket, data.c_str(), data.size(), 0);
+}
+
+void cppNetworkUtil::sendDataToHost(const std::string &host, int port, const std::string &request, std::string &header, std::string &content)
+{
+    SOCKET ConnectSocket = INVALID_SOCKET;
+
+    struct addrinfo *result = NULL, *ptr = NULL, hints;
+
+    char recvbuf[BUFFERSIZE];
+    int iResult;
+    int recvbuflen = sizeof(recvbuf);
+
+    std::string responseData = ""; // 用于存储接收到的数据
+
+// 1. 初始化 Winsock
+#ifdef _WIN32
+    WSADATA wsaData;
+    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (iResult != 0)
+    {
+        throw std::runtime_error("WSAStartup failed");
+    }
+#endif
+
+    ZeroMemory(&hints, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;     // IPv4 或 IPv6
+    hints.ai_socktype = SOCK_STREAM; // 流式套接字 (TCP)
+    hints.ai_protocol = IPPROTO_TCP; // TCP 协议
+
+    // 2. 解析服务器地址
+    iResult = getaddrinfo(host.c_str(), std::to_string(port).c_str(), &hints, &result);
+    if (iResult != 0)
+    {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw std::runtime_error("getaddrinfo failed");
+    }
+
+    // 尝试连接到解析到的每个地址
+    for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
+    {
+        // 3. 创建套接字
+        ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+        if (ConnectSocket == INVALID_SOCKET)
+        {
+            // 不要在此处直接返回，继续尝试下一个地址
+            continue;
+        }
+
+        // 4. 连接到服务器
+        iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+        if (iResult == SOCKET_ERROR)
+        {
+            closesocket(ConnectSocket);
+            ConnectSocket = INVALID_SOCKET;
+            continue; // 尝试下一个地址
+        }
+        break; // 连接成功
+    }
+
+    freeaddrinfo(result); // 释放地址信息结构体
+
+    if (ConnectSocket == INVALID_SOCKET)
+    {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw std::runtime_error("Unable to connect to server");
+    }
+
+    // 5. 发送 HTTP 请求头
+    iResult = send(ConnectSocket, request.c_str(), (int)request.length(), 0);
+    if (iResult == SOCKET_ERROR)
+    {
+        closesocket(ConnectSocket);
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw std::runtime_error("send failed");
+    }
+
+    // 6. 接收数据
+    do
+    {
+        iResult = recv(ConnectSocket, recvbuf, recvbuflen - 1, 0); // 留一个字节给 '\0'
+        if (iResult > 0)
+        {
+            recvbuf[iResult] = '\0';      // 添加字符串结束符
+            responseData.append(recvbuf); // 将接收到的数据添加到总字符串
+        }
+    } while (iResult > 0);
+
+    // 7. 关闭套接字
+    iResult = shutdown(ConnectSocket, SD_SEND); // 禁用发送
+    if (iResult == SOCKET_ERROR)
+    {
+        throw std::runtime_error("shutdown failed");
+    }
+    closesocket(ConnectSocket);
+
+    // 8. 清理 Winsock
+#ifdef _WIN32
+    WSACleanup();
+#endif
+
+    // 9. 解析响应头和内容
+    size_t headerEnd = responseData.find("\r\n\r\n"); // 查找头部结束位置
+    if (headerEnd == std::string::npos)
+    {
+        throw std::runtime_error("Invalid HTTP response format");
+    }
+    header = responseData.substr(0, headerEnd);   // 提取响应头
+    content = responseData.substr(headerEnd + 4); // 提取响应内容
 }
 
 SOCKET cppNetworkUtil::start(int port)
@@ -642,10 +783,6 @@ void *cppNetworkUtil::process(void (*func)(std::string recv_data, SOCKET client_
     else
     {
         // error
-        int errorcode = WSAGetLastError();
-        if (IS_DEBUG)
-            printf("errorcode:%d\n", errorcode);
-
         return NULL;
     }
 
