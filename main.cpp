@@ -2,8 +2,6 @@
 
 #include "cppNetworkUtil.h"
 
-int port = DEFAULT_SERVER_PORT;
-
 void process(std::string recv_data, SOCKET client_socket, SSL *ssl)
 {
     if (ssl == nullptr)
@@ -17,7 +15,14 @@ void process(std::string recv_data, SOCKET client_socket, SSL *ssl)
 
     std::string header;
     std::string content;
-    client.sendDataToHost(client.request_header_parameters.host, client.request_header_parameters.port, client.buildRequestHeader(client.request_header_parameters), header, content);
+    client.sendDataToHttpsHost(
+        "example.com",
+        "/",
+        443,
+        header,
+        content,
+        true); // enable CA verification
+    // client.sendDataToHttpHost(client.request_header_parameters.host, client.request_header_parameters.port, client.buildRequestHeader(client.request_header_parameters), header, content);
 
     client.response_header_parameters.mime_type = "text/html";
 

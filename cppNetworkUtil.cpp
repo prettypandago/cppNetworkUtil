@@ -1,5 +1,8 @@
 #include "cppNetworkUtil.h"
 
+SSL_CTX *server_ctx = SSL_CTX_new(TLS_server_method());
+SSL_CTX *client_ctx = SSL_CTX_new(TLS_client_method());
+
 // threadPool
 // 构造函数实现（模板函数通常需要在头文件中定义）
 inline ThreadPool::ThreadPool(size_t numThreads) : stop(false)
@@ -122,7 +125,7 @@ std::string cppNetworkUtil::getGetHeaderUrl(const std::string buffer)
     return url;
 }
 
-int cppNetworkUtil::getPostContentSize(const std::string buffer)
+int cppNetworkUtil::getContentSize(const std::string buffer)
 {
     // 查找Content-Length字段
     int pos = buffer.find("Content-Length:");
@@ -310,7 +313,9 @@ std::string cppNetworkUtil::buildRequestHeader(requestHeaderParameters parameter
     std::string buffer;
 
     buffer += parameter.method;
-    buffer += " / HTTP/1.1\r\n"; // 使用 HTTP/1.1 协议
+    buffer += " ";
+    buffer += parameter.path;  // 使用 path 字段
+    buffer += " HTTP/1.1\r\n"; // 使用 HTTP/1.1 协议
 
     buffer += "Host: ";
     buffer += parameter.host;
@@ -589,17 +594,17 @@ void cppNetworkUtil::sendDataToHttpsSocket(const std::string data, SSL *ssl)
     SSL_write(ssl, data.c_str(), data.length());
 }
 
-void cppNetworkUtil::sendDataToHost(const std::string &host, int port, const std::string &request, std::string &header, std::string &content)
+void cppNetworkUtil::sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content)
 {
     SOCKET ConnectSocket = INVALID_SOCKET;
 
-    struct addrinfo *result = NULL, *ptr = NULL, hints;
+    struct addrinfo *result = nullptr, *ptr = nullptr, hints;
 
     char recvbuf[BUFFERSIZE];
-    int iResult;
+    int iResult = 0, total_bytes_read = 0;
     int recvbuflen = sizeof(recvbuf);
 
-    std::string responseData = ""; // 用于存储接收到的数据
+    std::string response_buffer = ""; // 用于存储接收到的数据
 
 // 1. 初始化 Winsock
 #ifdef _WIN32
@@ -627,7 +632,7 @@ void cppNetworkUtil::sendDataToHost(const std::string &host, int port, const std
     }
 
     // 尝试连接到解析到的每个地址
-    for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
+    for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
     {
         // 3. 创建套接字
         ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
@@ -659,7 +664,10 @@ void cppNetworkUtil::sendDataToHost(const std::string &host, int port, const std
     }
 
     // 5. 发送 HTTP 请求头
-    iResult = send(ConnectSocket, request.c_str(), (int)request.length(), 0);
+    std::string request_header = cppNetworkUtil::buildRequestHeader(
+        cppNetworkUtil::requestHeaderParameters{
+            "GET", "close", host, path, port});
+    iResult = send(ConnectSocket, request_header.c_str(), (int)request_header.length(), 0);
     if (iResult == SOCKET_ERROR)
     {
         closesocket(ConnectSocket);
@@ -670,15 +678,49 @@ void cppNetworkUtil::sendDataToHost(const std::string &host, int port, const std
     }
 
     // 6. 接收数据
-    do
+    iResult = recv(ConnectSocket, recvbuf, recvbuflen - 1, 0); // 留一个字节给 '\0'
+    if (iResult > 0)
+    {
+        recvbuf[iResult] = '\0';         // 添加字符串结束符
+        response_buffer.append(recvbuf); // 将接收到的数据添加到总字符串
+    }
+    else if (iResult == 0)
+    {
+        // 连接已关闭
+        // std::cout << "Connection closed by server." << std::endl;
+    }
+    else
+    {
+        closesocket(ConnectSocket);
+#ifdef _WIN32
+        WSACleanup();
+#endif
+    }
+
+    int content_size = getContentSize(response_buffer); // 确保读取完整的响应内容
+    while (total_bytes_read < content_size)
     {
         iResult = recv(ConnectSocket, recvbuf, recvbuflen - 1, 0); // 留一个字节给 '\0'
         if (iResult > 0)
         {
-            recvbuf[iResult] = '\0';      // 添加字符串结束符
-            responseData.append(recvbuf); // 将接收到的数据添加到总字符串
+            recvbuf[iResult] = '\0';         // 添加字符串结束符
+            response_buffer.append(recvbuf); // 将接收到的数据添加到总字符串
+            total_bytes_read += iResult;
         }
-    } while (iResult > 0);
+        else if (iResult == 0)
+        {
+            // 连接已关闭
+            // std::cout << "Connection closed by server." << std::endl;
+            break;
+        }
+        else
+        {
+            closesocket(ConnectSocket);
+#ifdef _WIN32
+            WSACleanup();
+#endif
+        }
+    }
 
     // 7. 关闭套接字
     iResult = shutdown(ConnectSocket, SD_SEND); // 禁用发送
@@ -694,13 +736,180 @@ void cppNetworkUtil::sendDataToHost(const std::string &host, int port, const std
 #endif
 
     // 9. 解析响应头和内容
-    size_t headerEnd = responseData.find("\r\n\r\n"); // 查找头部结束位置
+    size_t headerEnd = response_buffer.find("\r\n\r\n"); // 查找头部结束位置
     if (headerEnd == std::string::npos)
     {
         throw std::runtime_error("Invalid HTTP response format");
     }
-    header = responseData.substr(0, headerEnd);   // 提取响应头
-    content = responseData.substr(headerEnd + 4); // 提取响应内容
+    header = response_buffer.substr(0, headerEnd);   // 提取响应头
+    content = response_buffer.substr(headerEnd + 4); // 提取响应内容
+}
+
+void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA)
+{
+#ifdef _WIN32
+    // Windows Sockets 初始化
+    WSADATA wsaData;
+    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (iResult != 0)
+    {
+        throw std::runtime_error("WSAStartup failed");
+    }
+#endif
+
+    // 加载系统信任的CA证书，用于验证服务器证书。
+    if (enable_CA)
+    {
+        if (SSL_CTX_set_default_verify_paths(client_ctx) != 1)
+        {
+            if (IS_DEBUG)
+                ERR_print_errors_fp(stderr);
+            throw std::runtime_error("Failed to load default CA certificates");
+        }
+    }
+
+    // 创建SSL对象
+    SSL *ssl = SSL_new(client_ctx);
+    if (ssl == nullptr)
+    {
+        if (IS_DEBUG)
+            ERR_print_errors_fp(stderr);
+        throw std::runtime_error("Failed to create SSL object");
+    }
+
+    // 创建BIO连接
+    BIO *bio = BIO_new_connect((char *)(std::string(host) + ":" + std::to_string(port)).c_str());
+    if (bio == nullptr)
+    {
+        SSL_free(ssl);
+        if (IS_DEBUG)
+            ERR_print_errors_fp(stderr);
+        throw std::runtime_error("Failed to create BIO connection");
+    }
+
+    // 设置连接BIO到SSL对象
+    SSL_set_bio(ssl, bio, bio); // SSL_set_bio 会接管bio的所有权
+
+    // 执行TLS/SSL握手
+    // BIO_do_connect() 会尝试建立底层TCP连接
+    if (BIO_do_connect(bio) <= 0)
+    {
+        if (IS_DEBUG)
+            ERR_print_errors_fp(stderr);
+
+        // Clean up resources before returning
+        if (ssl)
+        {
+            SSL_free(ssl); // This also frees the associated BIO
+        }
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw std::runtime_error("Failed to connect to server");
+    }
+
+    // 执行 SSL/TLS 握手
+    if (SSL_connect(ssl) <= 0)
+    {
+        // 握手失败，打印 OpenSSL 错误信息
+        if (IS_DEBUG)
+            ERR_print_errors_fp(stderr);
+        SSL_free(ssl); // 释放 SSL 结构
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw std::runtime_error("SSL handshake failed");
+    }
+
+    // 验证服务器证书
+    if (enable_CA)
+    {
+        X509 *cert = SSL_get_peer_certificate(ssl);
+        if (cert)
+        {
+            // std::cout << "Server certificate found." << std::endl;
+            long verify_result = SSL_get_verify_result(ssl);
+            // if (verify_result == X509_V_OK)
+            // {
+            //     std::cout << "Server certificate verified successfully." << std::endl;
+            // }
+            // else
+            // {
+            //     std::cerr << "Warning: Server certificate verification failed: "
+            //               << X509_verify_cert_error_string(verify_result) << std::endl;
+            // }
+            X509_free(cert); // 释放证书对象
+        }
+        else
+        {
+            // std::cerr << "Warning: No server certificate presented." << std::endl;
+        }
+    }
+
+    // 发送HTTPS请求 (HTTP协议部分)
+    std::string request_header = cppNetworkUtil::buildRequestHeader(
+        cppNetworkUtil::requestHeaderParameters{
+            "GET", "close", host, path, port});
+
+    int bytes_written = SSL_write(ssl, request_header.c_str(), request_header.length());
+    // std::cout << "Sent " << bytes_written << " bytes request." << std::endl;
+
+    // 接收响应
+    std::string response_buffer;
+    char buffer[BUFFERSIZE + 1]; // +1 for null terminator
+    int bytes_read = 0, total_bytes_read = 0;
+
+    if ((bytes_read = SSL_read(ssl, buffer, sizeof(buffer) - 1)) > 0)
+    {
+        response_buffer.append(buffer, bytes_read);
+        total_bytes_read += bytes_read;
+        buffer[bytes_read] = '\0'; // 确保字符串结束符
+    }
+
+    if (bytes_read < 0)
+    {
+        int err = SSL_get_error(ssl, bytes_read);
+        if (err != SSL_ERROR_ZERO_RETURN)
+        { // SSL_ERROR_ZERO_RETURN 表示连接已关闭
+            throw std::runtime_error("SSL read failed");
+            ERR_print_errors_fp(stderr);
+        }
+    }
+
+    int content_size = getContentSize(response_buffer); // 确保读取完整的响应内容
+    while (total_bytes_read < content_size)
+    {
+        bytes_read = SSL_read(ssl, buffer, sizeof(buffer) - 1);
+        if (bytes_read <= 0)
+        {
+            int err = SSL_get_error(ssl, bytes_read);
+            if (err != SSL_ERROR_ZERO_RETURN)
+            { // SSL_ERROR_ZERO_RETURN 表示连接已关闭
+                throw std::runtime_error("SSL read failed");
+                ERR_print_errors_fp(stderr);
+            }
+            break; // 如果没有更多数据可读，则退出循环
+        }
+        buffer[bytes_read] = '\0'; // 确保字符串结束符
+        response_buffer.append(buffer, bytes_read);
+        total_bytes_read += bytes_read;
+    }
+
+    // 清理资源
+    if (ssl)
+    {
+        SSL_shutdown(ssl); // 执行SSL关闭握手
+        SSL_free(ssl);     // 释放SSL对象 (也会释放关联的BIO)
+    }
+
+    // 解析响应头和内容
+    size_t headerEnd = response_buffer.find("\r\n\r\n"); // 查找头部结束位置
+    if (headerEnd == std::string::npos)
+    {
+        throw std::runtime_error("Invalid HTTP response format");
+    }
+    header = response_buffer.substr(0, headerEnd);   // 提取响应头
+    content = response_buffer.substr(headerEnd + 4); // 提取响应内容
 }
 
 void cppNetworkUtil::run(std::function<void(const std::string, SOCKET, SSL *)> func)
@@ -715,26 +924,29 @@ void cppNetworkUtil::run(std::function<void(const std::string, SOCKET, SSL *)> f
     }
 #endif
 
-    // 创建 SSL 上下文
-    ctx = SSL_CTX_new(TLS_server_method());
-    if (!ctx)
+    // SSL 上下文
+    if (!server_ctx)
     {
         HANDLE_ERROR("Unable to create SSL context");
+        throw("Unable to create SSL context");
     }
 
     // 加载证书和私钥
-    if (SSL_CTX_use_certificate_file(ctx, PUBLIC_KET_PATH, SSL_FILETYPE_PEM) <= 0)
+    if (SSL_CTX_use_certificate_file(server_ctx, PUBLIC_KET_PATH, SSL_FILETYPE_PEM) <= 0)
     {
         HANDLE_ERROR("Unable to load certificate PUBLIC KEY");
+        throw("Unable to load certificate PUBLIC KEY");
     }
-    if (SSL_CTX_use_PrivateKey_file(ctx, PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
+    if (SSL_CTX_use_PrivateKey_file(server_ctx, PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
     {
         HANDLE_ERROR("Unable to load private key PRIVATE KEY");
+        throw("Unable to load private key PRIVATE KEY");
     }
     // 验证私钥是否与证书匹配
-    if (!SSL_CTX_check_private_key(ctx))
+    if (!SSL_CTX_check_private_key(server_ctx))
     {
         HANDLE_ERROR("Private key does not match the certificate");
+        throw("Private key does not match the certificate");
     }
 
     // create socket
@@ -812,7 +1024,7 @@ void cppNetworkUtil::run(std::function<void(const std::string, SOCKET, SSL *)> f
 void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std::string, SOCKET, SSL *)> func)
 {
     // 为每个连接创建 SSL 结构并执行 SSL 握手
-    SSL *ssl = SSL_new(ctx);
+    SSL *ssl = SSL_new(server_ctx);
     if (!ssl)
     {
         if (IS_DEBUG)
@@ -854,8 +1066,8 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
         // 只附加实际接收到的字节数
         recv_buffer.append(temp_buffer, recvd);
         totla_recvd += recvd;
-        if (IS_DEBUG)
-            std::cout << "recv " << recvd << " bytes, total recv: " << totla_recvd << " bytes\n";
+        // if (IS_DEBUG)
+        //     std::cout << "recv " << recvd << " bytes, total recv: " << totla_recvd << " bytes\n";
     }
     else if (recvd == 0)
     {
@@ -884,7 +1096,7 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
 
     if (method == "POST")
     {
-        content_size = cppNetworkUtil::getPostContentSize(recv_buffer);
+        content_size = cppNetworkUtil::getContentSize(recv_buffer);
         // if (IS_DEBUG)
         //     std::cout << "content_size=" << content_size << "\n";
         if (content_size == -1)

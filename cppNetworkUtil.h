@@ -28,12 +28,14 @@
 #define BUFFERSIZE 4096
 
 // 错误处理宏，用于打印 OpenSSL 错误并退出
-#define HANDLE_ERROR(msg)                           \
-    do                                              \
-    {                                               \
-        ERR_print_errors_fp(stderr);                \
-        std::cerr << "Error: " << msg << std::endl; \
-        exit(EXIT_FAILURE);                         \
+#define HANDLE_ERROR(msg)                               \
+    do                                                  \
+    {                                                   \
+        if (IS_DEBUG)                                   \
+        {                                               \
+            ERR_print_errors_fp(stderr);                \
+            std::cerr << "Error: " << msg << std::endl; \
+        }                                               \
     } while (0)
 
 // C++ standard library headers
@@ -88,6 +90,9 @@ typedef int SOCKET;
 #include "openssl/ssl.h"
 #include "openssl/err.h"
 
+extern SSL_CTX *server_ctx;
+extern SSL_CTX *client_ctx;
+
 // ThreadPool 类定义
 class ThreadPool
 {
@@ -137,9 +142,10 @@ public:
         std::string method;     // request method
         std::string connection; // connection type
         std::string host;       // host
+        std::string path;       // path
         int port;               // port
 
-        requestHeaderParameters(std::string in_method = "GET", std::string in_connection = "close", std::string in_host = "example.com", int in_port = 80) : method(in_method), connection(in_connection), host(in_host), port(in_port) {}
+        requestHeaderParameters(std::string in_method = "GET", std::string in_connection = "close", std::string in_host = "example.com", std::string in_path = "/", int in_port = 80) : method(in_method), connection(in_connection), host(in_host), path(in_path), port(in_port) {}
     } request_header_parameters;
 
     // 用于存储解析过的post的multipart数据
@@ -193,7 +199,7 @@ public:
     static std::string getGetHeaderUrl(const std::string buffer);
 
     /**
-     * @brief Get the content size in the http POST request header
+     * @brief Get the content size in the http request header
      *
      * @param buffer (const std::string) Received string
      *
@@ -203,7 +209,7 @@ public:
      *
      * @return content size
      */
-    static int getPostContentSize(const std::string buffer);
+    static int getContentSize(const std::string buffer);
 
     /**
      * @brief Get the Content-Type in the http POST request header
@@ -312,11 +318,11 @@ public:
     static void sendDataToHttpsSocket(const std::string data, SSL *ssl);
 
     /**
-     * @brief Send data to the host
+     * @brief Send data to the host using HTTP protocol
      *
      * @param host (const std::string &) Host address
+     * @param path (const std::string &) Path to the resource
      * @param port (int) Port number
-     * @param request (const std::string &) Request data to be sent
      * @param header (std::string &) Header to be filled with the response header
      * @param content (std::string &) Content to be filled with the response content
      *
@@ -327,7 +333,28 @@ public:
      * @throws shutdown failed
      * @throws Invalid HTTP response format
      */
-    static void sendDataToHost(const std::string &host, int port, const std::string &request, std::string &header, std::string &content);
+    static void sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content);
+
+    /**
+     * @brief Send data to the host using HTTPS protocol
+     *
+     * @param host (const std::string &) Host address
+     * @param path (const std::string &) Path to the resource
+     * @param port (int) Port number
+     * @param header (std::string &) Header to be filled with the response header
+     * @param content (std::string &) Content to be filled with the response content
+     * @param enable_CA (bool) Whether to enable CA verification
+     *
+     * @throws WSAStartup failed
+     * @throws Failed to load default CA certificates
+     * @throws Failed to create SSL object
+     * @throws Failed to create BIO connection
+     * @throws Failed to connect to server
+     * @throws SSL handshake failed
+     * @throws SSL read failed
+     * @throws Invalid HTTP response format
+     */
+    static void sendDataToHttpsHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA = true);
 
     /**
      * @brief start server
@@ -351,7 +378,5 @@ public:
     ~cppNetworkUtil();
 
 private:
-    SSL_CTX *ctx = nullptr;
-
     void process(SOCKET client_socket, std::function<void(const std::string, SOCKET, SSL *)> func);
 };
