@@ -4,8 +4,15 @@
 
 int port = DEFAULT_SERVER_PORT;
 
-void process(std::string recv_data, SOCKET client_socket)
+void process(std::string recv_data, SOCKET client_socket, SSL *ssl)
 {
+    if (ssl == nullptr)
+    {
+        if (IS_DEBUG)
+            std::cerr << "SSL is not initialized, cannot process HTTPS request.\n";
+        return;
+    }
+
     cppNetworkUtil client;
 
     std::string header;
@@ -14,8 +21,8 @@ void process(std::string recv_data, SOCKET client_socket)
 
     client.response_header_parameters.mime_type = "text/html";
 
-    client.sendDataToClient(client.buildResponseHeader(client.response_header_parameters), client_socket);
-    client.sendDataToClient(content, client_socket);
+    client.sendDataToHttpsSocket(client.buildResponseHeader(client.response_header_parameters), ssl);
+    client.sendDataToHttpsSocket(content, ssl);
 }
 
 int main(int argc, char **argv)
@@ -25,7 +32,7 @@ int main(int argc, char **argv)
     SOCKET server_socket;
     try
     {
-        server_socket = server.start(port);
+        server.run(process);
     }
     catch (const std::exception &e)
     {
@@ -34,9 +41,6 @@ int main(int argc, char **argv)
             std::cerr << e.what() << '\n';
         }
     }
-    printf("Listening on 0.0.0.0:%d\n", port);
-
-    server.exec(process, 20, server_socket);
 
     return 0;
 }

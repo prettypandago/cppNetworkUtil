@@ -4,15 +4,37 @@
 #define IS_DEBUG (1)
 // #define IS_DEBUG (0)
 
+#define ENABLE_HTTPS (1) // Use HTTPS by default, can be changed to HTTP by defining HTTP
+// #define HTTPS (0) // Use HTTPS by default, can be changed to HTTP by defining HTTP
+
+#define ENABLE_PRINT_LISTEN_INFO (1) // Print server address and port when starting the server
+// #define ENABLE_PRINT_LISTEN_INFO (0) // Do not print server address and port when
+
 #define NAME "cppNetworkUtil"
 #define PROTOCOL "HTTP/1.1"
 
 #define RFC1123FMT "%a, %d %b %Y %H:%M:%S GMT"
 
-#define DEFAULT_SERVER_PORT 80;
+#ifdef ENABLE_HTTPS
+#define DEFAULT_SERVER_PORT 443 // Default port for HTTPS
+#elif
+#define DEFAULT_SERVER_PORT 80
+#endif
+
+#define PUBLIC_KET_PATH "server.crt"  // Public key path
+#define PRIVATE_KEY_PATH "server.key" // Private key path
 
 #define INFINITY 2147483647
 #define BUFFERSIZE 4096
+
+// 错误处理宏，用于打印 OpenSSL 错误并退出
+#define HANDLE_ERROR(msg)                           \
+    do                                              \
+    {                                               \
+        ERR_print_errors_fp(stderr);                \
+        std::cerr << "Error: " << msg << std::endl; \
+        exit(EXIT_FAILURE);                         \
+    } while (0)
 
 // C++ standard library headers
 
@@ -55,11 +77,16 @@ typedef int SOCKET;
 #include <thread>
 #include <mutex>
 #include <sstream>
+#include <fstream> // For std::ifstream
 #include <queue>
 #include <condition_variable>
 #include <functional> // For std::function
 #include <future>     // For std::future, std::packaged_task
 #include <algorithm>  // For std::min
+
+// openssl
+#include "openssl/ssl.h"
+#include "openssl/err.h"
 
 // ThreadPool 类定义
 class ThreadPool
@@ -93,6 +120,8 @@ private:
 class cppNetworkUtil
 {
 public:
+    int port = DEFAULT_SERVER_PORT; // 服务器端口
+
     struct responseHeaderParameters
     {
         int status;                   // status code
@@ -149,7 +178,7 @@ public:
      *
      * @return method
      */
-    std::string getHeaderMethod(const std::string buffer);
+    static std::string getHeaderMethod(const std::string buffer);
 
     /**
      * @brief Get the url in the GET request header
@@ -161,7 +190,7 @@ public:
      *
      * @return url
      */
-    std::string getGetHeaderUrl(const std::string buffer);
+    static std::string getGetHeaderUrl(const std::string buffer);
 
     /**
      * @brief Get the content size in the http POST request header
@@ -174,7 +203,7 @@ public:
      *
      * @return content size
      */
-    int getPostContentSize(const std::string buffer);
+    static int getPostContentSize(const std::string buffer);
 
     /**
      * @brief Get the Content-Type in the http POST request header
@@ -185,7 +214,7 @@ public:
      *
      * @return Content-Type
      */
-    std::string getPostContentType(const std::string buffer);
+    static std::string getPostContentType(const std::string buffer);
 
     /**
      * @brief Get the Boundary in the http POST request header
@@ -196,7 +225,7 @@ public:
      *
      * @return Boundary
      */
-    std::string getPostContentBoundary(const std::string buffer);
+    static std::string getPostContentBoundary(const std::string buffer);
 
     /**
      * @brief Get the content body in the http POST request header
@@ -207,7 +236,7 @@ public:
      *
      * @return content body
      */
-    std::string getPostContentBody(const std::string buffer);
+    static std::string getPostContentBody(const std::string buffer);
 
     /**
      * @brief Make a request header
@@ -216,7 +245,7 @@ public:
      *
      * @return header
      */
-    std::string buildResponseHeader(responseHeaderParameters parameters);
+    static std::string buildResponseHeader(responseHeaderParameters parameters);
 
     /**
      * @brief Make a request header
@@ -225,7 +254,7 @@ public:
      *
      * @return header
      */
-    std::string buildRequestHeader(requestHeaderParameters parameter);
+    static std::string buildRequestHeader(requestHeaderParameters parameter);
 
     /**
      * @brief Decode a URL-encoded string
@@ -234,7 +263,7 @@ public:
      *
      * @return Decoded string
      */
-    std::string urlDecode(const std::string &encodedString);
+    static std::string urlDecode(const std::string &encodedString);
 
     /**
      * @brief Parse URL parameters from a RESTful API style URL
@@ -243,7 +272,7 @@ public:
      *
      * @return A vector of strings representing the parameters in the URL
      */
-    std::vector<std::string> getURLParameterRestfulapi(std::string url);
+    static std::vector<std::string> getURLParameterRestfulapi(std::string url);
 
     /**
      * @brief Parse URL parameters from URL query string
@@ -254,7 +283,7 @@ public:
      *
      * @return A map of key-value pairs representing the query parameters
      */
-    std::map<std::string, std::string> parseUrlQueryParameters(const std::string &url);
+    static std::map<std::string, std::string> parseUrlQueryParameters(const std::string &url);
 
     /**
      * @brief Parse Multipart data from a POST request body
@@ -264,16 +293,23 @@ public:
      *
      * @return A vector of multipartData objects, each representing a part of the multipart data
      */
-    std::vector<multipartData> parseMultipart(const std::string &boundary, const std::string &body);
+    static std::vector<multipartData> parseMultipart(const std::string &boundary, const std::string &body);
 
     /**
-     * @brief Send data to the client
+     * @brief Send data to the socket using HTTP protocol
      *
      * @param data (const std::string) Data to be sent
-     * @param client_socket (SOCKET) Client socket to send data to
-     *
+     * @param socket (SOCKET) socket to send data to
      */
-    void sendDataToClient(const std::string data, SOCKET client_socket);
+    static void sendDataToHttpSocket(const std::string data, SOCKET socket);
+
+    /**
+     * @brief Send data to the socket using HTTPS protocol
+     *
+     * @param data (const std::string) Data to be sent
+     * @param ssl (SSL *) SSL structure for sending data
+     */
+    static void sendDataToHttpsSocket(const std::string data, SSL *ssl);
 
     /**
      * @brief Send data to the host
@@ -291,12 +327,13 @@ public:
      * @throws shutdown failed
      * @throws Invalid HTTP response format
      */
-    void sendDataToHost(const std::string &host, int port, const std::string &request, std::string &header, std::string &content);
+    static void sendDataToHost(const std::string &host, int port, const std::string &request, std::string &header, std::string &content);
 
     /**
      * @brief start server
      *
      * @param port (int) bind port
+     * @param func (std::function<void(const std::string, SOCKET, SSL *)>) Function to process the received data
      *
      * @throws WSAStartup failed
      * @throws Create socket failed
@@ -306,16 +343,7 @@ public:
      *
      * @return server_socket
      */
-    SOCKET start(int port);
-
-    /**
-     * @brief exec server
-     *
-     * @param func (void (*func)(std::string recv_data, SOCKET client_socket)) action function
-     * @param thread_num (int) thread num
-     * @param server_socket (SOCKET) server socket
-     */
-    void exec(void (*func)(std::string recv_data, SOCKET client_socket), int thread_num, SOCKET server_socket);
+    void run(std::function<void(const std::string, SOCKET, SSL *)> func);
 
     /**
      * @brief Automatically executed when leaving scope
@@ -323,11 +351,7 @@ public:
     ~cppNetworkUtil();
 
 private:
-    /**
-     * @brief exec server
-     *
-     * @param func (void (*func)(std::string recv_data, SOCKET client_socket)) action function
-     * @param server_socket (SOCKET) client socket
-     */
-    void *process(void (*func)(std::string recv_data, SOCKET client_socket), SOCKET client_socket);
+    SSL_CTX *ctx = nullptr;
+
+    void process(SOCKET client_socket, std::function<void(const std::string, SOCKET, SSL *)> func);
 };

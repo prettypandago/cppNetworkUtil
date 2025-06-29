@@ -9,8 +9,17 @@
                 "-g",
                 "*.cpp",
                 "-o",
-                "${fileDirname}\\cppNetworkUtil.exe",
-                "-lws2_32"
+                "${fileDirname}/cppNetworkUtil.exe",
+                "-I",
+                "\"C:/Program Files/OpenSSL-Win64/include\"",
+                "-L",
+                "\"C:/Program Files/OpenSSL-Win64/lib\"",
+                "-lssl",
+                "-lcrypto",
+                "-lws2_32",
+                "-lcrypt32",
+                "-static-libgcc",
+                "-static-libstdc++"
             ],
             "options": {
                 "cwd": "${fileDirname}"
