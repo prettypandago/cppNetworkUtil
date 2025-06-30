@@ -1262,7 +1262,7 @@ void cppNetworkUtil::run(std::function<void(const std::string, SOCKET, SSL *)> f
         throw("Listen failed");
     }
 
-#ifdef DISABLE_PRINT_LISTEN_INFO
+#ifndef DISABLE_PRINT_LISTEN_INFO
     printf("Listening on 0.0.0.0:%d\n", port);
 #endif
 
