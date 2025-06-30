@@ -4,7 +4,8 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/Program Files/OpenSSL-Win64/include"
+                "${workspaceFolder}/openssl/include",
+                "${workspaceFolder}/include"
             ],
             "defines": [
                 "_DEBUG",
