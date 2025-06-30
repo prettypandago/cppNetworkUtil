@@ -1,7 +1,7 @@
 # cppNetworkUtil
 
 ## Other language versions
-[English](README.md "English version"), [Simplified Chinese](README_zh-cn.md "Simplified Chinese version").
+[English](README.md "English version"), [简体中文](README_zh-cn.md "简体中文版").
 
 ## Warning
 
