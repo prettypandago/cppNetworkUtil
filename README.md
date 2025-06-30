@@ -1,10 +1,19 @@
 # cppNetworkUtil
 
-**Read this in other languages: [English](README.md "Endlish Version"), [中文](README_zh-cn.md "Chinese (Simplified) Version").**
+## Other language versions
+[English](README.md "English version"), [Simplified Chinese](README_zh-cn.md "Simplified Chinese version").
 
-If you want to implement network communication in your C++ project, you have to go through **complex** programming to achieve it.
+## Warning
 
-However, if you use my network library, it only takes **a few** steps to achieve it:
+Under **development** stage, usage may change **significantly**, **not recommended** to use!!!
+
+## Introduction
+
+With my network library, you can easily implement network communication functions.
+
+Support http and https
+
+## How to use
 
 1. Download
 2. Reference in your project
@@ -12,9 +21,10 @@ However, if you use my network library, it only takes **a few** steps to achieve
 4. Write code
 5. Run✅✅✅
 
-[Click to view example](main.cpp "example")
+[Click to view example](example.cpp "example")
 
-😊Thank you for your use!!!😊
+## How to compile
 
-**Warning**
-It is in the **development** stage, and the usage may change **significantly**, and is **not** recommended
+`g++ example.cpp -o example.exe lib/cppNetworkUtil.a -I include/ -I openssl/include -L openssl/lib -lssl -lcrypto -lws2_32 -lcrypt32 -static-libgcc -static-libstdc++`
+
+😊Thank you for using it! ! ! 😊
