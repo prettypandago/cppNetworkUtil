@@ -9,7 +9,7 @@
                 "-c",
                 "${workspaceFolder}/src/cppNetworkUtil.cpp",
                 "-o",
-                "${workspaceFolder}/cppNetworkUtil.o",
+                "${workspaceFolder}/lib/cppNetworkUtil.o",
                 "-I",
                 "${workspaceFolder}/openssl/include",
                 "-I",
@@ -26,8 +26,8 @@
             "command": "ar",
             "args": [
                 "rcs",
-                "${workspaceFolder}/cppNetworkUtil.a",
-                "${workspaceFolder}/cppNetworkUtil.o",
+                "${workspaceFolder}/lib/cppNetworkUtil.a",
+                "${workspaceFolder}/lib/cppNetworkUtil.o",
                 "${workspaceFolder}/openssl/lib/libcrypto.a",
                 "${workspaceFolder}/openssl/lib/libssl.a"
             ],
