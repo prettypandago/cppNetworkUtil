@@ -128,7 +128,7 @@ std::string cppNetworkUtil::getGetHeaderUrl(const std::string buffer)
 int cppNetworkUtil::getContentSize(const std::string buffer)
 {
     // 查找Content-Length字段
-    int pos = buffer.find("Content-Length:");
+    size_t pos = buffer.find("Content-Length:");
     if (pos == std::string::npos)
     {
         throw("Find Content-Length failed");
@@ -138,7 +138,7 @@ int cppNetworkUtil::getContentSize(const std::string buffer)
         pos++;
 
     // 提取Content-Length的值
-    int contentLength = 0;
+    size_t contentLength = 0;
     size_t lengthStart = pos;
     while (pos < buffer.length() && buffer[pos] != '\r')
         pos++;
@@ -163,50 +163,32 @@ int cppNetworkUtil::getContentSize(const std::string buffer)
     return bodyStart + contentLength;
 }
 
-std::string cppNetworkUtil::getPostContentType(const std::string buffer)
+std::string cppNetworkUtil::getHeaderValue(const std::string &headers, const std::string &key)
 {
-    // 查找Content-Type字段
-    int pos = buffer.find("Content-Type:");
-    if (pos == std::string::npos)
+    std::string searchKey = key + ":";
+    size_t pos = headers.find(searchKey);
+    if (pos != std::string::npos)
     {
-        throw("Find Content-Length failed");
+        size_t start = pos + searchKey.length();
+        size_t end = headers.find("\r\n", start);
+        if (end != std::string::npos)
+        {
+            std::string value = headers.substr(start, end - start);
+            // 裁剪前导/尾随空白
+            size_t first = value.find_first_not_of(" \t");
+            if (first == std::string::npos)
+                return ""; // 全是空白
+            size_t last = value.find_last_not_of(" \t");
+            return value.substr(first, (last - first + 1));
+        }
     }
-    pos += 13; // 跳过"Content-Type:"
-    if (buffer[pos] == ' ')
-        pos++;
-
-    // 提取Content-Type的值
-    size_t typeStart = pos;
-    while (pos < buffer.length() && buffer[pos] != ';' && buffer[pos] != '\r' && buffer[pos] != '\n' && buffer[pos] != '\0')
-        pos++;
-    std::string contentType = buffer.substr(typeStart, pos - typeStart);
-
-    return contentType;
-}
-
-std::string cppNetworkUtil::getPostContentBoundary(const std::string buffer)
-{
-    // 查找Boundary字段
-    int pos = buffer.find("boundary=");
-    if (pos == std::string::npos)
-    {
-        throw("Find boundary failed");
-    }
-    pos += 9; // 跳过"boundary="
-
-    // 提取Boundary的值
-    size_t boundaryStart = pos;
-    while (pos < buffer.length() && buffer[pos] != '\r')
-        pos++;
-    std::string boundary = buffer.substr(boundaryStart, pos - boundaryStart);
-
-    return boundary;
+    return "";
 }
 
 std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
 {
     // 查找Content-Length字段
-    int pos = buffer.find("Content-Length:");
+    size_t pos = buffer.find("Content-Length:");
     if (pos == std::string::npos)
     {
         throw("Find Content-Length failed");
@@ -216,7 +198,7 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
         pos++;
 
     // 提取Content-Length的值
-    int contentLength = 0;
+    size_t contentLength = 0;
     size_t lengthStart = pos;
     while (pos < buffer.length() && buffer[pos] != '\r')
         pos++;
@@ -231,7 +213,7 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
     }
 
     // 提取请求正文长度
-    int bodyStart = buffer.find("\r\n\r\n", pos);
+    size_t bodyStart = buffer.find("\r\n\r\n", pos);
     if (bodyStart == std::string::npos)
     {
         throw("Find body failed");
@@ -289,6 +271,31 @@ std::string cppNetworkUtil::buildResponseHeader(responseHeaderParameters paramet
     {
         buffer += "Content-Language: ";
         buffer += parameter.content_language;
+        buffer += "\r\n";
+    }
+
+    if (!parameter.cookie.empty())
+    {
+        buffer += "Set-Cookie: ";
+        buffer += parameter.cookie;
+        buffer += "\r\n";
+    }
+
+    if (parameter.Strict_Transport_Security_max_age > 0 && !parameter.Strict_Transport_Security_includeSubDomains.empty())
+    {
+        buffer += "Strict-Transport-Security: max-age=";
+        buffer += std::to_string(parameter.Strict_Transport_Security_max_age);
+        if (!parameter.Strict_Transport_Security_includeSubDomains.empty())
+        {
+            buffer += "; includeSubDomains";
+        }
+        buffer += "\r\n";
+    }
+
+    if (!parameter.Cache_Control.empty())
+    {
+        buffer += "Cache-Control: ";
+        buffer += parameter.Cache_Control;
         buffer += "\r\n";
     }
 
@@ -596,153 +603,264 @@ void cppNetworkUtil::sendDataToHttpsSocket(const std::string data, SSL *ssl)
 
 void cppNetworkUtil::sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content)
 {
-    SOCKET ConnectSocket = INVALID_SOCKET;
-
-    struct addrinfo *result = nullptr, *ptr = nullptr, hints;
-
-    char recvbuf[BUFFERSIZE];
-    int iResult = 0, total_bytes_read = 0;
-    int recvbuflen = sizeof(recvbuf);
-
-    std::string response_buffer = ""; // 用于存储接收到的数据
-
-// 1. 初始化 Winsock
 #ifdef _WIN32
     WSADATA wsaData;
-    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0)
     {
         throw std::runtime_error("WSAStartup failed");
     }
 #endif
 
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;     // IPv4 或 IPv6
-    hints.ai_socktype = SOCK_STREAM; // 流式套接字 (TCP)
-    hints.ai_protocol = IPPROTO_TCP; // TCP 协议
-
-    // 2. 解析服务器地址
-    iResult = getaddrinfo(host.c_str(), std::to_string(port).c_str(), &hints, &result);
-    if (iResult != 0)
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock == INVALID_SOCKET)
     {
+        HANDLE_ERROR("Failed to create socket");
 #ifdef _WIN32
         WSACleanup();
 #endif
-        throw std::runtime_error("getaddrinfo failed");
+        throw std::runtime_error("Failed to create socket");
     }
 
-    // 尝试连接到解析到的每个地址
-    for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
+    struct sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+
+    struct hostent *server_host = gethostbyname(host.c_str());
+    if (server_host == NULL)
     {
-        // 3. 创建套接字
-        ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-        if (ConnectSocket == INVALID_SOCKET)
-        {
-            // 不要在此处直接返回，继续尝试下一个地址
-            continue;
-        }
-
-        // 4. 连接到服务器
-        iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-        if (iResult == SOCKET_ERROR)
-        {
-            closesocket(ConnectSocket);
-            ConnectSocket = INVALID_SOCKET;
-            continue; // 尝试下一个地址
-        }
-        break; // 连接成功
-    }
-
-    freeaddrinfo(result); // 释放地址信息结构体
-
-    if (ConnectSocket == INVALID_SOCKET)
-    {
+        log_e("Failed to resolve host: %s", host.c_str());
+        closesocket(sock);
 #ifdef _WIN32
         WSACleanup();
 #endif
-        throw std::runtime_error("Unable to connect to server");
+        throw std::runtime_error("Failed to resolve host");
+    }
+    memcpy(&server_addr.sin_addr, server_host->h_addr_list[0], server_host->h_length);
+
+    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR)
+    {
+        HANDLE_ERROR("Failed to connect to server");
+        closesocket(sock);
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw std::runtime_error("Failed to connect to server");
     }
 
-    // 5. 发送 HTTP 请求头
-    std::string request_header = cppNetworkUtil::buildRequestHeader(
+    std::string request_header_str = cppNetworkUtil::buildRequestHeader(
         cppNetworkUtil::requestHeaderParameters{
             "GET", "close", host, path, port});
-    iResult = send(ConnectSocket, request_header.c_str(), (int)request_header.length(), 0);
-    if (iResult == SOCKET_ERROR)
+    int bytes_sent = send(sock, request_header_str.c_str(), request_header_str.length(), 0);
+    if (bytes_sent == SOCKET_ERROR)
     {
-        closesocket(ConnectSocket);
+        HANDLE_ERROR("Failed to send request");
+        closesocket(sock);
 #ifdef _WIN32
         WSACleanup();
 #endif
-        throw std::runtime_error("send failed");
+        throw std::runtime_error("Failed to send request");
     }
 
-    // 6. 接收数据
-    iResult = recv(ConnectSocket, recvbuf, recvbuflen - 1, 0); // 留一个字节给 '\0'
-    if (iResult > 0)
-    {
-        recvbuf[iResult] = '\0';         // 添加字符串结束符
-        response_buffer.append(recvbuf); // 将接收到的数据添加到总字符串
-    }
-    else if (iResult == 0)
-    {
-        // 连接已关闭
-        // std::cout << "Connection closed by server." << std::endl;
-    }
-    else
-    {
-        closesocket(ConnectSocket);
-#ifdef _WIN32
-        WSACleanup();
-#endif
-    }
+    // 接收响应头部
+    std::string response_buffer;
+    char buffer[BUFFERSIZE + 1];
+    size_t header_end_pos = std::string::npos;
+    bool header_found = false;
 
-    int content_size = getContentSize(response_buffer); // 确保读取完整的响应内容
-    while (total_bytes_read < content_size)
+    while (!header_found)
     {
-        iResult = recv(ConnectSocket, recvbuf, recvbuflen - 1, 0); // 留一个字节给 '\0'
-        if (iResult > 0)
+        memset(buffer, '\0', sizeof(buffer));
+        int bytes_read = recv(sock, buffer, BUFFERSIZE, 0);
+        if (bytes_read <= 0)
         {
-            recvbuf[iResult] = '\0';         // 添加字符串结束符
-            response_buffer.append(recvbuf); // 将接收到的数据添加到总字符串
-            total_bytes_read += iResult;
-        }
-        else if (iResult == 0)
-        {
-            // 连接已关闭
-            // std::cout << "Connection closed by server." << std::endl;
-            break;
-        }
-        else
-        {
-            closesocket(ConnectSocket);
+            HANDLE_ERROR("Failed to read from socket during header reception or connection closed");
+            closesocket(sock);
 #ifdef _WIN32
             WSACleanup();
 #endif
+            throw std::runtime_error("Connection closed before complete header reception or socket read error");
+        }
+        response_buffer.append(buffer, bytes_read);
+        header_end_pos = response_buffer.find("\r\n\r\n");
+        if (header_end_pos != std::string::npos)
+        {
+            header_found = true;
         }
     }
 
-    // 7. 关闭套接字
-    iResult = shutdown(ConnectSocket, SD_SEND); // 禁用发送
-    if (iResult == SOCKET_ERROR)
-    {
-        throw std::runtime_error("shutdown failed");
-    }
-    closesocket(ConnectSocket);
+    header = response_buffer.substr(0, header_end_pos);
+    std::string remaining_buffer_after_header = response_buffer.substr(header_end_pos + 4);
 
-    // 8. 清理 Winsock
+    // 检查 Transfer-Encoding 头部
+    std::string transfer_encoding = getHeaderValue(header, "Transfer-Encoding");
+    std::transform(transfer_encoding.begin(), transfer_encoding.end(), transfer_encoding.begin(), ::tolower);
+
+    if (transfer_encoding == "chunked")
+    {
+        // --- 直接在函数内部处理分块传输编码 ---
+        std::string current_chunk_buffer = remaining_buffer_after_header; // 从初始缓冲区中剩余的数据开始
+        content.clear();                                                  // 清空内容，准备接收解码后的数据
+
+        while (true)
+        {
+            size_t line_end_pos = current_chunk_buffer.find("\r\n");
+            while (line_end_pos == std::string::npos)
+            {
+                // 缓冲区中没有完整的行，需要从套接字中读取更多数据
+                char temp_buffer[BUFFERSIZE + 1];
+                memset(temp_buffer, '\0', sizeof(temp_buffer));
+                int bytes_read_chunk = recv(sock, temp_buffer, BUFFERSIZE, 0);
+                if (bytes_read_chunk <= 0)
+                {
+                    HANDLE_ERROR("Failed to read from socket during chunk size reception");
+                    closesocket(sock);
+#ifdef _WIN32
+                    WSACleanup();
+#endif
+                    throw std::runtime_error("Socket read failed during chunk size reception");
+                }
+                current_chunk_buffer.append(temp_buffer, bytes_read_chunk);
+                line_end_pos = current_chunk_buffer.find("\r\n");
+            }
+
+            if (line_end_pos == std::string::npos)
+            {          // 仍然没有完整行，可能连接已关闭或数据异常
+                break; // 退出外层while循环
+            }
+
+            std::string chunk_size_str = current_chunk_buffer.substr(0, line_end_pos);
+            // 移除分块大小后的扩展信息（如 ";chunk-extension"），只保留十六进制大小
+            size_t semi_colon_pos = chunk_size_str.find(';');
+            if (semi_colon_pos != std::string::npos)
+            {
+                chunk_size_str = chunk_size_str.substr(0, semi_colon_pos);
+            }
+
+            long chunk_size;
+            try
+            {
+                chunk_size = std::stoul(chunk_size_str, nullptr, 16); // 将十六进制字符串转换为数字
+            }
+            catch (const std::exception &e)
+            {
+                log_e("Failed to parse chunk size '%s': {%s}", chunk_size_str.c_str(), e.what());
+                closesocket(sock);
+#ifdef _WIN32
+                WSACleanup();
+#endif
+                throw std::runtime_error("Failed to parse chunk size");
+            }
+
+            // 移除已解析的分块大小行（包括 CRLF）
+            current_chunk_buffer = current_chunk_buffer.substr(line_end_pos + 2);
+
+            if (chunk_size == 0)
+            {
+                // 遇到最后一个空块，表示分块数据结束
+                // 还需要读取最后的 CRLF
+                if (current_chunk_buffer.length() < 2)
+                {
+                    char temp_crlf[2];
+                    recv(sock, temp_crlf, 2, 0); // 读取最后的 CRLF
+                }
+                else
+                {
+                    current_chunk_buffer = current_chunk_buffer.substr(2); // 移除最后的 CRLF
+                }
+                break; // 退出外层while循环
+            }
+
+            // 读取块数据
+            long bytes_needed_for_chunk = chunk_size;
+            while (bytes_needed_for_chunk > 0)
+            {
+                if (!current_chunk_buffer.empty())
+                {
+                    long bytes_from_buffer = std::min((long)current_chunk_buffer.length(), bytes_needed_for_chunk);
+                    content.append(current_chunk_buffer.data(), bytes_from_buffer);
+                    current_chunk_buffer = current_chunk_buffer.substr(bytes_from_buffer);
+                    bytes_needed_for_chunk -= bytes_from_buffer;
+                }
+                else
+                {
+                    char data_buffer[BUFFERSIZE + 1];
+                    memset(data_buffer, '\0', sizeof(data_buffer));
+                    int bytes_read_data = recv(sock, data_buffer, std::min((long)BUFFERSIZE, bytes_needed_for_chunk), 0);
+                    if (bytes_read_data <= 0)
+                    {
+                        HANDLE_ERROR("Failed to read from socket during chunk data reception");
+                        closesocket(sock);
+#ifdef _WIN32
+                        WSACleanup();
+#endif
+                        throw std::runtime_error("Incomplete chunk data: connection closed unexpectedly or socket read error");
+                    }
+                    content.append(data_buffer, bytes_read_data);
+                    bytes_needed_for_chunk -= bytes_read_data;
+                }
+            }
+
+            // 读取每个块数据后的 CRLF
+            if (current_chunk_buffer.length() < 2)
+            {
+                char temp_crlf[2];
+                recv(sock, temp_crlf, 2, 0); // 读取 CRLF
+            }
+            else
+            {
+                current_chunk_buffer = current_chunk_buffer.substr(2); // 移除 CRLF
+            }
+        }
+    }
+    else
+    {
+        // 非分块编码，尝试通过 Content-Length 或直接读取直到连接关闭
+        std::string content_length_str = getHeaderValue(header, "Content-Length");
+        long content_length = -1;
+        if (!content_length_str.empty())
+        {
+            try
+            {
+                content_length = std::stol(content_length_str);
+            }
+            catch (const std::exception &e)
+            {
+                log_e("Failed to parse Content-Length: {%s}", e.what());
+                // 继续尝试读取直到连接关闭
+            }
+        }
+
+        content = remaining_buffer_after_header; // 将头部后面的剩余数据作为内容的开始
+
+        long bytes_read_body = content.length();
+        while (true)
+        {
+            if (content_length != -1 && bytes_read_body >= content_length)
+            {
+                break; // 已读取指定长度的内容
+            }
+
+            memset(buffer, '\0', sizeof(buffer));
+            int bytes_from_sock = recv(sock, buffer, BUFFERSIZE, 0);
+            if (bytes_from_sock <= 0)
+            {
+                if (bytes_from_sock == 0)
+                { // Connection closed normally
+                    break;
+                }
+                HANDLE_ERROR("Failed to read from socket during body reception");
+                break; // 连接关闭或错误
+            }
+            content.append(buffer, bytes_from_sock);
+            bytes_read_body += bytes_from_sock;
+        }
+    }
+
+    closesocket(sock);
 #ifdef _WIN32
     WSACleanup();
 #endif
-
-    // 9. 解析响应头和内容
-    size_t headerEnd = response_buffer.find("\r\n\r\n"); // 查找头部结束位置
-    if (headerEnd == std::string::npos)
-    {
-        throw std::runtime_error("Invalid HTTP response format");
-    }
-    header = response_buffer.substr(0, headerEnd);   // 提取响应头
-    content = response_buffer.substr(headerEnd + 4); // 提取响应内容
 }
 
 void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA)
@@ -762,8 +880,7 @@ void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::str
     {
         if (SSL_CTX_set_default_verify_paths(client_ctx) != 1)
         {
-            if (IS_DEBUG)
-                ERR_print_errors_fp(stderr);
+            HANDLE_ERROR("Failed to set default verify paths for client context");
             throw std::runtime_error("Failed to load default CA certificates");
         }
     }
@@ -772,8 +889,7 @@ void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::str
     SSL *ssl = SSL_new(client_ctx);
     if (ssl == nullptr)
     {
-        if (IS_DEBUG)
-            ERR_print_errors_fp(stderr);
+        HANDLE_ERROR("SSL creation failed");
         throw std::runtime_error("Failed to create SSL object");
     }
 
@@ -782,8 +898,7 @@ void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::str
     if (bio == nullptr)
     {
         SSL_free(ssl);
-        if (IS_DEBUG)
-            ERR_print_errors_fp(stderr);
+        HANDLE_ERROR("BIO creation failed");
         throw std::runtime_error("Failed to create BIO connection");
     }
 
@@ -794,8 +909,7 @@ void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::str
     // BIO_do_connect() 会尝试建立底层TCP连接
     if (BIO_do_connect(bio) <= 0)
     {
-        if (IS_DEBUG)
-            ERR_print_errors_fp(stderr);
+        HANDLE_ERROR("BIO connection failed");
 
         // Clean up resources before returning
         if (ssl)
@@ -812,8 +926,7 @@ void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::str
     if (SSL_connect(ssl) <= 0)
     {
         // 握手失败，打印 OpenSSL 错误信息
-        if (IS_DEBUG)
-            ERR_print_errors_fp(stderr);
+        HANDLE_ERROR("SSL handshake failed");
         SSL_free(ssl); // 释放 SSL 结构
 #ifdef _WIN32
         WSACleanup();
@@ -855,44 +968,205 @@ void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::str
     // std::cout << "Sent " << bytes_written << " bytes request." << std::endl;
 
     // 接收响应
-    std::string response_buffer;
+    std::string response_buffer = "";
     char buffer[BUFFERSIZE + 1]; // +1 for null terminator
-    int bytes_read = 0, total_bytes_read = 0;
+    int total_bytes_read = 0;    // 用于跟踪已读取的总字节数
+    size_t header_end_pos = std::string::npos;
+    bool header_found = false;
 
-    if ((bytes_read = SSL_read(ssl, buffer, sizeof(buffer) - 1)) > 0)
+    while (!header_found)
     {
-        response_buffer.append(buffer, bytes_read);
-        total_bytes_read += bytes_read;
-        buffer[bytes_read] = '\0'; // 确保字符串结束符
-    }
-
-    if (bytes_read < 0)
-    {
-        int err = SSL_get_error(ssl, bytes_read);
-        if (err != SSL_ERROR_ZERO_RETURN)
-        { // SSL_ERROR_ZERO_RETURN 表示连接已关闭
-            throw std::runtime_error("SSL read failed");
-            ERR_print_errors_fp(stderr);
-        }
-    }
-
-    int content_size = getContentSize(response_buffer); // 确保读取完整的响应内容
-    while (total_bytes_read < content_size)
-    {
-        bytes_read = SSL_read(ssl, buffer, sizeof(buffer) - 1);
+        memset(buffer, '\0', sizeof(buffer));
+        int bytes_read = SSL_read(ssl, buffer, BUFFERSIZE);
         if (bytes_read <= 0)
         {
             int err = SSL_get_error(ssl, bytes_read);
             if (err != SSL_ERROR_ZERO_RETURN)
-            { // SSL_ERROR_ZERO_RETURN 表示连接已关闭
-                throw std::runtime_error("SSL read failed");
-                ERR_print_errors_fp(stderr);
+            {
+                HANDLE_ERROR("SSL read failed during header reception");
             }
-            break; // 如果没有更多数据可读，则退出循环
+            SSL_free(ssl);
+            throw std::runtime_error("Connection closed before complete header reception or SSL read error");
         }
-        buffer[bytes_read] = '\0'; // 确保字符串结束符
         response_buffer.append(buffer, bytes_read);
         total_bytes_read += bytes_read;
+        header_end_pos = response_buffer.find("\r\n\r\n");
+        if (header_end_pos != std::string::npos)
+        {
+            header_found = true;
+        }
+    }
+
+    header = response_buffer.substr(0, header_end_pos);
+    std::string remaining_buffer_after_header = response_buffer.substr(header_end_pos + 4); // +4 to skip the "\r\n\r\n"
+
+    // 检查 Transfer-Encoding 头部
+    std::string transfer_encoding = getHeaderValue(header, "Transfer-Encoding");
+    std::transform(transfer_encoding.begin(), transfer_encoding.end(), transfer_encoding.begin(), ::tolower);
+
+    if (transfer_encoding == "chunked")
+    {
+        // 需要分块接收
+        std::string current_chunk_buffer = remaining_buffer_after_header; // 从初始缓冲区中剩余的数据开始
+        content.clear();                                                  // 清空内容，准备接收解码后的数据
+
+        while (true)
+        {
+            size_t line_end_pos = current_chunk_buffer.find("\r\n");
+            while (line_end_pos == std::string::npos)
+            {
+                // 缓冲区中没有完整的行，需要从SSL连接中读取更多数据
+                char temp_buffer[BUFFERSIZE + 1];
+                memset(temp_buffer, '\0', sizeof(temp_buffer));
+                int bytes_read = SSL_read(ssl, temp_buffer, BUFFERSIZE);
+                if (bytes_read <= 0)
+                {
+                    int err = SSL_get_error(ssl, bytes_read);
+                    if (err != SSL_ERROR_ZERO_RETURN)
+                    {
+                        HANDLE_ERROR("SSL read failed during chunk size reception");
+                        SSL_free(ssl); // Ensure SSL object is freed on error
+                        throw std::runtime_error("SSL read failed during chunk size reception");
+                    }
+                    // 连接关闭或无更多数据，但可能还没有遇到最后一个0块
+                    break; // 退出内部while循环
+                }
+                current_chunk_buffer.append(temp_buffer, bytes_read);
+                line_end_pos = current_chunk_buffer.find("\r\n");
+            }
+
+            if (line_end_pos == std::string::npos)
+            {          // 仍然没有完整行，可能连接已关闭或数据异常
+                break; // 退出外层while循环
+            }
+
+            std::string chunk_size_str = current_chunk_buffer.substr(0, line_end_pos);
+            // 移除分块大小后的扩展信息（如 ";chunk-extension"），只保留十六进制大小
+            size_t semi_colon_pos = chunk_size_str.find(';');
+            if (semi_colon_pos != std::string::npos)
+            {
+                chunk_size_str = chunk_size_str.substr(0, semi_colon_pos);
+            }
+
+            long chunk_size;
+            try
+            {
+                chunk_size = std::stoul(chunk_size_str, nullptr, 16); // 将十六进制字符串转换为数字
+            }
+            catch (const std::exception &e)
+            {
+                log_e("Failed to parse chunk size '%s': {%s}", chunk_size_str.c_str(), e.what());
+                SSL_free(ssl); // Ensure SSL object is freed on error
+                throw std::runtime_error("Failed to parse chunk size");
+            }
+
+            // 移除已解析的分块大小行（包括 CRLF）
+            current_chunk_buffer = current_chunk_buffer.substr(line_end_pos + 2);
+
+            if (chunk_size == 0)
+            {
+                // 遇到最后一个空块，表示分块数据结束
+                // 还需要读取最后的 CRLF
+                if (current_chunk_buffer.length() < 2)
+                {
+                    char temp_crlf[2];
+                    SSL_read(ssl, temp_crlf, 2); // 读取最后的 CRLF
+                }
+                else
+                {
+                    current_chunk_buffer = current_chunk_buffer.substr(2); // 移除最后的 CRLF
+                }
+                break; // 退出外层while循环
+            }
+
+            // 读取块数据
+            long bytes_needed_for_chunk = chunk_size;
+            while (bytes_needed_for_chunk > 0)
+            {
+                if (!current_chunk_buffer.empty())
+                {
+                    long bytes_from_buffer = std::min((long)current_chunk_buffer.length(), bytes_needed_for_chunk);
+                    content.append(current_chunk_buffer.data(), bytes_from_buffer);
+                    current_chunk_buffer = current_chunk_buffer.substr(bytes_from_buffer);
+                    bytes_needed_for_chunk -= bytes_from_buffer;
+                }
+                else
+                {
+                    char data_buffer[BUFFERSIZE + 1];
+                    memset(data_buffer, '\0', sizeof(data_buffer));
+                    int bytes_read_data = SSL_read(ssl, data_buffer, std::min((long)BUFFERSIZE, bytes_needed_for_chunk));
+                    if (bytes_read_data <= 0)
+                    {
+                        int err = SSL_get_error(ssl, bytes_read_data);
+                        if (err != SSL_ERROR_ZERO_RETURN)
+                        {
+                            HANDLE_ERROR("SSL read failed during chunk data reception");
+                        }
+                        SSL_free(ssl); // Ensure SSL object is freed on error
+                        throw std::runtime_error("Incomplete chunk data: connection closed unexpectedly or SSL read error");
+                    }
+                    content.append(data_buffer, bytes_read_data);
+                    bytes_needed_for_chunk -= bytes_read_data;
+                }
+            }
+
+            // 读取每个块数据后的 CRLF
+            if (current_chunk_buffer.length() < 2)
+            {
+                char temp_crlf[2];
+                SSL_read(ssl, temp_crlf, 2); // 读取 CRLF
+            }
+            else
+            {
+                current_chunk_buffer = current_chunk_buffer.substr(2); // 移除 CRLF
+            }
+        }
+    }
+    else
+    {
+        // 循环接收
+        int content_size = 0; // 确保读取完整的响应内容
+        try
+        {
+            content_size = getContentSize(response_buffer);
+        }
+        catch (const std::exception &e)
+        {
+            log_e("Failed to get content size: {%s}", e.what());
+        }
+        catch (...)
+        {
+            log_e("Failed to get content size: unknown error");
+        }
+        while (total_bytes_read < content_size)
+        {
+            memset(buffer, '\0', BUFFERSIZE + 1); // 清空缓冲区
+            int bytes_read = SSL_read(ssl, buffer, BUFFERSIZE);
+            if (bytes_read == 0)
+            {
+                break; // 连接已关闭
+            }
+            else if (bytes_read < 0)
+            {
+                int err = SSL_get_error(ssl, bytes_read);
+                if (err != SSL_ERROR_ZERO_RETURN)
+                { // SSL_ERROR_ZERO_RETURN 表示连接已关闭
+                    HANDLE_ERROR("SSL read failed");
+                    SSL_free(ssl); // 释放 SSL 对象
+                }
+            }
+            response_buffer.append(buffer, bytes_read);
+            total_bytes_read += bytes_read;
+        }
+
+        // 解析响应头和内容
+        size_t headerEnd = response_buffer.find("\r\n\r\n"); // 查找头部结束位置
+        if (headerEnd == std::string::npos)
+        {
+            throw std::runtime_error("Invalid HTTP response format");
+        }
+        header = response_buffer.substr(0, headerEnd);   // 提取响应头
+        content = response_buffer.substr(headerEnd + 4); // 提取响应内容
     }
 
     // 清理资源
@@ -901,15 +1175,6 @@ void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::str
         SSL_shutdown(ssl); // 执行SSL关闭握手
         SSL_free(ssl);     // 释放SSL对象 (也会释放关联的BIO)
     }
-
-    // 解析响应头和内容
-    size_t headerEnd = response_buffer.find("\r\n\r\n"); // 查找头部结束位置
-    if (headerEnd == std::string::npos)
-    {
-        throw std::runtime_error("Invalid HTTP response format");
-    }
-    header = response_buffer.substr(0, headerEnd);   // 提取响应头
-    content = response_buffer.substr(headerEnd + 4); // 提取响应内容
 }
 
 void cppNetworkUtil::run(std::function<void(const std::string, SOCKET, SSL *)> func)
@@ -997,10 +1262,9 @@ void cppNetworkUtil::run(std::function<void(const std::string, SOCKET, SSL *)> f
         throw("Listen failed");
     }
 
-    if (ENABLE_PRINT_LISTEN_INFO)
-    {
-        printf("Listening on 0.0.0.0:%d\n", port);
-    }
+#ifdef DISABLE_PRINT_LISTEN_INFO
+    printf("Listening on 0.0.0.0:%d\n", port);
+#endif
 
     ThreadPool client_socket_thread_pool(20);
 
@@ -1011,8 +1275,7 @@ void cppNetworkUtil::run(std::function<void(const std::string, SOCKET, SSL *)> f
         SOCKET client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_len);
         if (client_socket == INVALID_SOCKET)
         {
-            if (IS_DEBUG)
-                std::cerr << "accept failed: " << WSAGetLastError() << "\n";
+            log_d("accept failed: %s\n", WSAGetLastError());
             continue;
         }
 
@@ -1027,8 +1290,7 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
     SSL *ssl = SSL_new(server_ctx);
     if (!ssl)
     {
-        if (IS_DEBUG)
-            HANDLE_ERROR("Unable to create SSL structure");
+        HANDLE_ERROR("Unable to create SSL structure");
     }
     SSL_set_fd(ssl, client_socket); // 将套接字描述符与 SSL 结构关联
 
@@ -1036,8 +1298,7 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
     if (SSL_accept(ssl) <= 0)
     {
         // 握手失败，打印 OpenSSL 错误信息
-        if (IS_DEBUG)
-            ERR_print_errors_fp(stderr);
+        HANDLE_ERROR("SSL accept failed");
         SSL_free(ssl);              // 释放 SSL 结构
         closesocket(client_socket); // 关闭客户端套接字
         return;                     // 关闭套接字并返回
@@ -1052,15 +1313,12 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
     char temp_buffer[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果直接作为 C 字符串打印的话
     memset(temp_buffer, 0, BUFFERSIZE);
 
-    // 接收数据
-    if (ENABLE_HTTPS)
-    {
-        recvd = SSL_read(ssl, temp_buffer, BUFFERSIZE);
-    }
-    else
-    {
-        recvd = recv(client_socket, temp_buffer, BUFFERSIZE, 0);
-    }
+// 接收数据
+#ifdef DISABLE_HTTPS
+    recvd = recv(client_socket, temp_buffer, BUFFERSIZE, 0);
+#else
+    recvd = SSL_read(ssl, temp_buffer, BUFFERSIZE);
+#endif
     if (recvd > 0)
     {
         // 只附加实际接收到的字节数
@@ -1075,9 +1333,10 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
     }
     else
     {
-        // 发生error
-        if (IS_DEBUG)
-            std::cerr << "An error occurred receiving, errno: " << errno << "\n";
+// 发生error
+#ifdef IS_DEBUG
+        std::cerr << "An error occurred receiving, errno: " << errno << "\n";
+#endif
         SSL_free(ssl);              // 释放 SSL 结构
         closesocket(client_socket); // 关闭客户端套接字
         return;                     // 关闭套接字并返回
@@ -1090,8 +1349,9 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
     }
     catch (const std::exception &e)
     {
-        if (IS_DEBUG)
-            std::cerr << e.what() << '\n';
+#ifdef IS_DEBUG
+        std::cerr << e.what() << '\n';
+#endif
     }
 
     if (method == "POST")
@@ -1112,8 +1372,9 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
             memset(temp_buffer_in_do_while, 0, BUFFERSIZE);
             recvd = recv(client_socket, temp_buffer_in_do_while, BUFFERSIZE, 0);
 
-            if (IS_DEBUG)
-                std::cout << "recvd=" << recvd << "\n";
+#ifdef IS_DEBUG
+            std::cout << "recvd=" << recvd << "\n";
+#endif
 
             if (recvd > 0)
             {
@@ -1132,9 +1393,10 @@ void cppNetworkUtil::process(SOCKET client_socket, std::function<void(const std:
             }
             else
             {
-                // 发生error
-                if (IS_DEBUG)
-                    std::cerr << "An error occurred while receiving, errno: " << errno << "\n";
+// 发生error
+#ifdef IS_DEBUG
+                std::cerr << "An error occurred while receiving, errno: " << errno << "\n";
+#endif
                 break; // 跳出循环
             }
         }

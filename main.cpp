@@ -6,8 +6,7 @@ void process(std::string recv_data, SOCKET client_socket, SSL *ssl)
 {
     if (ssl == nullptr)
     {
-        if (IS_DEBUG)
-            std::cerr << "SSL is not initialized, cannot process HTTPS request.\n";
+        log_e("SSL is not initialized, cannot process HTTPS request.\n");
         return;
     }
 
@@ -15,14 +14,22 @@ void process(std::string recv_data, SOCKET client_socket, SSL *ssl)
 
     std::string header;
     std::string content;
+
+    // https
     client.sendDataToHttpsHost(
-        "example.com",
+        "www.example.com",
         "/",
-        443,
+        DEFAULT_SERVER_PORT,
         header,
         content,
-        true); // enable CA verification
-    // client.sendDataToHttpHost(client.request_header_parameters.host, client.request_header_parameters.port, client.buildRequestHeader(client.request_header_parameters), header, content);
+        true); // enable CA verification(Optional)
+    // http
+    // client.sendDataToHttpHost(
+    //     "www.example.com",
+    //     "/",
+    //     DEFAULT_SERVER_PORT,
+    //     header,
+    //     content);
 
     client.response_header_parameters.mime_type = "text/html";
 
@@ -41,10 +48,11 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        if (IS_DEBUG)
-        {
-            std::cerr << e.what() << '\n';
-        }
+        log_e("Error:%s\n", e.what());
+    }
+    catch (...)
+    {
+        log_e("Unknown error occurred.\n");
     }
 
     return 0;

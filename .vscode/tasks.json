@@ -6,6 +6,7 @@
             "command": "g++",
             "args": [
                 "-fdiagnostics-color=always",
+                "-DIS_DEBUG",
                 "-g",
                 "*.cpp",
                 "-o",
