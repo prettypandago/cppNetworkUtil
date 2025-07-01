@@ -1,10 +1,10 @@
-#include "cppNetworkUtilImpl.h"
+#include "cppNetworkUtilPimpl.h"
 #include "serverCallback.h"
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-cppNetworkUtilImpl::cppNetworkUtilImpl() : ssl_ctx_server(nullptr), ssl_ctx_client(nullptr), ssl(nullptr)
+cppNetworkUtilPimpl::cppNetworkUtilPimpl() : ssl_ctx_server(nullptr), ssl_ctx_client(nullptr), ssl(nullptr)
 {
     SSL_library_init();
     SSL_load_error_strings();
@@ -14,7 +14,7 @@ cppNetworkUtilImpl::cppNetworkUtilImpl() : ssl_ctx_server(nullptr), ssl_ctx_clie
     ssl_ctx_client = SSL_CTX_new(TLS_client_method());
 }
 
-cppNetworkUtilImpl::~cppNetworkUtilImpl()
+cppNetworkUtilPimpl::~cppNetworkUtilPimpl()
 {
     if (ssl)
     {
@@ -31,7 +31,7 @@ cppNetworkUtilImpl::~cppNetworkUtilImpl()
     EVP_cleanup(); // 清理 OpenSSL 资源
 }
 
-std::string cppNetworkUtilImpl::getHeaderMethod_impl(const std::string buffer)
+std::string cppNetworkUtilPimpl::getHeaderMethod_Pimpl(const std::string buffer)
 {
     std::string method;
 
@@ -50,7 +50,7 @@ std::string cppNetworkUtilImpl::getHeaderMethod_impl(const std::string buffer)
     return method;
 }
 
-std::string cppNetworkUtilImpl::getGetHeaderUrl_impl(const std::string buffer)
+std::string cppNetworkUtilPimpl::getGetHeaderUrl_Pimpl(const std::string buffer)
 {
     std::string url;
 
@@ -77,7 +77,7 @@ std::string cppNetworkUtilImpl::getGetHeaderUrl_impl(const std::string buffer)
     return url;
 }
 
-int cppNetworkUtilImpl::getContentSize_impl(const std::string buffer)
+int cppNetworkUtilPimpl::getContentSize_Pimpl(const std::string buffer)
 {
     // 查找Content-Length字段
     size_t pos = buffer.find("Content-Length:");
@@ -119,7 +119,7 @@ int cppNetworkUtilImpl::getContentSize_impl(const std::string buffer)
     return bodyStart + contentLength;
 }
 
-std::string cppNetworkUtilImpl::getHeaderValue_impl(const std::string &headers, const std::string &key)
+std::string cppNetworkUtilPimpl::getHeaderValue_Pimpl(const std::string &headers, const std::string &key)
 {
     std::string searchKey = key + ":";
     size_t pos = headers.find(searchKey);
@@ -141,7 +141,7 @@ std::string cppNetworkUtilImpl::getHeaderValue_impl(const std::string &headers, 
     return "";
 }
 
-std::string cppNetworkUtilImpl::getPostContentBody_impl(const std::string buffer)
+std::string cppNetworkUtilPimpl::getPostContentBody_Pimpl(const std::string buffer)
 {
     // 查找Content-Length字段
     size_t pos = buffer.find("Content-Length:");
@@ -194,7 +194,7 @@ std::string cppNetworkUtilImpl::getPostContentBody_impl(const std::string buffer
     return body;
 }
 
-std::string cppNetworkUtilImpl::buildResponseHeader_impl(responseHeaderParameters parameter)
+std::string cppNetworkUtilPimpl::buildResponseHeader_Pimpl(responseHeaderParameters parameter)
 {
     std::string buffer;
 
@@ -274,7 +274,7 @@ std::string cppNetworkUtilImpl::buildResponseHeader_impl(responseHeaderParameter
     return buffer;
 }
 
-std::string cppNetworkUtilImpl::buildRequestHeader_impl(requestHeaderParameters parameter)
+std::string cppNetworkUtilPimpl::buildRequestHeader_Pimpl(requestHeaderParameters parameter)
 {
     std::string buffer;
 
@@ -304,7 +304,7 @@ std::string cppNetworkUtilImpl::buildRequestHeader_impl(requestHeaderParameters 
 }
 
 // URL解码函数
-std::string cppNetworkUtilImpl::urlDecode_impl(const std::string &encodedString)
+std::string cppNetworkUtilPimpl::urlDecode_Pimpl(const std::string &encodedString)
 {
     std::string decodedString;
     char hex[3];
@@ -338,7 +338,7 @@ std::string cppNetworkUtilImpl::urlDecode_impl(const std::string &encodedString)
 }
 
 // 解析url路径
-std::vector<std::string> cppNetworkUtilImpl::getURLParameterRestfulapi_impl(std::string url)
+std::vector<std::string> cppNetworkUtilPimpl::getURLParameterRestfulapi_Pimpl(std::string url)
 {
     std::vector<std::string> parts;
 
@@ -363,7 +363,7 @@ std::vector<std::string> cppNetworkUtilImpl::getURLParameterRestfulapi_impl(std:
     return parts;
 }
 
-std::map<std::string, std::string> cppNetworkUtilImpl::parseUrlQueryParameters_impl(const std::string &url)
+std::map<std::string, std::string> cppNetworkUtilPimpl::parseUrlQueryParameters_Pimpl(const std::string &url)
 {
     std::map<std::string, std::string> params;
     size_t question_pos = url.find('?');
@@ -380,7 +380,7 @@ std::map<std::string, std::string> cppNetworkUtilImpl::parseUrlQueryParameters_i
         {
             std::string key = pair.substr(0, eq_pos);
             std::string value = pair.substr(eq_pos + 1);
-            params[key] = urlDecode_impl(value);
+            params[key] = urlDecode_Pimpl(value);
         }
         else if (!pair.empty())
         {
@@ -391,7 +391,7 @@ std::map<std::string, std::string> cppNetworkUtilImpl::parseUrlQueryParameters_i
 }
 
 // 解析 multipart 数据
-std::vector<multipartData> cppNetworkUtilImpl::parseMultipart_impl(const std::string &boundary, const std::string &body)
+std::vector<multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::string &boundary, const std::string &body)
 {
     std::vector<multipartData> parsedParts;      // 存储所有解析出的部分
     std::string delimiter = "--" + boundary;     // 每个部分的开始分隔符
@@ -550,22 +550,22 @@ std::vector<multipartData> cppNetworkUtilImpl::parseMultipart_impl(const std::st
     return parsedParts; // 返回所有解析出的部分
 }
 
-void cppNetworkUtilImpl::printOpensslVersion_impl()
+void cppNetworkUtilPimpl::printOpensslVersion_Pimpl()
 {
     std::cout << "OpenSSL version: " << OpenSSL_version(OPENSSL_VERSION) << std::endl;
 }
 
-void cppNetworkUtilImpl::sendDataToHttpSocket_impl(SOCKET socket, const std::string &data)
+void cppNetworkUtilPimpl::sendDataToHttpSocket_Pimpl(SOCKET socket, const std::string &data)
 {
     send(socket, data.c_str(), data.length(), 0); // 发送数据到套接字
 }
 
-void cppNetworkUtilImpl::sendDataToHttpsSocket_impl(SOCKET socket, const std::string &data)
+void cppNetworkUtilPimpl::sendDataToHttpsSocket_Pimpl(SOCKET socket, const std::string &data)
 {
     SSL_write(client_connections[socket].ssl, data.c_str(), data.length()); // 发送数据到 SSL 套接字
 }
 
-void cppNetworkUtilImpl::sendDataToHttpHost_impl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content)
+void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content)
 {
 #ifdef _WIN32
     WSADATA wsaData;
@@ -612,7 +612,7 @@ void cppNetworkUtilImpl::sendDataToHttpHost_impl(const std::string &host, const 
         throw std::runtime_error("Failed to connect to server");
     }
 
-    std::string request_header_str = buildRequestHeader_impl(
+    std::string request_header_str = buildRequestHeader_Pimpl(
         requestHeaderParameters{
             "GET", "close", host, path, port});
     int bytes_sent = send(sock, request_header_str.c_str(), request_header_str.length(), 0);
@@ -657,7 +657,7 @@ void cppNetworkUtilImpl::sendDataToHttpHost_impl(const std::string &host, const 
     std::string remaining_buffer_after_header = response_buffer.substr(header_end_pos + 4);
 
     // 检查 Transfer-Encoding 头部
-    std::string transfer_encoding = getHeaderValue_impl(header, "Transfer-Encoding");
+    std::string transfer_encoding = getHeaderValue_Pimpl(header, "Transfer-Encoding");
     std::transform(transfer_encoding.begin(), transfer_encoding.end(), transfer_encoding.begin(), ::tolower);
 
     if (transfer_encoding == "chunked")
@@ -789,7 +789,7 @@ void cppNetworkUtilImpl::sendDataToHttpHost_impl(const std::string &host, const 
     else
     {
         // 非分块编码，尝试通过 Content-Length 或直接读取直到连接关闭
-        std::string content_length_str = getHeaderValue_impl(header, "Content-Length");
+        std::string content_length_str = getHeaderValue_Pimpl(header, "Content-Length");
         long content_length = -1;
         if (!content_length_str.empty())
         {
@@ -841,7 +841,7 @@ void cppNetworkUtilImpl::sendDataToHttpHost_impl(const std::string &host, const 
 #endif
 }
 
-void cppNetworkUtilImpl::sendDataToHttpsHost_impl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA)
+void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA)
 {
 #ifdef _WIN32
     // Windows Sockets 初始化
@@ -938,7 +938,7 @@ void cppNetworkUtilImpl::sendDataToHttpsHost_impl(const std::string &host, const
     }
 
     // 发送HTTPS请求 (HTTP协议部分)
-    std::string request_header = buildRequestHeader_impl(
+    std::string request_header = buildRequestHeader_Pimpl(
         requestHeaderParameters{
             "GET", "close", host, path, port});
 
@@ -979,7 +979,7 @@ void cppNetworkUtilImpl::sendDataToHttpsHost_impl(const std::string &host, const
     std::string remaining_buffer_after_header = response_buffer.substr(header_end_pos + 4); // +4 to skip the "\r\n\r\n"
 
     // 检查 Transfer-Encoding 头部
-    std::string transfer_encoding = getHeaderValue_impl(header, "Transfer-Encoding");
+    std::string transfer_encoding = getHeaderValue_Pimpl(header, "Transfer-Encoding");
     std::transform(transfer_encoding.begin(), transfer_encoding.end(), transfer_encoding.begin(), ::tolower);
 
     if (transfer_encoding == "chunked")
@@ -1112,7 +1112,7 @@ void cppNetworkUtilImpl::sendDataToHttpsHost_impl(const std::string &host, const
         int content_size = 0; // 确保读取完整的响应内容
         try
         {
-            content_size = getContentSize_impl(response_buffer);
+            content_size = getContentSize_Pimpl(response_buffer);
         }
         catch (const std::exception &e)
         {
@@ -1161,7 +1161,7 @@ void cppNetworkUtilImpl::sendDataToHttpsHost_impl(const std::string &host, const
     }
 }
 
-void cppNetworkUtilImpl::run_impl(int port, serverCallback *callback)
+void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
 {
     // WSA startup
 #ifdef _WIN32
@@ -1264,7 +1264,7 @@ void cppNetworkUtilImpl::run_impl(int port, serverCallback *callback)
                        { this->process(server_socket, callback); }); // 将处理函数添加到线程池中
 }
 
-void cppNetworkUtilImpl::process(SOCKET server_socket, serverCallback *callback)
+void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback)
 {
     if (server_socket == INVALID_SOCKET)
     {
@@ -1358,7 +1358,7 @@ void cppNetworkUtilImpl::process(SOCKET server_socket, serverCallback *callback)
 
         try
         {
-            content_size = getContentSize_impl(recv_buffer);
+            content_size = getContentSize_Pimpl(recv_buffer);
         }
         catch (const std::exception &e)
         {

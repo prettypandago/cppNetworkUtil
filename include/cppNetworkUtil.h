@@ -1,7 +1,7 @@
 #pragma once
 
 // 前向声明实现类
-class cppNetworkUtilImpl;
+class cppNetworkUtilPimpl;
 class serverCallback;
 
 // include
@@ -286,5 +286,5 @@ public:
     void run(int port, serverCallback *callback);
 
 private:
-    std::unique_ptr<cppNetworkUtilImpl> pimpl_; // 不透明指针
+    std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // 不透明指针
 };

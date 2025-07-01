@@ -1,0 +1,2 @@
+C:\PROGRA~1\REDPAN~1\mingw64\bin\ar.exe qc libcppNetworkUtilLib.a CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj
+C:\PROGRA~1\REDPAN~1\mingw64\bin\ranlib.exe libcppNetworkUtilLib.a

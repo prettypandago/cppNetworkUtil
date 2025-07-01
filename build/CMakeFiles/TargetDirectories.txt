@@ -1,0 +1,3 @@
+D:/YYProject/vscode-project/cppNetworkUtil/build/CMakeFiles/cppNetworkUtilLib.dir
+D:/YYProject/vscode-project/cppNetworkUtil/build/CMakeFiles/edit_cache.dir
+D:/YYProject/vscode-project/cppNetworkUtil/build/CMakeFiles/rebuild_cache.dir

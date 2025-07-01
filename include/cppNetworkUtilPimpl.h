@@ -51,11 +51,11 @@ struct bio_st; // 用于 OpenSSL 的 BIO
 // 向前申明
 class serverCallback; // 回调接口
 
-class cppNetworkUtilImpl
+class cppNetworkUtilPimpl
 {
 public:
-    cppNetworkUtilImpl();
-    ~cppNetworkUtilImpl();
+    cppNetworkUtilPimpl();
+    ~cppNetworkUtilPimpl();
 
     struct clientConnectionInfo
     {
@@ -75,7 +75,7 @@ public:
      *
      * @return method
      */
-    std::string getHeaderMethod_impl(const std::string buffer);
+    std::string getHeaderMethod_Pimpl(const std::string buffer);
 
     /**
      * @brief Get the url in the GET request header
@@ -87,7 +87,7 @@ public:
      *
      * @return url
      */
-    std::string getGetHeaderUrl_impl(const std::string buffer);
+    std::string getGetHeaderUrl_Pimpl(const std::string buffer);
 
     /**
      * @brief Get the content size in the http request header
@@ -101,7 +101,7 @@ public:
      *
      * @return content size
      */
-    int getContentSize_impl(const std::string buffer);
+    int getContentSize_Pimpl(const std::string buffer);
 
     /**
      * @brief Get the value of a specific header field in the HTTP request header
@@ -111,7 +111,7 @@ public:
      *
      * @return The value of the specified header field, or an empty string if not found
      */
-    std::string getHeaderValue_impl(const std::string &headers, const std::string &key);
+    std::string getHeaderValue_Pimpl(const std::string &headers, const std::string &key);
 
     /**
      * @brief Get the content body in the http POST request header
@@ -126,7 +126,7 @@ public:
      *
      * @return content body
      */
-    std::string getPostContentBody_impl(const std::string buffer);
+    std::string getPostContentBody_Pimpl(const std::string buffer);
 
     /**
      * @brief Make a request header
@@ -135,7 +135,7 @@ public:
      *
      * @return header
      */
-    std::string buildResponseHeader_impl(responseHeaderParameters parameters);
+    std::string buildResponseHeader_Pimpl(responseHeaderParameters parameters);
 
     /**
      * @brief Make a request header
@@ -144,7 +144,7 @@ public:
      *
      * @return header
      */
-    std::string buildRequestHeader_impl(requestHeaderParameters parameter);
+    std::string buildRequestHeader_Pimpl(requestHeaderParameters parameter);
 
     /**
      * @brief Decode a URL-encoded string
@@ -153,7 +153,7 @@ public:
      *
      * @return Decoded string
      */
-    std::string urlDecode_impl(const std::string &encodedString);
+    std::string urlDecode_Pimpl(const std::string &encodedString);
 
     /**
      * @brief Parse URL parameters from a RESTful API style URL
@@ -162,7 +162,7 @@ public:
      *
      * @return A vector of strings representing the parameters in the URL
      */
-    std::vector<std::string> getURLParameterRestfulapi_impl(std::string url);
+    std::vector<std::string> getURLParameterRestfulapi_Pimpl(std::string url);
 
     /**
      * @brief Parse URL parameters from URL query string
@@ -173,7 +173,7 @@ public:
      *
      * @return A map of key-value pairs representing the query parameters
      */
-    std::map<std::string, std::string> parseUrlQueryParameters_impl(const std::string &url);
+    std::map<std::string, std::string> parseUrlQueryParameters_Pimpl(const std::string &url);
 
     /**
      * @brief Parse Multipart data from a POST request body
@@ -183,7 +183,7 @@ public:
      *
      * @return A vector of multipartData objects, each representing a part of the multipart data
      */
-    std::vector<multipartData> parseMultipart_impl(const std::string &boundary, const std::string &body);
+    std::vector<multipartData> parseMultipart_Pimpl(const std::string &boundary, const std::string &body);
 
     /**
      * @brief Send data to the socket using HTTP protocol
@@ -191,7 +191,7 @@ public:
      * @param socket (SOCKET) The socket to send data to
      * @param data (const std::string &) Data to be sent
      */
-    void sendDataToHttpSocket_impl(SOCKET socket, const std::string &data);
+    void sendDataToHttpSocket_Pimpl(SOCKET socket, const std::string &data);
 
     /**
      * @brief Send data to the socket using HTTPS protocol
@@ -199,18 +199,18 @@ public:
      * @param socket (SOCKET) The socket to send data to
      * @param data (const std::string &) Data to be sent
      */
-    void sendDataToHttpsSocket_impl(SOCKET socket, const std::string &data);
+    void sendDataToHttpsSocket_Pimpl(SOCKET socket, const std::string &data);
 
-    void sendDataToHttpHost_impl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content);
+    void sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content);
 
-    void sendDataToHttpsHost_impl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA = true);
+    void sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA = true);
 
     /**
      * @brief Print the OpenSSL version
      */
-    void printOpensslVersion_impl();
+    void printOpensslVersion_Pimpl();
 
-    void run_impl(int port, serverCallback *callback);
+    void run_Pimpl(int port, serverCallback *callback);
 
 private:
     ssl_ctx_st *ssl_ctx_server; // 服务器端 SSL 上下文
