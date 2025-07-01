@@ -37,11 +37,6 @@
 *.out
 *.app
 
-# Scripts
-*.bat
-*.cmd
-*.sh
-
 # Certificate
 *.key
 *.crt

@@ -1,50 +1,52 @@
 #include <iostream>
 
 #include "cppNetworkUtil.h"
+#include "serverCallback.h"
 
-void process(std::string recv_data, SOCKET client_socket, SSL *ssl)
+#include "defines.h"
+#include "log.h"
+
+class MyServerHandler : public serverCallback
 {
-    if (ssl == nullptr)
+public:
+    // 构造函数接收 cppNetworkUtil 的引用
+    MyServerHandler(cppNetworkUtil &network_util) : network_util_(network_util) {}
+
+    void onDataReceived(int client_id) override
     {
-        log_e("SSL is not initialized, cannot process HTTPS request.\n");
-        return;
+        std::string recv_buffer = network_util_.get_client_connections_recv_buffer(client_id);
+
+        std::string header;
+        std::string content;
+
+        responseHeaderParameters response_header_parameters;
+        response_header_parameters.mime_type = "text/html";
+
+// 发送响应数据到客户端
+#ifndef DISABLE_HTTPS
+        network_util_.sendDataToHttpsHost("www.example.com", "/", 443, header, content, true); // 使用 HTTPS 协议发送数据
+        network_util_.sendDataToHttpsSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
+        network_util_.sendDataToHttpsSocket(client_id, content);
+#else
+        network_util_.sendDataToHttpHost("www.example.com", "/", 80, header, content); // 使用 HTTPS 协议发送数据
+        network_util_.sendDataToHttpSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
+        network_util_.sendDataToHttpSocket(client_id, content);
+#endif
     }
 
-    cppNetworkUtil client;
-
-    std::string header;
-    std::string content;
-
-    // https
-    client.sendDataToHttpsHost(
-        "www.example.com",
-        "/",
-        DEFAULT_SERVER_PORT,
-        header,
-        content,
-        true); // enable CA verification(Optional)
-    // http
-    // client.sendDataToHttpHost(
-    //     "www.example.com",
-    //     "/",
-    //     DEFAULT_SERVER_PORT,
-    //     header,
-    //     content);
-
-    client.response_header_parameters.mime_type = "text/html";
-
-    client.sendDataToHttpsSocket(client.buildResponseHeader(client.response_header_parameters), ssl);
-    client.sendDataToHttpsSocket(content, ssl);
-}
+private:
+    // 声明 network_util_ 作为 MyServerHandler 类的成员变量 (不然会报错)
+    cppNetworkUtil &network_util_;
+};
 
 int main(int argc, char **argv)
 {
     cppNetworkUtil server;
+    MyServerHandler handler(server); // 创建回调对象
 
-    SOCKET server_socket;
     try
     {
-        server.run(process);
+        server.run(DEFAULT_SERVER_PORT, &handler);
     }
     catch (const std::exception &e)
     {
