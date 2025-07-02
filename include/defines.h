@@ -1,6 +1,15 @@
 #pragma once
 
+// Adjust the macro definition here
+#define IS_DEBUG // Enable debug mode
+// #define DISABLE_HTTPS                 // Disable HTTPS support
+// #define DISABLE_PRINT_LISTEN_INFO     // Disable printing listen info
+#define PUBLIC_KEY_PATH "server.crt"  // Default public key path
+#define PRIVATE_KEY_PATH "server.key" // Default private key path
+#define BUFFERSIZE 4096
 #define NAME "cppNetworkUtil"
+
+// Do not modify the following macros unless you know what you are doing
 #define PROTOCOL "HTTP/1.1"
 
 #define RFC1123FMT "%a, %d %b %Y %H:%M:%S GMT"
@@ -11,14 +20,7 @@
 #define DEFAULT_SERVER_PORT 443 // Default port for HTTPS
 #endif
 
-#define IS_DEBUG // Enable debug mode
-// #define DISABLE_HTTPS                 // Disable HTTPS support
-// #define DISABLE_PRINT_LISTEN_INFO     // Disable printing listen info
-#define PUBLIC_KEY_PATH "server.crt"  // Default public key path
-#define PRIVATE_KEY_PATH "server.key" // Default private key path
-
 #define INFINITY 2147483647
-#define BUFFERSIZE 4096
 
 struct responseHeaderParameters
 {
