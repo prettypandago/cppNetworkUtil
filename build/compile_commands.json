@@ -1,25 +1,25 @@
 [
 {
   "directory": "D:/YYProject/vscode-project/cppNetworkUtil/build",
-  "command": "C:\\PROGRA~1\\REDPAN~1\\mingw64\\bin\\C__~1.EXE -DIS_DEBUG -DPRIVATE_KEY_PATH=\\\"../server.key\\\" -DPUBLIC_KET_PATH=\\\"../server.crt\\\" @CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\cppNetworkUtilLib.dir\\src\\cppNetworkUtil.cpp.obj -c D:\\YYProject\\vscode-project\\cppNetworkUtil\\src\\cppNetworkUtil.cpp",
+  "command": "C:\\PROGRA~1\\REDPAN~1\\mingw64\\bin\\C__~1.EXE -DPRIVATE_KEY_PATH=\\\"../server.key\\\" -DPUBLIC_KET_PATH=\\\"../server.crt\\\" @CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\cppNetworkUtilLib.dir\\src\\cppNetworkUtil.cpp.obj -c D:\\YYProject\\vscode-project\\cppNetworkUtil\\src\\cppNetworkUtil.cpp",
   "file": "D:/YYProject/vscode-project/cppNetworkUtil/src/cppNetworkUtil.cpp",
   "output": "CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj"
 },
 {
   "directory": "D:/YYProject/vscode-project/cppNetworkUtil/build",
-  "command": "C:\\PROGRA~1\\REDPAN~1\\mingw64\\bin\\C__~1.EXE -DIS_DEBUG -DPRIVATE_KEY_PATH=\\\"../server.key\\\" -DPUBLIC_KET_PATH=\\\"../server.crt\\\" @CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\cppNetworkUtilLib.dir\\src\\cppNetworkUtilPimpl.cpp.obj -c D:\\YYProject\\vscode-project\\cppNetworkUtil\\src\\cppNetworkUtilPimpl.cpp",
+  "command": "C:\\PROGRA~1\\REDPAN~1\\mingw64\\bin\\C__~1.EXE -DPRIVATE_KEY_PATH=\\\"../server.key\\\" -DPUBLIC_KET_PATH=\\\"../server.crt\\\" @CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\cppNetworkUtilLib.dir\\src\\cppNetworkUtilPimpl.cpp.obj -c D:\\YYProject\\vscode-project\\cppNetworkUtil\\src\\cppNetworkUtilPimpl.cpp",
   "file": "D:/YYProject/vscode-project/cppNetworkUtil/src/cppNetworkUtilPimpl.cpp",
   "output": "CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj"
 },
 {
   "directory": "D:/YYProject/vscode-project/cppNetworkUtil/build",
-  "command": "C:\\PROGRA~1\\REDPAN~1\\mingw64\\bin\\C__~1.EXE -DIS_DEBUG -DPRIVATE_KEY_PATH=\\\"../server.key\\\" -DPUBLIC_KET_PATH=\\\"../server.crt\\\" @CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\cppNetworkUtilLib.dir\\src\\threadPool.cpp.obj -c D:\\YYProject\\vscode-project\\cppNetworkUtil\\src\\threadPool.cpp",
+  "command": "C:\\PROGRA~1\\REDPAN~1\\mingw64\\bin\\C__~1.EXE -DPRIVATE_KEY_PATH=\\\"../server.key\\\" -DPUBLIC_KET_PATH=\\\"../server.crt\\\" @CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\cppNetworkUtilLib.dir\\src\\threadPool.cpp.obj -c D:\\YYProject\\vscode-project\\cppNetworkUtil\\src\\threadPool.cpp",
   "file": "D:/YYProject/vscode-project/cppNetworkUtil/src/threadPool.cpp",
   "output": "CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj"
 },
 {
   "directory": "D:/YYProject/vscode-project/cppNetworkUtil/build",
-  "command": "C:\\PROGRA~1\\REDPAN~1\\mingw64\\bin\\C__~1.EXE -DIS_DEBUG -DPRIVATE_KEY_PATH=\\\"../server.key\\\" -DPUBLIC_KET_PATH=\\\"../server.crt\\\" @CMakeFiles/example.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\example.dir\\example.cpp.obj -c D:\\YYProject\\vscode-project\\cppNetworkUtil\\example.cpp",
+  "command": "C:\\PROGRA~1\\REDPAN~1\\mingw64\\bin\\C__~1.EXE -DPRIVATE_KEY_PATH=\\\"../server.key\\\" -DPUBLIC_KET_PATH=\\\"../server.crt\\\" @CMakeFiles/example.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\example.dir\\example.cpp.obj -c D:\\YYProject\\vscode-project\\cppNetworkUtil\\example.cpp",
   "file": "D:/YYProject/vscode-project/cppNetworkUtil/example.cpp",
   "output": "CMakeFiles/example.dir/example.cpp.obj"
 }

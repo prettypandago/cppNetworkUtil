@@ -36,7 +36,7 @@ add_library(cppNetworkUtilLib STATIC ${NETWORK_LIB_SOURCES})
 
 target_compile_definitions(cppNetworkUtilLib
     PUBLIC
-        IS_DEBUG
+        # IS_DEBUG
         # DISABLE_HTTPS
         # DISABLE_PRINT_LISTEN_INFO
         PUBLIC_KET_PATH="../server.crt"  # Public key path

@@ -78,10 +78,6 @@
 			[
 				{
 					"backtrace" : 3,
-					"define" : "IS_DEBUG"
-				},
-				{
-					"backtrace" : 3,
 					"define" : "PRIVATE_KEY_PATH=\"../server.key\""
 				},
 				{
