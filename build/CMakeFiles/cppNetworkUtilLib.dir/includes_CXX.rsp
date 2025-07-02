@@ -1,1 +1,1 @@
--I"D:/YYProject/vscode-project/cppNetworkUtil/include" -I"D:/YYProject/vscode-project/cppNetworkUtil/openssl/include"
+-I"D:/YYProject/vscode-project/cppNetworkUtil/include" -isystem "D:/YYProject/vscode-project/cppNetworkUtil/openssl/include"

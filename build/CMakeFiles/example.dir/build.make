@@ -96,6 +96,8 @@ example_EXTERNAL_OBJECTS =
 example.exe: CMakeFiles/example.dir/example.cpp.obj
 example.exe: CMakeFiles/example.dir/build.make
 example.exe: libcppNetworkUtilLib.a
+example.exe: D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libssl.a
+example.exe: D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libcrypto.a
 example.exe: CMakeFiles/example.dir/linkLibs.rsp
 example.exe: CMakeFiles/example.dir/objects1.rsp
 example.exe: CMakeFiles/example.dir/link.txt

@@ -30,37 +30,37 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 68,
+				"line" : 234,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 16,
+				"line" : 187,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 72,
+				"line" : 238,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 49,
+				"line" : 214,
 				"parent" : 0
 			},
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 12,
+				"line" : 182,
 				"parent" : 0
 			},
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 13,
+				"line" : 184,
 				"parent" : 0
 			}
 		]
@@ -74,17 +74,6 @@
 					"fragment" : "-g -std=c++17"
 				}
 			],
-			"defines" : 
-			[
-				{
-					"backtrace" : 3,
-					"define" : "PRIVATE_KEY_PATH=\"../server.key\""
-				},
-				{
-					"backtrace" : 3,
-					"define" : "PUBLIC_KET_PATH=\"../server.crt\""
-				}
-			],
 			"includes" : 
 			[
 				{
@@ -93,6 +82,7 @@
 				},
 				{
 					"backtrace" : 6,
+					"isSystem" : true,
 					"path" : "D:/YYProject/vscode-project/cppNetworkUtil/openssl/include"
 				}
 			],
@@ -139,32 +129,17 @@
 			},
 			{
 				"backtrace" : 4,
-				"fragment" : "-lws2_32",
+				"fragment" : "D:\\YYProject\\vscode-project\\cppNetworkUtil\\openssl\\lib\\libssl.a",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 4,
-				"fragment" : "-lssl",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 4,
-				"fragment" : "-lcrypto",
+				"fragment" : "D:\\YYProject\\vscode-project\\cppNetworkUtil\\openssl\\lib\\libcrypto.a",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 4,
 				"fragment" : "-lws2_32",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 4,
-				"fragment" : "-lssl",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 4,
-				"fragment" : "-lcrypto",
 				"role" : "libraries"
 			},
 			{

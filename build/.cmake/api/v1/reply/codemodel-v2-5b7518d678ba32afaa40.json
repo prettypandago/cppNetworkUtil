@@ -28,7 +28,7 @@
 					[
 						0
 					],
-					"name" : "cppNetworkUtilLib",
+					"name" : "cppNetworkUtil",
 					"targetIndexes" : 
 					[
 						0,
@@ -41,14 +41,14 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "cppNetworkUtilLib::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-cppNetworkUtilLib-Debug-c03f9335c3530dd724fd.json",
+					"jsonFile" : "target-cppNetworkUtilLib-Debug-dd46211fe427ba895fae.json",
 					"name" : "cppNetworkUtilLib",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 0,
 					"id" : "example::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-example-Debug-e9c33691b00911bc6820.json",
+					"jsonFile" : "target-example-Debug-44aba480cf637e94aa0a.json",
 					"name" : "example",
 					"projectIndex" : 0
 				}

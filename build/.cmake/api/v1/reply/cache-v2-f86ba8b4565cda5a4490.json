@@ -759,7 +759,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "cppNetworkUtilLib"
+			"value" : "cppNetworkUtil"
 		},
 		{
 			"name" : "CMAKE_RANLIB",
@@ -1163,7 +1163,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "[D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libcrypto.a][D:/YYProject/vscode-project/cppNetworkUtil/openssl/include][ ][v3.5.0()]"
+			"value" : "[D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libcrypto.a][D:/YYProject/vscode-project/cppNetworkUtil/openssl/include][found components: SSL Crypto ][v3.5.0()]"
 		},
 		{
 			"name" : "LIB_EAY",
@@ -1214,30 +1214,6 @@
 			"value" : "D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libssl.a"
 		},
 		{
-			"name" : "cppNetworkUtilLib_BINARY_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "D:/YYProject/vscode-project/cppNetworkUtil/build"
-		},
-		{
-			"name" : "cppNetworkUtilLib_IS_TOP_LEVEL",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "ON"
-		},
-		{
 			"name" : "cppNetworkUtilLib_LIB_DEPENDS",
 			"properties" : 
 			[
@@ -1247,19 +1223,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "general;ws2_32;general;ssl;general;crypto;general;ws2_32;general;gdi32;general;crypt32;"
-		},
-		{
-			"name" : "cppNetworkUtilLib_SOURCE_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Value Computed by CMake"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "D:/YYProject/vscode-project/cppNetworkUtil"
+			"value" : "general;OpenSSL::SSL;general;OpenSSL::Crypto;"
 		},
 		{
 			"name" : "cppNetworkUtil_BINARY_DIR",
@@ -1284,18 +1248,6 @@
 			],
 			"type" : "STATIC",
 			"value" : "ON"
-		},
-		{
-			"name" : "cppNetworkUtil_LIB_DEPENDS",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Dependencies for the target"
-				}
-			],
-			"type" : "STATIC",
-			"value" : "general;ws2_32;general;ssl;general;crypto;general;ws2_32;general;gdi32;general;crypt32;"
 		},
 		{
 			"name" : "cppNetworkUtil_SOURCE_DIR",

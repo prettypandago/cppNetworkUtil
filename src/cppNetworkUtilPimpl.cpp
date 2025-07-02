@@ -1187,35 +1187,17 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
         throw("Unable to create SSL context");
     }
 
-// 加载证书和私钥
-#ifdef PUBLIC_KET_PATH
-    if (SSL_CTX_use_certificate_file(ssl_ctx_server, PUBLIC_KET_PATH, SSL_FILETYPE_PEM) <= 0)
+    // 加载证书和私钥
+    if (SSL_CTX_use_certificate_file(ssl_ctx_server, PUBLIC_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
     {
         HANDLE_ERROR("Unable to load certificate PUBLIC KEY");
         throw("Unable to load certificate PUBLIC KEY");
     }
-#else
-    log_w("Warning: PUBLIC_KET_PATH is not defined, using default certificate path.\n");
-    if (SSL_CTX_use_certificate_file(ssl_ctx_server, DEFAULT_PUBLIC_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
-    {
-        HANDLE_ERROR("Unable to load default certificate PUBLIC KEY");
-        throw("Unable to load default certificate PUBLIC KEY");
-    }
-#endif
-#ifdef PRIVATE_KEY_PATH
     if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
     {
         HANDLE_ERROR("Unable to load private key PRIVATE KEY");
         throw("Unable to load private key PRIVATE KEY");
     }
-#else
-    log_w("Warning: PRIVATE_KEY_PATH is not defined, using default private key path.\n");
-    if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, DEFAULT_PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
-    {
-        HANDLE_ERROR("Unable to load default private key PRIVATE KEY");
-        throw("Unable to load default private key PRIVATE KEY");
-    }
-#endif
     // 验证私钥是否与证书匹配
     if (!SSL_CTX_check_private_key(ssl_ctx_server))
     {
@@ -1306,7 +1288,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         SOCKET client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_len);
         if (client_socket == INVALID_SOCKET)
         {
-            log_d("accept failed: %s\n", WSAGetLastError());
+            log_e("Accept failed, errno: %d\n", errno);
             continue;
         }
 
