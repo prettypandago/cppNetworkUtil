@@ -275,14 +275,37 @@ public:
      */
     ~cppNetworkUtil();
 
+    /**
+     * @brief Constructor
+     */
     cppNetworkUtil();
 
     // 禁用拷贝构造和赋值运算符，因为 unique_ptr 不支持拷贝
     cppNetworkUtil(const cppNetworkUtil &) = delete;
     cppNetworkUtil &operator=(const cppNetworkUtil &) = delete;
 
+    /**
+     * @brief Print the OpenSSL version
+     */
     void printOpensslVersion();
 
+    /*
+     * @brief Run the server with the specified port and callback
+     *
+     * @param port (int) The port number to run the server on
+     * @param callback (serverCallback *) The callback to handle server events
+     *
+     * @throws WSAStartup failed
+     * @throws Unable to create SSL context
+     * @throws Unable to load certificate PUBLIC KEY
+     * @throws Unable to load private key PRIVATE KEY
+     * @throws Private key does not match the certificate
+     * @throws Create socket failed
+     * @throws Setsockopt failed
+     * @throws Bind failed
+     * @throws Listen failed
+     * @throws Unable to get the number of CPU cores
+     */
     void run(int port, serverCallback *callback);
 
 private:

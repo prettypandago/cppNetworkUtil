@@ -201,8 +201,49 @@ public:
      */
     void sendDataToHttpsSocket_Pimpl(SOCKET socket, const std::string &data);
 
+    /**
+     * @brief Send data to the host using HTTP protocol
+     *
+     * @param host (const std::string &) Host address
+     * @param path (const std::string &) Path to the resource
+     * @param port (int) Port number
+     * @param header (std::string &) Header to be filled with the response header
+     * @param content (std::string &) Content to be filled with the response content
+     *
+     * @throws WSAStartup failed
+     * @throws getaddrinfo failed
+     * @throws Unable to connect to server
+     * @throws Send failed
+     * @throws Socket read failed during chunk size reception
+     * @throws Failed to parse chunk size
+     * @throws Failed to parse chunk size with unknown error
+     * @throws Incomplete chunk data: connection closed unexpectedly or socket read error
+     * @throws shutdown failed
+     * @throws Invalid HTTP response format
+     */
     void sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content);
 
+    /**
+     * @brief Send data to the host using HTTPS protocol
+     *
+     * @param host (const std::string &) Host address
+     * @param path (const std::string &) Path to the resource
+     * @param port (int) Port number
+     * @param header (std::string &) Header to be filled with the response header
+     * @param content (std::string &) Content to be filled with the response content
+     * @param enable_CA (bool) Whether to enable CA verification
+     *
+     * @throws WSAStartup failed
+     * @throws Failed to load default CA certificates
+     * @throws Failed to create SSL object
+     * @throws Failed to create BIO connection
+     * @throws Failed to connect to server
+     * @throws SSL handshake failed
+     * @throws SSL read failed during chunk size reception
+     * @throws Failed to parse chunk size with unknown error
+     * @throws Incomplete chunk data: connection closed unexpectedly or SSL read error
+     * @throws Invalid HTTP response format
+     */
     void sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA = true);
 
     /**
@@ -210,6 +251,23 @@ public:
      */
     void printOpensslVersion_Pimpl();
 
+    /*
+     * @brief Run the server with the specified port and callback
+     *
+     * @param port (int) The port number to run the server on
+     * @param callback (serverCallback *) The callback to handle server events
+     *
+     * @throws WSAStartup failed
+     * @throws Unable to create SSL context
+     * @throws Unable to load certificate PUBLIC KEY
+     * @throws Unable to load private key PRIVATE KEY
+     * @throws Private key does not match the certificate
+     * @throws Create socket failed
+     * @throws Setsockopt failed
+     * @throws Bind failed
+     * @throws Listen failed
+     * @throws Unable to get the number of CPU cores
+     */
     void run_Pimpl(int port, serverCallback *callback);
 
 private:
@@ -220,5 +278,17 @@ private:
     // 指向父 cppNetworkUtil 实例的指针，用于在回调中传递给用户
     cppNetworkUtil *parent_util_;
 
+    /*
+     * @brief Process incoming connections and handle requests
+     *
+     * @param server_socket (SOCKET) The server socket to accept connections on
+     * @param callback (serverCallback *) The callback to handle server events
+     *
+     * @throws Invalid server socket
+     * @throws No callback provided to process the request
+     *
+     * This function runs in a loop, accepting incoming client connections and processing their requests.
+     * It uses the provided callback to notify the user of received data.
+     */
     void process(SOCKET server_socket, serverCallback *callback);
 };
