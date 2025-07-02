@@ -1,6 +1,6 @@
 #pragma once
 
-// 前向声明实现类
+// Forward declaration of implementation class
 class cppNetworkUtilPimpl;
 class serverCallback;
 
@@ -61,7 +61,7 @@ typedef int SOCKET;
 class cppNetworkUtil
 {
 public:
-    int port = DEFAULT_SERVER_PORT; // 服务器端口
+    int port = DEFAULT_SERVER_PORT; // server listen port
 
     /**
      * @brief Get the client connections IP address
@@ -280,7 +280,7 @@ public:
      */
     cppNetworkUtil();
 
-    // 禁用拷贝构造和赋值运算符，因为 unique_ptr 不支持拷贝
+    // Disable copy constructor and assignment operator
     cppNetworkUtil(const cppNetworkUtil &) = delete;
     cppNetworkUtil &operator=(const cppNetworkUtil &) = delete;
 
@@ -309,5 +309,5 @@ public:
     void run(int port, serverCallback *callback);
 
 private:
-    std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // 不透明指针
+    std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // pimpl implementation pointer
 };

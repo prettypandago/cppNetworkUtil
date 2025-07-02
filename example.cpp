@@ -9,7 +9,7 @@
 class MyServerHandler : public serverCallback
 {
 public:
-    // 构造函数接收 cppNetworkUtil 的引用
+    // Constructor receives a reference to cppNetworkUtil
     MyServerHandler(cppNetworkUtil &network_util) : network_util_(network_util) {}
 
     void onDataReceived(int client_id) override
@@ -54,7 +54,6 @@ public:
         {
             if (url.empty())
             {
-                // 发送响应数据到客户端
                 try
                 {
                     response_header_parameters.mime_type = "text/html";
@@ -98,14 +97,14 @@ public:
     }
 
 private:
-    // 声明 network_util_ 作为 MyServerHandler 类的成员变量 (不然会报错)
+    // Declare network_util_ as a member variable of the MyServerHandler class (otherwise there will be an error)
     cppNetworkUtil &network_util_;
 };
 
 int main(int argc, char **argv)
 {
     cppNetworkUtil server;
-    MyServerHandler handler(server); // 创建回调对象
+    MyServerHandler handler(server);
 
     try
     {
