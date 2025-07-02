@@ -4,7 +4,7 @@
 # compile CXX with C:/Program Files/RedPanda-Cpp/mingw64/bin/c++.exe
 CXX_DEFINES = -DIS_DEBUG -DPRIVATE_KEY_PATH=\"../server.key\" -DPUBLIC_KET_PATH=\"../server.crt\"
 
-CXX_INCLUDES = @CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp
+CXX_INCLUDES = @CMakeFiles/example.dir/includes_CXX.rsp
 
 CXX_FLAGS = -g -std=c++17
 

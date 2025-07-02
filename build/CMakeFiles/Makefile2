@@ -63,10 +63,12 @@ CMAKE_BINARY_DIR = D:\YYProject\vscode-project\cppNetworkUtil\build
 
 # The main recursive "all" target.
 all: CMakeFiles/cppNetworkUtilLib.dir/all
+all: CMakeFiles/example.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/cppNetworkUtilLib.dir/codegen
+codegen: CMakeFiles/example.dir/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
@@ -75,6 +77,7 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/cppNetworkUtilLib.dir/clean
+clean: CMakeFiles/example.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -108,6 +111,38 @@ CMakeFiles/cppNetworkUtilLib.dir/codegen:
 CMakeFiles/cppNetworkUtilLib.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/clean
 .PHONY : CMakeFiles/cppNetworkUtilLib.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/example.dir
+
+# All Build rule for target.
+CMakeFiles/example.dir/all: CMakeFiles/cppNetworkUtilLib.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=5,6 "Built target example"
+.PHONY : CMakeFiles/example.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/example.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles 6
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/example.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles 0
+.PHONY : CMakeFiles/example.dir/rule
+
+# Convenience name for target.
+example: CMakeFiles/example.dir/rule
+.PHONY : example
+
+# codegen rule for target.
+CMakeFiles/example.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=5,6 "Finished codegen for target example"
+.PHONY : CMakeFiles/example.dir/codegen
+
+# clean rule for target.
+CMakeFiles/example.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/clean
+.PHONY : CMakeFiles/example.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

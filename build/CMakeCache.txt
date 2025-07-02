@@ -127,7 +127,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=cppNetworkUtil
+CMAKE_PROJECT_NAME:STATIC=cppNetworkUtilLib
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=C:/Program Files/RedPanda-Cpp/mingw64/bin/ranlib.exe
@@ -221,14 +221,26 @@ OPENSSL_INCLUDE_DIR:PATH=D:/YYProject/vscode-project/cppNetworkUtil/openssl/incl
 //Path to a library.
 SSL_EAY:FILEPATH=D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libssl.a
 
+//Value Computed by CMake
+cppNetworkUtilLib_BINARY_DIR:STATIC=D:/YYProject/vscode-project/cppNetworkUtil/build
+
+//Value Computed by CMake
+cppNetworkUtilLib_IS_TOP_LEVEL:STATIC=ON
+
 //Dependencies for the target
 cppNetworkUtilLib_LIB_DEPENDS:STATIC=general;ws2_32;general;ssl;general;crypto;general;ws2_32;general;gdi32;general;crypt32;
+
+//Value Computed by CMake
+cppNetworkUtilLib_SOURCE_DIR:STATIC=D:/YYProject/vscode-project/cppNetworkUtil
 
 //Value Computed by CMake
 cppNetworkUtil_BINARY_DIR:STATIC=D:/YYProject/vscode-project/cppNetworkUtil/build
 
 //Value Computed by CMake
 cppNetworkUtil_IS_TOP_LEVEL:STATIC=ON
+
+//Dependencies for the target
+cppNetworkUtil_LIB_DEPENDS:STATIC=general;ws2_32;general;ssl;general;crypto;general;ws2_32;general;gdi32;general;crypt32;
 
 //Value Computed by CMake
 cppNetworkUtil_SOURCE_DIR:STATIC=D:/YYProject/vscode-project/cppNetworkUtil

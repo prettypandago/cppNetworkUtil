@@ -128,6 +128,43 @@ cppNetworkUtilLib/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/build
 .PHONY : cppNetworkUtilLib/fast
 
+#=============================================================================
+# Target rules for targets named example
+
+# Build rule for target.
+example: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 example
+.PHONY : example
+
+# fast build rule for target.
+example/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/build
+.PHONY : example/fast
+
+example.obj: example.cpp.obj
+.PHONY : example.obj
+
+# target to build an object file
+example.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/example.cpp.obj
+.PHONY : example.cpp.obj
+
+example.i: example.cpp.i
+.PHONY : example.i
+
+# target to preprocess a source file
+example.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/example.cpp.i
+.PHONY : example.cpp.i
+
+example.s: example.cpp.s
+.PHONY : example.s
+
+# target to generate assembly for a file
+example.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/example.cpp.s
+.PHONY : example.cpp.s
+
 src/cppNetworkUtil.obj: src/cppNetworkUtil.cpp.obj
 .PHONY : src/cppNetworkUtil.obj
 
@@ -209,6 +246,10 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... cppNetworkUtilLib
+	@echo ... example
+	@echo ... example.obj
+	@echo ... example.i
+	@echo ... example.s
 	@echo ... src/cppNetworkUtil.obj
 	@echo ... src/cppNetworkUtil.i
 	@echo ... src/cppNetworkUtil.s

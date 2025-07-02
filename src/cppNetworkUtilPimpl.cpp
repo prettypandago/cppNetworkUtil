@@ -63,7 +63,7 @@ std::string cppNetworkUtilPimpl::getGetHeaderUrl_Pimpl(const std::string buffer)
     }
 
     // 2. 查找第二个空格，它将 URL 与 PROTOCOL 分开。
-    size_t second_space_pos = buffer.find(' ', frist_space_pos);
+    size_t second_space_pos = buffer.find(' ', frist_space_pos + 1);
     if (second_space_pos == std::string::npos)
     {
         // 如果没有找到空格，说明请求行格式不正确
@@ -71,8 +71,14 @@ std::string cppNetworkUtilPimpl::getGetHeaderUrl_Pimpl(const std::string buffer)
     }
 
     // 2. 提取 URL
-    // 从字符串开头到第一个空格的位置就是 Method
-    url = buffer.substr(frist_space_pos, second_space_pos);
+    // 从字符串第一个空格到第二个空格的位置就是 URL
+    // 注意: substr的第二个参数是长度, 在这里踩坑了
+    url = buffer.substr(frist_space_pos + 1, second_space_pos - frist_space_pos - 1);
+
+    if (url[0] == '/')
+    {
+        url.erase(0, 1); // 去除'/'
+    }
 
     return url;
 }
@@ -1181,17 +1187,35 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
         throw("Unable to create SSL context");
     }
 
-    // 加载证书和私钥
-    if (SSL_CTX_use_certificate_file(ssl_ctx_server, "server.crt", SSL_FILETYPE_PEM) <= 0)
+// 加载证书和私钥
+#ifdef PUBLIC_KET_PATH
+    if (SSL_CTX_use_certificate_file(ssl_ctx_server, PUBLIC_KET_PATH, SSL_FILETYPE_PEM) <= 0)
     {
         HANDLE_ERROR("Unable to load certificate PUBLIC KEY");
         throw("Unable to load certificate PUBLIC KEY");
     }
-    if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, "server.key", SSL_FILETYPE_PEM) <= 0)
+#else
+    log_w("Warning: PUBLIC_KET_PATH is not defined, using default certificate path.\n");
+    if (SSL_CTX_use_certificate_file(ssl_ctx_server, DEFAULT_PUBLIC_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
+    {
+        HANDLE_ERROR("Unable to load default certificate PUBLIC KEY");
+        throw("Unable to load default certificate PUBLIC KEY");
+    }
+#endif
+#ifdef PRIVATE_KEY_PATH
+    if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
     {
         HANDLE_ERROR("Unable to load private key PRIVATE KEY");
         throw("Unable to load private key PRIVATE KEY");
     }
+#else
+    log_w("Warning: PRIVATE_KEY_PATH is not defined, using default private key path.\n");
+    if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, DEFAULT_PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
+    {
+        HANDLE_ERROR("Unable to load default private key PRIVATE KEY");
+        throw("Unable to load default private key PRIVATE KEY");
+    }
+#endif
     // 验证私钥是否与证书匹配
     if (!SSL_CTX_check_private_key(ssl_ctx_server))
     {
@@ -1325,8 +1349,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
 
         char temp_buffer[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果直接作为 C 字符串打印的话
         memset(temp_buffer, 0, BUFFERSIZE);
-
-// 接收数据
+        // 接收数据
 #ifdef DISABLE_HTTPS
         recvd = recv(client_socket, temp_buffer, BUFFERSIZE, 0);
 #else
@@ -1343,6 +1366,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         else if (recvd == 0)
         {
             // 客户端已优雅断开连接
+            continue; // 继续等待下一个连接
         }
         else
         {
@@ -1353,66 +1377,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             SSL_free(ssl_conn);     // 释放 SSL 结构
 #endif
             closesocket(client_socket); // 关闭客户端套接字
-            continue;                   // 继续等待下一个连接
-        }
-
-        try
-        {
-            content_size = getContentSize_Pimpl(recv_buffer);
-        }
-        catch (const std::exception &e)
-        {
-            log_e("Failed to get content size: %s\n", e.what());
-        }
-        catch (...)
-        {
-            log_e("Failed to get content size: unknown error\n");
-        }
-
-        // if (IS_DEBUG)
-        //     std::cout << "content_size=" << content_size << "\n";
-        if (content_size == -1)
-        {
-#ifndef DISABLE_HTTPS
-            SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
-            SSL_free(ssl_conn);     // 释放 SSL 结构
-#endif
-            closesocket(client_socket);
-            continue; // 继续等待下一个连接
-        }
-
-        // 循环接收数据
-        while (totla_recvd < content_size)
-        {
-            char temp_buffer_in_do_while[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果您直接作为 C 字符串打印的话
-            memset(temp_buffer_in_do_while, 0, BUFFERSIZE);
-#ifdef DISABLE_HTTPS
-            recvd = recv(client_socket, temp_buffer_in_do_while, BUFFERSIZE, 0);
-#else
-            recvd = SSL_read(ssl_conn, temp_buffer_in_do_while, BUFFERSIZE);
-#endif
-
-            if (recvd > 0)
-            {
-                // 只附加实际接收到的字节数
-                recv_buffer.append(temp_buffer_in_do_while, recvd);
-                totla_recvd += recvd;
-                // if (IS_DEBUG)
-                // std::cout << "recv " << recvd << " bytes, total recv: " << totla_recvd << " bytes\n";
-            }
-            else if (recvd == 0)
-            {
-                // 客户端已优雅断开连接
-                // if (IS_DEBUG)
-                //     std::cout << "client close connect。" << "\n";
-                break; // 跳出循环
-            }
-            else
-            {
-                // 发生error
-                // log_e("An error occurred receiving, errno: %d\n", errno);
-                break; // 跳出循环
-            }
+            break;                      // 继续等待下一个连接
         }
 
 #ifndef DISABLE_HTTPS

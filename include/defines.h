@@ -11,8 +11,8 @@
 #define DEFAULT_SERVER_PORT 443 // Default port for HTTPS
 #endif
 
-#define PUBLIC_KET_PATH "server.crt"  // Public key path
-#define PRIVATE_KEY_PATH "server.key" // Private key path
+#define DEFAULT_PUBLIC_KEY_PATH "server.crt"  // Default public key path
+#define DEFAULT_PRIVATE_KEY_PATH "server.key" // Default private key path
 
 #define INFINITY 2147483647
 #define BUFFERSIZE 4096
