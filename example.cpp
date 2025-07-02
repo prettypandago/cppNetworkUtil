@@ -22,16 +22,27 @@ public:
         responseHeaderParameters response_header_parameters;
         response_header_parameters.mime_type = "text/html";
 
-// 发送响应数据到客户端
+        // 发送响应数据到客户端
+        try
+        {
 #ifndef DISABLE_HTTPS
-        network_util_.sendDataToHttpsHost("www.example.com", "/", 443, header, content, true); // 使用 HTTPS 协议发送数据
-        network_util_.sendDataToHttpsSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
-        network_util_.sendDataToHttpsSocket(client_id, content);
+            network_util_.sendDataToHttpsHost("www.example.com", "/", 443, header, content, true); // 使用 HTTPS 协议发送数据
+            network_util_.sendDataToHttpsSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
+            network_util_.sendDataToHttpsSocket(client_id, content);
 #else
-        network_util_.sendDataToHttpHost("www.example.com", "/", 80, header, content); // 使用 HTTPS 协议发送数据
-        network_util_.sendDataToHttpSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
-        network_util_.sendDataToHttpSocket(client_id, content);
+            network_util_.sendDataToHttpHost("www.example.com", "/", 80, header, content); // 使用 HTTPS 协议发送数据
+            network_util_.sendDataToHttpSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
+            network_util_.sendDataToHttpSocket(client_id, content);
 #endif
+        }
+        catch (const std::exception &e)
+        {
+            log_e("Error: %s\n", e.what());
+        }
+        catch (...)
+        {
+            log_e("Unknown error occurred while sending data.\n");
+        }
     }
 
 private:
