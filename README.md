@@ -1,160 +1,163 @@
 # cppNetworkUtil
 
-## Other language versions
-[English](README.md "English version"), [Simplified Chinese](README_zh-cn.md "Simplified Chinese version").
+## Other Language Versions
+[English](README.md "English version"), [简体中文](README_zh-cn.md "Simplified Chinese version").
 
 ## Warning
 
-This is in the **development** stage, the usage may change **significantly**, and it is **not** recommended to use it! ! !
+This project is in the **development** stage. The usage may change **significantly**. **Not recommended** for production use!
 
 ## Introduction
 
-Simple and easy-to-use C++ network communication library that supports HTTP and HTTPS protocols
+A simple and easy-to-use C++ network communication library supporting HTTP and HTTPS protocols.
 
-## How to use
+## How to Use
 
-1. Configure the environment
+1. Environment Setup
 
-1. Install vscode (recommended)
+    1. Install VS Code (recommended)
 
-2. Configure vscode c++ development environment
+    2. Set up the VS Code C++ development environment
 
-3. Install cmake plugin
+    3. Install the CMake extension
 
 2. Download:
 
-1. Download all files to a local folder and put them in a suitable folder
+    1. Download all files to a local folder
 
-2. Unzip
+    2. Extract the files
 
-3. Compile
+3. Build
 
-1. Before compiling, you can adjust the macro definition in `include/defines.h`
+    1. Before building, you can adjust macro definitions in `include/defines.h`
 
-```cpp
-#pragma once
+    ```cpp
+    #pragma once
 
-// Adjust the macro definition here
+    // Adjust the macro definition here
 
-// defines... (Modify only these)
+    // defines... (Modify only these)
 
-// Do not modify the following macros unless you know what you are doing
-```
+    // Do not modify the following macros unless you know what you are doing
+    ```
 
-Then save it and you're done
+    Save the file after making changes.
 
-2. Open the file `CMakeLists.txt`
+    2. Open `CMakeLists.txt`
 
-3. Now you can edit the file. After editing, please proceed to the next operation
+    3. Edit files as needed, then proceed to the next step
 
-4. make (usually press Ctrl + S to save and it will automatically make)
+    4. Build (usually, pressing Ctrl + S will trigger an automatic build)
 
-5. build (a `Generate` button may appear in the lower left corner now, click it to build)
+    5. Build (a `Build` button may appear in the lower left corner, click it to build)
 
-4. Compile your own code
+4. Build Your Own Code
 
-1. Congratulations, the sample code has been compiled. If you need to compile other files, please continue reading, otherwise please skip
+    1. Congratulations, the sample code has been built. If you want to build other files, continue reading; otherwise, you can skip this section.
 
-2. Now go to the output directory you set (the default is `./build`) and find the static link library you compiled (the default is `libcppNetworkUtilLib.a`). Please create a new project and copy this static link library to the `lib` folder under your new project folder (recommended)
+    2. Go to your output directory (default is `./build`) and find the static library you built (default is `libcppNetworkUtilLib.a`). Create a new project and copy this static library to the `lib` folder in your new project directory (recommended).
 
-3. By the way, you also need to copy the files under `openssl/lib` under the previous project to the `lib` folder under your new project folder (recommended)
+    3. Also, copy the files from the previous project's `openssl/lib` folder to the `lib` folder in your new project directory (recommended).
 
-4. After that, please copy the files under `include` under the previous project to the `include` folder under your new project folder (recommended)
+    4. Next, copy the files from the previous project's `include` folder to the `include` folder in your new project directory (recommended).
 
-5. Now, you can create a folder `src` is used to place source files, and then create a cpp file in it
+    5. Now, create a `src` folder for your source files, and add a `.cpp` file inside.
 
-6. Add include to the .cpp file:
+    6. In your `.cpp` file, add the following includes:
 
-```cpp
-#include "cppNetworkUtil.h"
-#include "serverCallback.h"
-```
+    ```cpp
+    #include "cppNetworkUtil.h"
+    #include "serverCallback.h"
+    ```
 
-7. Add a structure to your .cpp file:
+    7. Add a handler class in your `.cpp` file:
 
-```cpp
-class MyServerHandler : public serverCallback
-{
-public:
-MyServerHandler(cppNetworkUtil &network_util) : network_util_(network_util) {}
+    ```cpp
+    class MyServerHandler : public serverCallback
+    {
+    public:
+        MyServerHandler(cppNetworkUtil &network_util) : network_util_(network_util) {}
 
-void onDataReceived(int client_id) override
-{
-// code
-}
-private:
-cppNetworkUtil &network_util_;
-};
-```
-The `onDataReceived` function in this structure will be called after the client connects. You can write the client processing code in this function, [click to view example](example.cpp "example")
+        void onDataReceived(int client_id) override
+        {
+            // code
+        }
+    private:
+        cppNetworkUtil &network_util_;
+    };
+    ```
+    The `onDataReceived` function will be called when a client connects. You can handle client logic here. [See example](example.cpp "Example")
 
-8. Then add a `main()` function:
+    8. Add a `main()` function:
 
-```cpp
-int main(int argc, char **argv)
-{
-cppNetworkUtil server;
-MyServerHandler handler(server);
+    ```cpp
+    int main(int argc, char **argv)
+    {
+        cppNetworkUtil server;
+        MyServerHandler handler(server);
 
-try
-{
-server.run(DEFAULT_SERVER_PORT, &handler);
-}
-catch (const std::exception &e)
-{
-std::cout << "Error: " << e.what() << "\n";
-}
-catch (...)
-{
-std::cout << "Unknown error occurred.\n";
-}
+        try
+        {
+            server.run(DEFAULT_SERVER_PORT, &handler);
+        }
+        catch (const std::exception &e)
+        {
+            std::cout << "Error: " << e.what() << "\n";
+        }
+        catch (...)
+        {
+            std::cout << "Unknown error occurred.\n";
+        }
 
-return 0;
-}
-```
+        return 0;
+    }
+    ```
 
-9. Finally, go to the project root directory, create a `CMakeLists.txt`, and write the script in it:
+    9. In your project root, create a `CMakeLists.txt` file with the following content:
 
-```cmake
-cmake_minimum_required(VERSION 3.10)
-project(cppPlayer CXX) # Your project name
+    ```cmake
+    cmake_minimum_required(VERSION 3.10)
+    project(cppPlayer CXX) # Your project name
 
-set(CMAKE_CXX_STANDARD 17) # Or you 
-set(CMAKE_CXX_STANDARD_REQUIRED ON) 
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(cppPlayer src/main.cpp) 
+    add_executable(cppPlayer src/main.cpp)
 
-target_include_directories(cppPlayer PRIVATE 
-${CMAKE_CURRENT_SOURCE_DIR}/include 
-) 
+    target_include_directories(cppPlayer PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
 
-target_link_libraries(cppPlayer PRIVATE 
-${CMAKE_CURRENT_SOURCE_DIR}/lib/libcppNetworkUtilLib.a # Your static library 
-${CMAKE_CURRENT_SOURCE_DIR}/lib/libssl.a # openssl libssl.a 
-${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrypto.a # openssl libcrypto.a 
-# only Windows 
-ws2_32 
-iphlpapi 
-#Mayneed 
-gdi32 
-crypt32 
-) set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
-```
+    target_link_libraries(cppPlayer PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcppNetworkUtilLib.a # Your static library
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libssl.a               # openssl libssl.a
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrypto.a            # openssl libcrypto.a
+        # only Windows
+        ws2_32
+        iphlpapi
+        # May need
+        gdi32
+        crypt32
+    )
 
-10. Now `CMakeLists.txt` has been written. Please compile according to the steps mentioned above. If nothing unexpected happens, your file has been output to the project root directory.
+    set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+    ```
+
+    10. Now your `CMakeLists.txt` is ready. Follow the previous steps to build. If everything goes well, your executable will be in the project root directory.
 
 5. Notes
 
-- If you crash after opening, you can open a `cmd` and open this program in it. If it shows words like `No such file or directory`, if you have not disabled HTTPS support, it means that you do not have a certificate file. You can use the following command to generate it:
+    - If the program crashes on launch, open a `cmd` window and run the program there. If you see an error like `No such file or directory` and you haven't disabled HTTPS support, it means you don't have the certificate files. You can generate them with:
 
-1. `openssl genrsa -out server.key 2048`
+        1. `openssl genrsa -out server.key 2048`
 
-2. `openssl req -x509 -new -nodes -key server.key -sha256 -days 365 -out server.crt`
+        2. `openssl req -x509 -new -nodes -key server.key -sha256 -days 365 -out server.crt`
 
-If nothing unexpected happens, your program should be able to run
+    If everything is set up correctly, your program should run.
 
-6. Run✅✅✅
+6. Run ✅✅✅
 
-- It's done! Go to the output directory you set (default is `./build`) to find your output program and run it
+    - All done! Go to your output directory (default is `./build`), find your executable, and run it.
 
-😊Thank you for using it!!! 😊
+😊 Thank you for using cppNetworkUtil! 😊
+
