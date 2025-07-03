@@ -15,9 +15,19 @@ int cppNetworkUtil::get_client_connections_port(SOCKET client_socket)
     return pimpl_->client_connections[client_socket].port; // 获取客户端端口号
 }
 
-std::string cppNetworkUtil::get_client_connections_recv_buffer(SOCKET client_socket)
+std::string cppNetworkUtil::get_client_connections_request_data(SOCKET client_socket)
 {
-    return pimpl_->client_connections[client_socket].recv_buffer; // 获取客户端接收缓冲区
+    return pimpl_->client_connections[client_socket].request_data; // 获取客户端接收缓冲区
+}
+
+std::string cppNetworkUtil::get_client_connections_request_header(SOCKET client_socket)
+{
+    return pimpl_->client_connections[client_socket].request_header; // 获取客户端接收缓冲区
+}
+
+std::string cppNetworkUtil::get_client_connections_request_content(SOCKET client_socket)
+{
+    return pimpl_->client_connections[client_socket].request_content; // 获取客户端接收缓冲区
 }
 
 std::string cppNetworkUtil::getHeaderMethod(const std::string buffer)

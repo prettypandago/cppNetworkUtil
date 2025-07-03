@@ -82,13 +82,31 @@ public:
     int get_client_connections_port(SOCKET client_socket);
 
     /**
-     * @brief Get the client connections recv buffer
+     * @brief Get the client connections request data
      *
      * @param client_socket (SOCKET) Client socket
      *
-     * @return Client recv buffer
+     * @return Client request data
      */
-    std::string get_client_connections_recv_buffer(SOCKET client_socket);
+    std::string get_client_connections_request_data(SOCKET client_socket);
+
+    /**
+     * @brief Get the client connections recv header
+     *
+     * @param client_socket (SOCKET) Client socket
+     *
+     * @return Client header
+     */
+    std::string get_client_connections_request_header(SOCKET client_socket);
+
+    /**
+     * @brief Get the client connections recv content
+     *
+     * @param client_socket (SOCKET) Client socket
+     *
+     * @return Client content
+     */
+    std::string get_client_connections_request_content(SOCKET client_socket);
 
     /**
      * @brief Get the method in the GET request header

@@ -14,13 +14,15 @@ public:
 
     void onDataReceived(int client_id) override
     {
-        std::string recv_buffer = network_util_.get_client_connections_recv_buffer(client_id);
+        std::string request_data = network_util_.get_client_connections_request_data(client_id);
+        std::string request_header = network_util_.get_client_connections_request_header(client_id);
+        std::string request_content = network_util_.get_client_connections_request_content(client_id);
 
         std::string method;
         // Get method from the header
         try
         {
-            method = network_util_.getHeaderMethod(recv_buffer);
+            method = network_util_.getHeaderMethod(request_header);
         }
         catch (const std::exception &e)
         {
@@ -35,7 +37,7 @@ public:
         // Get url from the header
         try
         {
-            url = network_util_.getGetHeaderUrl(recv_buffer);
+            url = network_util_.getGetHeaderUrl(request_header);
         }
         catch (const std::exception &e)
         {

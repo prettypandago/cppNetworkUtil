@@ -60,9 +60,11 @@ public:
     struct clientConnectionInfo
     {
         ssl_st *ssl;
-        std::string ip; // 客户端 IP 地址
+        std::string ip;
         int port;
-        std::string recv_buffer; // 接收缓冲区
+        std::string request_data;
+        std::string request_header;
+        std::string request_content;
     };
     std::map<SOCKET, clientConnectionInfo> client_connections; // 存储客户端连接信息
 

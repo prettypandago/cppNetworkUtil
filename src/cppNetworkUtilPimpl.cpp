@@ -1323,7 +1323,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         client_connections[client_socket].ip = inet_ntoa(((struct sockaddr_in *)&client_address)->sin_addr); // 获取客户端 IP 地址
         client_connections[client_socket].port = ntohs(((struct sockaddr_in *)&client_address)->sin_port);   // 获取客户端端口号
 
-        std::string recv_buffer;
+        std::string request_data;
 
         int recvd = 0;
         int totla_recvd = 0;
@@ -1340,7 +1340,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         if (recvd > 0)
         {
             // 只附加实际接收到的字节数
-            recv_buffer.append(temp_buffer, recvd);
+            request_data.append(temp_buffer, recvd);
             totla_recvd += recvd;
             // if (IS_DEBUG)
             //     std::cout << "recv " << recvd << " bytes, total recv: " << totla_recvd << " bytes\n";
@@ -1365,7 +1365,22 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
 #ifndef DISABLE_HTTPS
         client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
 #endif
-        client_connections[client_socket].recv_buffer = recv_buffer; // 将接收到的数据存储到 client_connections 中
+        client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
+        // 分离请求体
+        size_t header_end_pos = request_data.find("\r\n\r\n");
+        std::string request_header, request_content;
+        if (header_end_pos != std::string::npos)
+        {
+            request_header = request_data.substr(0, header_end_pos);
+            request_content = request_data.substr(header_end_pos + 4);
+        }
+        else
+        {
+            request_header = request_data;
+            request_content = "";
+        }
+        client_connections[client_socket].request_header = request_header;
+        client_connections[client_socket].request_content = request_content;
 
         // 调用用户的函数
         if (callback)
