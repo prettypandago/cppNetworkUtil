@@ -22,18 +22,15 @@
 #endif
 
 #ifdef IS_DEBUG
-#define log_w(fmt, ...)                                                                                                      \
-    do                                                                                                                       \
-    {                                                                                                                        \
-        if (IS_DEBUG)                                                                                                        \
-        {                                                                                                                    \
-            time_t t = time(nullptr);                                                                                        \
-            struct tm tm_info;                                                                                               \
-            localtime_s(&tm_info, &t);                                                                                       \
-            char time_buf[32];                                                                                               \
-            strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);                                             \
-            printf(YELLOW "[WARNING][%s][%s][%s][%d] " fmt NONE, time_buf, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
-        }                                                                                                                    \
+#define log_w(fmt, ...)                                                                                                  \
+    do                                                                                                                   \
+    {                                                                                                                    \
+        time_t t = time(nullptr);                                                                                        \
+        struct tm tm_info;                                                                                               \
+        localtime_s(&tm_info, &t);                                                                                       \
+        char time_buf[32];                                                                                               \
+        strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);                                             \
+        printf(YELLOW "[WARNING][%s][%s][%s][%d] " fmt NONE, time_buf, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
     } while (0)
 #else
 #define log_w(fmt, ...) \
@@ -43,18 +40,15 @@
 #endif
 
 #ifdef IS_DEBUG
-#define log_d(fmt, ...)                                                                                                  \
-    do                                                                                                                   \
-    {                                                                                                                    \
-        if (IS_DEBUG)                                                                                                    \
-        {                                                                                                                \
-            time_t t = time(nullptr);                                                                                    \
-            struct tm tm_info;                                                                                           \
-            localtime_s(&tm_info, &t);                                                                                   \
-            char time_buf[32];                                                                                           \
-            strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);                                         \
-            printf(GRAY "[DEBUG][%s][%s][%s][%d] " fmt NONE, time_buf, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
-        }                                                                                                                \
+#define log_d(fmt, ...)                                                                                              \
+    do                                                                                                               \
+    {                                                                                                                \
+        time_t t = time(nullptr);                                                                                    \
+        struct tm tm_info;                                                                                           \
+        localtime_s(&tm_info, &t);                                                                                   \
+        char time_buf[32];                                                                                           \
+        strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);                                         \
+        printf(GRAY "[DEBUG][%s][%s][%s][%d] " fmt NONE, time_buf, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
     } while (0)
 #else
 #define log_d(fmt, ...) \
