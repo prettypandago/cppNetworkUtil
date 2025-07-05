@@ -50,6 +50,21 @@ std::string cppNetworkUtil::getHeaderValue(const std::string &headers, const std
     return pimpl_->getHeaderValue_Pimpl(headers, key);
 }
 
+int cppNetworkUtil::getPostContentSize(const std::string &buffer)
+{
+    return pimpl_->getPostContentSize_Pimpl(buffer);
+}
+
+std::string cppNetworkUtil::getPostContentType(const std::string &buffer)
+{
+    return pimpl_->getPostContentType_Pimpl(buffer);
+}
+
+std::string cppNetworkUtil::getPostContentBoundary(const std::string &buffer)
+{
+    return pimpl_->getPostContentBoundary_Pimpl(buffer);
+}
+
 std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
 {
     return pimpl_->getPostContentBody_Pimpl(buffer);
@@ -70,6 +85,11 @@ std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
     return pimpl_->urlDecode_Pimpl(encodedString);
 }
 
+std::map<std::string, std::string> cppNetworkUtil::parseUrlEncodedFormBody(const std::string &encoded_string)
+{
+    return pimpl_->parseUrlEncodedFormBody_Pimpl(encoded_string);
+}
+
 std::vector<std::string> cppNetworkUtil::getURLParameterRestfulapi(std::string url)
 {
     return pimpl_->getURLParameterRestfulapi_Pimpl(url);
@@ -80,7 +100,7 @@ std::map<std::string, std::string> cppNetworkUtil::parseUrlQueryParameters(const
     return pimpl_->parseUrlQueryParameters_Pimpl(url);
 }
 
-std::vector<multipartData> cppNetworkUtil::parseMultipart(const std::string &boundary, const std::string &body)
+std::map<std::string, multipartData> cppNetworkUtil::parseMultipart(const std::string &boundary, const std::string &body)
 {
     return pimpl_->parseMultipart_Pimpl(boundary, body);
 }

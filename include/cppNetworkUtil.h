@@ -113,7 +113,7 @@ public:
      *
      * @param buffer (const std::string) Received string
      *
-     * @throws Invalid request line: No space found after method
+     * @throw Invalid request line: No space found after method
      *
      * @return method
      */
@@ -124,8 +124,8 @@ public:
      *
      * @param buffer (const std::string) Received string
      *
-     * @throws Invalid request line: No space found after method
-     * @throws Invalid request line: No space found after url
+     * @throw Invalid request line: No space found after method
+     * @throw Invalid request line: No space found after url
      *
      * @return url
      */
@@ -136,10 +136,10 @@ public:
      *
      * @param buffer (const std::string) Received string
      *
-     * @throws Find Content-Length failed
-     * @throws Parse Content-Length failed
-     * @throws Parse Content-Length failed with unknown error
-     * @throws Find body failed
+     * @throw Find Content-Length failed
+     * @throw Parse Content-Length failed
+     * @throw Parse Content-Length failed with unknown error
+     * @throw Find body failed
      *
      * @return content size
      */
@@ -156,15 +156,57 @@ public:
     std::string getHeaderValue(const std::string &headers, const std::string &key);
 
     /**
+     * @brief Calculates the size of the POST content from the given buffer.
+     *
+     * This function analyzes the provided buffer, which is expected to contain
+     * HTTP request data, and determines the size of the POST content.
+     *
+     * @param buffer The input string containing the HTTP request data.
+     *
+     * @throw Find Content-Length failed
+     * @throw Parse Content-Length failed
+     * @throw Parse Content-Length failed with unknown error
+     * @throw Find body failed
+     * @throw Size does not meet the requirements
+     *
+     * @return The size of the POST content in bytes.
+     */
+    int getPostContentSize(const std::string &buffer);
+
+    /**
+     * @brief Determines the Content-Type of a POST request from the provided buffer.
+     *
+     * This function analyzes the given buffer, which is expected to contain the headers or body
+     * of an HTTP POST request, and extracts or infers the Content-Type value.
+     *
+     * @param buffer The input string containing HTTP request data.
+     *
+     * @return A string representing the Content-Type of the POST request. Returns an empty string if the Content-Type cannot be determined.
+     */
+    std::string getPostContentType(const std::string &buffer);
+
+    /**
+     * @brief Extracts the boundary string from the given HTTP POST content buffer.
+     *
+     * This function parses the provided buffer, typically containing HTTP headers,
+     * and retrieves the boundary value used in multipart/form-data POST requests.
+     *
+     * @param buffer The input string containing the HTTP POST content or headers.
+     *
+     * @return The extracted boundary string if found; otherwise, an empty string.
+     */
+    std::string getPostContentBoundary(const std::string &buffer);
+
+    /**
      * @brief Get the content body in the http POST request header
      *
      * @param buffer (const std::string) Received string
      *
-     * @throws Find Content-Length failed
-     * @throws Parse Content-Length failed
-     * @throws Parse Content-Length failed with unknown error
-     * @throws Find body failed
-     * @throws Size does not meet the requirements
+     * @throw Find Content-Length failed
+     * @throw Parse Content-Length failed
+     * @throw Parse Content-Length failed with unknown error
+     * @throw Find body failed
+     * @throw Size does not meet the requirements
      *
      * @return content body
      */
@@ -198,6 +240,19 @@ public:
     std::string urlDecode(const std::string &encodedString);
 
     /**
+     * @brief Parses a URL-encoded form body string into a map of key-value pairs.
+     *
+     * This function takes a URL-encoded string (typically from an HTTP POST body)
+     * and parses it into a std::map, where each key-value pair corresponds to a
+     * field in the form data.
+     *
+     * @param encoded_string The URL-encoded form body as a std::string.
+     *
+     * @return std::map<std::string, std::string> A map containing the decoded key-value pairs.
+     */
+    std::map<std::string, std::string> parseUrlEncodedFormBody(const std::string &encoded_string);
+
+    /**
      * @brief Parse URL parameters from a RESTful API style URL
      *
      * @param url (std::string) The URL to parse
@@ -211,21 +266,26 @@ public:
      *
      * @param url (std::string) The URL to parse
      *
-     * @throws Invalid URL format
+     * @throw Invalid URL format
      *
      * @return A map of key-value pairs representing the query parameters
      */
     std::map<std::string, std::string> parseUrlQueryParameters(const std::string &url);
 
     /**
-     * @brief Parse Multipart data from a POST request body
+     * @brief Parses a multipart/form-data HTTP body using the specified boundary.
      *
-     * @param boundary (const std::string &boundary) The boundary string used to separate parts in the multipart data
-     * @param body (const std::string &body) The body of the POST request containing multipart data
+     * This function processes the given HTTP request body, extracting each part
+     * separated by the provided boundary string. Each part is parsed and stored
+     * as a multipartData object, mapped by its corresponding field name.
      *
-     * @return A vector of multipartData objects, each representing a part of the multipart data
+     * @param boundary The boundary string used to separate parts in the multipart body.
+     * @param body The raw HTTP request body containing multipart/form-data.
+     *
+     * @return std::map<std::string, multipartData>
+     *         A map where the key is the field name and the value is the parsed multipartData.
      */
-    std::vector<multipartData> parseMultipart(const std::string &boundary, const std::string &body);
+    std::map<std::string, multipartData> parseMultipart(const std::string &boundary, const std::string &body);
 
     /**
      * @brief Send data to the socket using HTTP protocol
@@ -252,16 +312,16 @@ public:
      * @param header (std::string &) Header to be filled with the response header
      * @param content (std::string &) Content to be filled with the response content
      *
-     * @throws WSAStartup failed
-     * @throws getaddrinfo failed
-     * @throws Unable to connect to server
-     * @throws Send failed
-     * @throws Socket read failed during chunk size reception
-     * @throws Failed to parse chunk size
-     * @throws Failed to parse chunk size with unknown error
-     * @throws Incomplete chunk data: connection closed unexpectedly or socket read error
-     * @throws shutdown failed
-     * @throws Invalid HTTP response format
+     * @throw WSAStartup failed
+     * @throw getaddrinfo failed
+     * @throw Unable to connect to server
+     * @throw Send failed
+     * @throw Socket read failed during chunk size reception
+     * @throw Failed to parse chunk size
+     * @throw Failed to parse chunk size with unknown error
+     * @throw Incomplete chunk data: connection closed unexpectedly or socket read error
+     * @throw shutdown failed
+     * @throw Invalid HTTP response format
      */
     void sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content);
 
@@ -275,16 +335,16 @@ public:
      * @param content (std::string &) Content to be filled with the response content
      * @param enable_CA (bool) Whether to enable CA verification
      *
-     * @throws WSAStartup failed
-     * @throws Failed to load default CA certificates
-     * @throws Failed to create SSL object
-     * @throws Failed to create BIO connection
-     * @throws Failed to connect to server
-     * @throws SSL handshake failed
-     * @throws SSL read failed during chunk size reception
-     * @throws Failed to parse chunk size with unknown error
-     * @throws Incomplete chunk data: connection closed unexpectedly or SSL read error
-     * @throws Invalid HTTP response format
+     * @throw WSAStartup failed
+     * @throw Failed to load default CA certificates
+     * @throw Failed to create SSL object
+     * @throw Failed to create BIO connection
+     * @throw Failed to connect to server
+     * @throw SSL handshake failed
+     * @throw SSL read failed during chunk size reception
+     * @throw Failed to parse chunk size with unknown error
+     * @throw Incomplete chunk data: connection closed unexpectedly or SSL read error
+     * @throw Invalid HTTP response format
      */
     void sendDataToHttpsHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA = true);
 
@@ -313,16 +373,16 @@ public:
      * @param port (int) The port number to run the server on
      * @param callback (serverCallback *) The callback to handle server events
      *
-     * @throws WSAStartup failed
-     * @throws Unable to create SSL context
-     * @throws Unable to load certificate PUBLIC KEY
-     * @throws Unable to load private key PRIVATE KEY
-     * @throws Private key does not match the certificate
-     * @throws Create socket failed
-     * @throws Setsockopt failed
-     * @throws Bind failed
-     * @throws Listen failed
-     * @throws Unable to get the number of CPU cores
+     * @throw WSAStartup failed
+     * @throw Unable to create SSL context
+     * @throw Unable to load certificate PUBLIC KEY
+     * @throw Unable to load private key PRIVATE KEY
+     * @throw Private key does not match the certificate
+     * @throw Create socket failed
+     * @throw Setsockopt failed
+     * @throw Bind failed
+     * @throw Listen failed
+     * @throw Unable to get the number of CPU cores
      */
     void run(int port, serverCallback *callback);
 

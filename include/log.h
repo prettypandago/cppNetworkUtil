@@ -57,6 +57,7 @@
     } while (0)
 #endif
 
+#ifdef IS_DEBUG
 #define log_i(fmt, ...)                                                                                              \
     do                                                                                                               \
     {                                                                                                                \
@@ -67,6 +68,12 @@
         strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);                                         \
         printf(WHITE "[INFO][%s][%s][%s][%d] " fmt NONE, time_buf, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
     } while (0)
+#else
+#define log_i(fmt, ...) \
+    do                  \
+    {                   \
+    } while (0)
+#endif
 
 // 错误处理宏，用于打印 OpenSSL 错误并退出
 #ifdef IS_DEBUG

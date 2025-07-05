@@ -76,16 +76,14 @@ struct requestHeaderParameters
 // 用于存储解析过的post的multipart数据
 struct multipartData
 {
-    std::string name;
     std::string data;
     std::string filename;
     std::string content_type;
 
-    multipartData() : name(""), data(""), filename(""), content_type("") {}
+    multipartData() : data(""), filename(""), content_type("") {}
 
     void print() const
     {
-        std::cout << "Name: " << name << "\n";
         if (!filename.empty())
         {
             std::cout << "  Filename: " << filename << "\n";

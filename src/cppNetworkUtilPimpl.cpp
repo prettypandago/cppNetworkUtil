@@ -147,6 +147,86 @@ std::string cppNetworkUtilPimpl::getHeaderValue_Pimpl(const std::string &headers
     return "";
 }
 
+int cppNetworkUtilPimpl::getPostContentSize_Pimpl(const std::string &buffer)
+{
+    // 查找Content-Length字段
+    int pos = buffer.find("Content-Length:");
+    if (pos == std::string::npos)
+    {
+        throw std::runtime_error("Find Content-Length failed");
+    }
+    pos += 15; // 跳过"Content-Length:"
+    if (buffer[pos] == ' ')
+        pos++;
+
+    // 提取Content-Length的值
+    int contentLength = 0;
+    size_t lengthStart = pos;
+    while (pos < buffer.length() && buffer[pos] != '\r')
+        pos++;
+    std::string lengthStr = buffer.substr(lengthStart, pos - lengthStart);
+    try
+    {
+        contentLength = std::stoi(lengthStr);
+    }
+    catch (const std::invalid_argument &)
+    {
+        throw std::runtime_error("Parse Content-Length failed");
+    }
+
+    // 提取请求正文长度
+    size_t bodyStart = buffer.find("\r\n\r\n", pos);
+    if (bodyStart == std::string::npos)
+    {
+        throw std::runtime_error("Find body failed");
+    }
+    bodyStart += 4; // 跳过"\r\n\r\n"
+
+    return bodyStart + contentLength;
+}
+
+std::string cppNetworkUtilPimpl::getPostContentType_Pimpl(const std::string &buffer)
+{
+    // 查找Content-Type字段
+    int pos = buffer.find("Content-Type:");
+    if (pos == std::string::npos)
+    {
+        log_e("Find Content-Type failed!\n");
+        return "failed";
+    }
+    pos += 13; // 跳过"Content-Type:"
+    if (buffer[pos] == ' ')
+        pos++;
+
+    // 提取Content-Type的值
+    size_t typeStart = pos;
+    while (pos < buffer.length() && buffer[pos] != ';' && buffer[pos] != '\r' && buffer[pos] != '\n' && buffer[pos] != '\0')
+        pos++;
+    std::string contentType = buffer.substr(typeStart, pos - typeStart);
+
+    return contentType;
+}
+
+std::string cppNetworkUtilPimpl::getPostContentBoundary_Pimpl(const std::string &buffer)
+{
+    // 查找Boundary字段
+    int pos = buffer.find("boundary=");
+    if (pos == std::string::npos)
+    {
+        log_e("Find boundary failed!\n");
+        return "failed";
+    }
+    pos += 9; // 跳过"boundary="
+
+    // 提取Boundary的值
+    size_t boundaryStart = pos;
+    while (pos < buffer.length() && buffer[pos] != '\r')
+        pos++;
+    std::string boundary = buffer.substr(boundaryStart, pos - boundaryStart);
+
+    return boundary;
+}
+
 std::string cppNetworkUtilPimpl::getPostContentBody_Pimpl(const std::string buffer)
 {
     // 查找Content-Length字段
@@ -343,6 +423,50 @@ std::string cppNetworkUtilPimpl::urlDecode_Pimpl(const std::string &encodedStrin
     return decodedString;
 }
 
+std::map<std::string, std::string> cppNetworkUtilPimpl::parseUrlEncodedFormBody_Pimpl(const std::string &postBody)
+{
+    std::map<std::string, std::string> formData;
+
+    std::string data = urlDecode_Pimpl(postBody);
+
+    if (data.empty())
+    {
+        return formData; // 空消息体直接返回空map
+    }
+
+    std::string::size_type prevPos = 0;
+    std::string::size_type pos = data.find('&', prevPos);
+
+    while (pos != std::string::npos)
+    {
+        std::string pair = data.substr(prevPos, pos - prevPos);
+        size_t eqPos = pair.find('=');
+        if (eqPos != std::string::npos)
+        {
+            std::string key = pair.substr(0, eqPos);
+            std::string value = pair.substr(eqPos + 1);
+            formData[key] = value;
+        }
+        prevPos = pos + 1; // 跳过'&'
+        pos = data.find('&', prevPos);
+    }
+
+    // 处理最后一个键值对（如果没有以&结尾）
+    std::string lastPair = data.substr(prevPos);
+    if (!lastPair.empty())
+    {
+        size_t eqPos = lastPair.find('=');
+        if (eqPos != std::string::npos)
+        {
+            std::string key = lastPair.substr(0, eqPos);
+            std::string value = lastPair.substr(eqPos + 1);
+            formData[key] = value;
+        }
+    }
+
+    return formData;
+}
+
 // 解析url路径
 std::vector<std::string> cppNetworkUtilPimpl::getURLParameterRestfulapi_Pimpl(std::string url)
 {
@@ -397,12 +521,12 @@ std::map<std::string, std::string> cppNetworkUtilPimpl::parseUrlQueryParameters_
 }
 
 // 解析 multipart 数据
-std::vector<multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::string &boundary, const std::string &body)
+std::map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::string &boundary, const std::string &body)
 {
-    std::vector<multipartData> parsedParts;      // 存储所有解析出的部分
-    std::string delimiter = "--" + boundary;     // 每个部分的开始分隔符
-    std::string endDelimiter = delimiter + "--"; // 整个 multipart 结束的分隔符
-    size_t pos = 0;                              // 当前在 body 字符串中的查找位置
+    std::map<std::string, multipartData> parsedParts; // 存储所有解析出的部分
+    std::string delimiter = "--" + boundary;          // 每个部分的开始分隔符
+    std::string endDelimiter = delimiter + "--";      // 整个 multipart 结束的分隔符
+    size_t pos = 0;                                   // 当前在 body 字符串中的查找位置
 
     // 跳过开头的空行，找到第一个有内容的位置
     pos = body.find_first_not_of("\r\n");
@@ -452,7 +576,7 @@ std::vector<multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::
         transform(headers_lower.begin(), headers_lower.end(), headers_lower.begin(), ::toupper);           // 提取头部字符串
         std::string data = part.substr(headersEnd + (part.find("\r\n\r\n") != std::string::npos ? 4 : 2)); // 提取数据字符串，跳过分隔符长度
 
-        multipartData currentPart; // 创建一个新的 ParsedPart 对象来存储当前部分的信息
+        std::string name;
 
         // --- 提取 name 属性 ---
         size_t namePos = headers.find("name=\"");
@@ -462,7 +586,7 @@ std::vector<multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::
             size_t nameEnd = headers.find("\"", namePos);
             if (nameEnd != std::string::npos)
             {
-                currentPart.name = headers.substr(namePos, nameEnd - namePos);
+                name = headers.substr(namePos, nameEnd - namePos);
             }
         }
 
@@ -474,7 +598,7 @@ std::vector<multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::
             size_t filenameEnd = headers.find("\"", filenamePos);
             if (filenameEnd != std::string::npos)
             {
-                currentPart.filename = headers.substr(filenamePos, filenameEnd - filenamePos);
+                parsedParts[name].filename = headers.substr(filenamePos, filenameEnd - filenamePos);
             }
         }
 
@@ -498,7 +622,7 @@ std::vector<multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::
                 if (firstChar != std::string::npos)
                 {
                     size_t lastChar = typeStr.find_last_not_of(" \t");
-                    currentPart.content_type = typeStr.substr(firstChar, lastChar - firstChar + 1);
+                    parsedParts[name].content_type = typeStr.substr(firstChar, lastChar - firstChar + 1);
                 }
             }
         }
@@ -533,7 +657,7 @@ std::vector<multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::
         // 根据解析到的 Content-Length 来截取数据
         if (contentLength >= 0 && contentLength < data.length())
         {
-            currentPart.data = data.substr(0, contentLength);
+            parsedParts[name].data = data.substr(0, contentLength);
         }
         else
         {
@@ -541,16 +665,15 @@ std::vector<multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::
             size_t lastNonSpace = data.find_last_not_of(" \t\r\n");
             if (lastNonSpace != std::string::npos)
             {
-                currentPart.data = data.substr(0, lastNonSpace + 1);
+                parsedParts[name].data = data.substr(0, lastNonSpace + 1);
             }
             else
             {
-                currentPart.data = ""; // 如果数据全是空白，则数据为空
+                parsedParts[name].data = ""; // 如果数据全是空白，则数据为空
             }
         }
 
-        parsedParts.push_back(currentPart); // 将解析出的当前部分添加到结果向量中
-        pos = nextPos;                      // 更新查找位置，继续查找下一个分隔符
+        pos = nextPos; // 更新查找位置，继续查找下一个分隔符
     }
 
     return parsedParts; // 返回所有解析出的部分
@@ -1362,8 +1485,40 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             break;                      // 继续等待下一个连接
         }
 
+        content_size = getPostContentSize_Pimpl(request_data);
+        // 循环接收数据
+        while (totla_recvd < content_size)
+        {
+            char temp_buffer_in_do_while[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果您直接作为 C 字符串打印的话
+            memset(temp_buffer_in_do_while, 0, BUFFERSIZE);
+#ifdef DISABLE_HTTPS
+            recvd = recv(client_socket, temp_buffer_in_do_while, BUFFERSIZE, 0);
+#else
+            recvd = SSL_read(ssl_conn, temp_buffer_in_do_while, BUFFERSIZE);
+#endif
+
+            if (recvd > 0)
+            {
+                // 只附加实际接收到的字节数
+                request_data.append(temp_buffer_in_do_while, recvd);
+                totla_recvd += recvd;
+            }
+            else if (recvd == 0)
+            {
+                // 客户端已优雅断开连接
+                break; // 跳出循环
+            }
+            else
+            {
+                // 发生error
+                log_e("An error occurred receiving, errno: %d\n", errno);
+                break;
+            }
+        }
+
 #ifndef DISABLE_HTTPS
-        client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
+        client_connections[client_socket]
+            .ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
 #endif
         client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
         // 分离请求体
