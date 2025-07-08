@@ -236,3 +236,6 @@ add_executable(example ${EXECUTABLE_SOURCES})
 # 链接可执行文件到你刚刚构建的静态库
 # 由于 cppNetworkUtilLib 使用 PUBLIC 链接了所有依赖，这里的 example 目标会自动继承。
 target_link_libraries(example PRIVATE cppNetworkUtilLib)
+
+# 设置输出目录
+set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")

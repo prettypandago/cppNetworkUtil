@@ -686,12 +686,12 @@ void cppNetworkUtilPimpl::printOpensslVersion_Pimpl()
 
 void cppNetworkUtilPimpl::sendDataToHttpSocket_Pimpl(SOCKET socket, const std::string &data)
 {
-    send(socket, data.c_str(), data.length(), 0); // 发送数据到套接字
+    send(socket, data.data(), data.length(), 0); // 发送数据到套接字
 }
 
 void cppNetworkUtilPimpl::sendDataToHttpsSocket_Pimpl(SOCKET socket, const std::string &data)
 {
-    SSL_write(client_connections[socket].ssl, data.c_str(), data.length()); // 发送数据到 SSL 套接字
+    SSL_write(client_connections[socket].ssl, data.data(), data.length()); // 发送数据到 SSL 套接字
 }
 
 void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content)
@@ -744,7 +744,7 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
     std::string request_header_str = buildRequestHeader_Pimpl(
         requestHeaderParameters{
             "GET", "close", host, path, port});
-    int bytes_sent = send(sock, request_header_str.c_str(), request_header_str.length(), 0);
+    int bytes_sent = send(sock, request_header_str.data(), request_header_str.length(), 0);
     if (bytes_sent == SOCKET_ERROR)
     {
         HANDLE_ERROR("Failed to send request");
@@ -1071,7 +1071,7 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
         requestHeaderParameters{
             "GET", "close", host, path, port});
 
-    int bytes_written = SSL_write(ssl_conn, request_header.c_str(), request_header.length());
+    int bytes_written = SSL_write(ssl_conn, request_header.data(), request_header.length());
     // std::cout << "Sent " << bytes_written << " bytes request." << std::endl;
 
     // 接收响应
@@ -1485,7 +1485,19 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             break;                      // 继续等待下一个连接
         }
 
-        content_size = getPostContentSize_Pimpl(request_data);
+        try
+        {
+            content_size = getPostContentSize_Pimpl(request_data);
+        }
+        catch (const std::exception &e)
+        {
+            log_e("Get content size error: %s\n", e.what());
+        }
+        catch (...)
+        {
+            log_e("Get content size unknown error\n");
+        }
+
         // 循环接收数据
         while (totla_recvd < content_size)
         {
@@ -1517,8 +1529,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         }
 
 #ifndef DISABLE_HTTPS
-        client_connections[client_socket]
-            .ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
+        client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
 #endif
         client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
         // 分离请求体

@@ -1,10 +1,10 @@
 file(REMOVE_RECURSE
   "CMakeFiles/example.dir/example.cpp.obj"
   "CMakeFiles/example.dir/example.cpp.obj.d"
-  "example.exe"
-  "example.exe.manifest"
-  "example.pdb"
-  "libexample.dll.a"
+  "D:/YYProject/vscode-project/cppNetworkUtil/example.exe"
+  "D:/YYProject/vscode-project/cppNetworkUtil/example.exe.manifest"
+  "D:/YYProject/vscode-project/cppNetworkUtil/example.pdb"
+  "D:/YYProject/vscode-project/cppNetworkUtil/libexample.dll.a"
 )
 
 # Per-language clean rules from dependency scanning.

@@ -2,10 +2,10 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "example.exe"
+			"path" : "D:/YYProject/vscode-project/cppNetworkUtil/example.exe"
 		},
 		{
-			"path" : "example.pdb"
+			"path" : "D:/YYProject/vscode-project/cppNetworkUtil/example.pdb"
 		}
 	],
 	"backtrace" : 1,
