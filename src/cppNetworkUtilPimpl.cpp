@@ -4,6 +4,10 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+#include <nghttp2/nghttp2.h>
+
+#include <zlib.h>
+
 cppNetworkUtilPimpl::cppNetworkUtilPimpl() : ssl_ctx_server(nullptr), ssl_ctx_client(nullptr), ssl(nullptr)
 {
     SSL_library_init();
@@ -679,9 +683,30 @@ std::map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(c
     return parsedParts; // 返回所有解析出的部分
 }
 
-void cppNetworkUtilPimpl::printOpensslVersion_Pimpl()
+// ALPN 协商回调函数
+// 当客户端和服务器都支持 ALPN 时，OpenSSL 会调用这个回调来选择最终的协议
+int cppNetworkUtilPimpl::alpnSelect(ssl_st *ssl, const unsigned char **out, unsigned char *outlen,
+                                    const unsigned char *in, unsigned int inlen, void *arg)
 {
-    std::cout << "OpenSSL version: " << OpenSSL_version(OPENSSL_VERSION) << std::endl;
+    int rv = SSL_select_next_proto((unsigned char **)out, outlen,
+                                   ALPN_PROTOCOLS, ALPN_PROTOCOLS_LEN,
+                                   in, inlen);
+    if (rv != 1)
+    { // 1 means selected successfully
+        // 没有找到匹配的协议
+        log_e("ALPN: No supported protocol selected. Falling back or rejecting\n");
+        return SSL_TLSEXT_ERR_NOACK; // No supported protocol found
+    }
+    if (std::string((char *)*out, *outlen) == "h2")
+    {
+        return SSL_TLSEXT_ERR_OK; // 成功
+    }
+    else
+    {
+        // 选择的不是h2
+        log_e("ALPN: Selected protocol is not h2. Closing connection\n");
+        return SSL_TLSEXT_ERR_ALERT_FATAL; // 强制关闭连接
+    }
 }
 
 void cppNetworkUtilPimpl::sendDataToHttpSocket_Pimpl(SOCKET socket, const std::string &data)
@@ -1329,6 +1354,14 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
     }
 #endif
 
+    // 设置 ALPN 回调
+    SSL_CTX_set_alpn_select_cb(ssl_ctx_server, alpnSelect, nullptr);
+
+    // 推荐的安全设置
+    SSL_CTX_set_min_proto_version(ssl_ctx_server, TLS1_2_VERSION); // 禁用旧版本 TLS
+    SSL_CTX_set_options(ssl_ctx_server, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1);
+    SSL_CTX_set_mode(ssl_ctx_server, SSL_MODE_AUTO_RETRY); // 自动重试读写，简化处理
+
     // create socket
     SOCKET server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket == INVALID_SOCKET)
@@ -1438,13 +1471,75 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             SSL_shutdown(ssl_conn);     // 尝试执行 SSL 关闭握手
             SSL_free(ssl_conn);         // 释放 SSL 结构
             closesocket(client_socket); // 关闭客户端套接字
-            // throw("SSL accept failed");
+            delete ssl_conn;
             continue; // 继续等待下一个连接
+        }
+
+        // 检查 ALPN 协商结果
+        const unsigned char *alpn_proto;
+        unsigned int alpn_len;
+        SSL_get0_alpn_selected(ssl_conn, &alpn_proto, &alpn_len);
+        if (!alpn_proto || std::string((char *)alpn_proto, alpn_len) != "h2")
+        {
+            std::cerr << "ALPN: Did not negotiate h2. Closing connection." << std::endl;
+            SSL_shutdown(ssl_conn);
+            SSL_free(ssl_conn);
+            closesocket(client_socket);
+            delete ssl_conn;
+            continue;
         }
 #endif
 
         client_connections[client_socket].ip = inet_ntoa(((struct sockaddr_in *)&client_address)->sin_addr); // 获取客户端 IP 地址
         client_connections[client_socket].port = ntohs(((struct sockaddr_in *)&client_address)->sin_port);   // 获取客户端端口号
+
+        // 3. 初始化 nghttp2 回调函数结构体
+        nghttp2_session_callbacks *callbacks;
+        nghttp2_session_callbacks_new(&callbacks);
+
+        nghttp2_session_callbacks_set_send_callback(callbacks, send_callback);
+        nghttp2_session_callbacks_set_recv_callback(callbacks, recv_callback);
+        nghttp2_session_callbacks_set_on_begin_headers_callback(callbacks, on_begin_headers_callback);
+        nghttp2_session_callbacks_set_on_stream_close_callback(callbacks, on_stream_close_callback);
+
+        // 4. 创建 nghttp2 session，并将 conn_info 作为 user_data 传递
+        int rv = nghttp2_session_server_new(&conn_info->session, callbacks, conn_info);
+        if (rv != 0)
+        {
+            std::cerr << "nghttp2_session_server_new failed: " << nghttp2_strerror(rv) << std::endl;
+            nghttp2_session_callbacks_del(callbacks);
+            SSL_shutdown(conn_info->ssl_obj);
+            SSL_free(conn_info->ssl_obj);
+            closesocket(client_socket);
+            delete conn_info;
+            return;
+        }
+        nghttp2_session_callbacks_del(callbacks);
+
+        // 5. 发送服务器连接前言 (Server Connection Preface)
+        rv = nghttp2_submit_settings(conn_info->session, NGHTTP2_FLAG_NONE, NULL, 0);
+        if (rv != 0)
+        {
+            std::cerr << "Failed to submit settings: " << nghttp2_strerror(rv) << std::endl;
+            nghttp2_session_del(conn_info->session);
+            SSL_shutdown(conn_info->ssl_obj);
+            SSL_free(conn_info->ssl_obj);
+            closesocket(client_sock);
+            delete conn_info;
+            return;
+        }
+
+        rv = nghttp2_session_send(conn_info->session);
+        if (rv < 0)
+        {
+            std::cerr << "Failed to send initial settings: " << nghttp2_strerror(rv) << std::endl;
+            nghttp2_session_del(conn_info->session);
+            SSL_shutdown(conn_info->ssl_obj);
+            SSL_free(conn_info->ssl_obj);
+            closesocket(client_sock);
+            delete conn_info;
+            return;
+        }
 
         std::string request_data;
 
@@ -1563,4 +1658,32 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
 #endif
         closesocket(client_socket); // 关闭套接字
     }
+}
+
+void cppNetworkUtilPimpl::print_opensslVersion_Pimpl()
+{
+    std::cout << "openSSL version: " << OpenSSL_version(OPENSSL_VERSION) << std::endl;
+}
+
+void cppNetworkUtilPimpl::print_nghttp2Version_Pimpl()
+{
+    nghttp2_info *info = nghttp2_version(0);
+    if (info)
+    {
+        std::cout << "nghttp2 version: " << info->version_str << "\n";
+    }
+    else
+    {
+        std::cerr << "Failed to get nghttp2 version info.\n";
+    }
+}
+
+void cppNetworkUtilPimpl::print_zlibVersion_Pimpl()
+{
+    std::cout << "zlib version: " << zlibVersion() << "\n";
+}
+
+void cppNetworkUtilPimpl::print_cppNetworkUtilVersion_Pimpl()
+{
+    std::cout << "cppNetworkUtil version: " << VERSION << "\n";
 }

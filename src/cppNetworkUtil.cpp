@@ -20,14 +20,9 @@ std::string cppNetworkUtil::get_client_connections_request_data(SOCKET client_so
     return pimpl_->client_connections[client_socket].request_data; // 获取客户端接收缓冲区
 }
 
-std::string cppNetworkUtil::get_client_connections_request_header(SOCKET client_socket)
+std::map<std::string, std::string> cppNetworkUtil::get_client_connections_request_headers(SOCKET client_socket)
 {
-    return pimpl_->client_connections[client_socket].request_header; // 获取客户端接收缓冲区
-}
-
-std::string cppNetworkUtil::get_client_connections_request_content(SOCKET client_socket)
-{
-    return pimpl_->client_connections[client_socket].request_content; // 获取客户端接收缓冲区
+    return pimpl_->client_connections[client_socket].request_headers;
 }
 
 std::string cppNetworkUtil::getHeaderMethod(const std::string buffer)
@@ -70,14 +65,9 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
     return pimpl_->getPostContentBody_Pimpl(buffer);
 }
 
-std::string cppNetworkUtil::buildResponseHeader(responseHeaderParameters parameters)
+std::string cppNetworkUtil::makeResponseHeader(responseHeaderParameters parameters)
 {
-    return pimpl_->buildResponseHeader_Pimpl(parameters);
-}
-
-std::string cppNetworkUtil::buildRequestHeader(requestHeaderParameters parameter)
-{
-    return pimpl_->buildRequestHeader_Pimpl(parameter);
+    return pimpl_->makeResponseHeader_Pimpl(parameters);
 }
 
 std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
@@ -129,12 +119,27 @@ cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>(
 
 cppNetworkUtil::~cppNetworkUtil() = default; // unique_ptr 会自动管理内存
 
-void cppNetworkUtil::printOpensslVersion()
-{
-    pimpl_->printOpensslVersion_Pimpl();
-}
-
 void cppNetworkUtil::run(int port, serverCallback *callback)
 {
     pimpl_->run_Pimpl(port, callback);
+}
+
+void cppNetworkUtil::print_opensslVersion()
+{
+    pimpl_->print_opensslVersion_Pimpl();
+}
+
+void cppNetworkUtil::print_nghttp2Version()
+{
+    pimpl_->print_nghttp2Version_Pimpl();
+}
+
+void cppNetworkUtil::print_zlibVersion()
+{
+    pimpl_->print_zlibVersion_Pimpl();
+}
+
+void cppNetworkUtil::print_cppNetworkUtilVersion()
+{
+    pimpl_->print_cppNetworkUtilVersion_Pimpl();
 }

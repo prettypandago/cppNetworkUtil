@@ -15,87 +15,86 @@ public:
     void onDataReceived(int client_id) override
     {
         std::string request_data = network_util_.get_client_connections_request_data(client_id);
-        std::string request_header = network_util_.get_client_connections_request_header(client_id);
-        std::string request_content = network_util_.get_client_connections_request_content(client_id);
+        std::map<std::string, std::string> request_headers = network_util_.get_client_connections_request_headers(client_id);
 
-        std::string method;
-        // Get method from the header
-        try
-        {
-            method = network_util_.getHeaderMethod(request_header);
-        }
-        catch (const std::exception &e)
-        {
-            log_e("Error getting header method: %s\n", e.what());
-        }
-        catch (...)
-        {
-            log_e("Unknown error occurred while getting header method.\n");
-        }
+        //         std::string method;
+        //         // Get method from the header
+        //         try
+        //         {
+        //             method = network_util_.getHeaderMethod(request_header);
+        //         }
+        //         catch (const std::exception &e)
+        //         {
+        //             log_e("Error getting header method: %s\n", e.what());
+        //         }
+        //         catch (...)
+        //         {
+        //             log_e("Unknown error occurred while getting header method.\n");
+        //         }
 
-        std::string url;
-        // Get url from the header
-        try
-        {
-            url = network_util_.getGetHeaderUrl(request_header);
-        }
-        catch (const std::exception &e)
-        {
-            log_e("Error getting GET header URL: %s\n", e.what());
-        }
-        catch (...)
-        {
-            log_e("Unknown error occurred while getting GET header URL.\n");
-        }
+        //         std::string url;
+        //         // Get url from the header
+        //         try
+        //         {
+        //             url = network_util_.getGetHeaderUrl(request_header);
+        //         }
+        //         catch (const std::exception &e)
+        //         {
+        //             log_e("Error getting GET header URL: %s\n", e.what());
+        //         }
+        //         catch (...)
+        //         {
+        //             log_e("Unknown error occurred while getting GET header URL.\n");
+        //         }
 
-        std::string header;  // received header
-        std::string content; // received content
-        responseHeaderParameters response_header_parameters;
+        //         std::string header;  // received header
+        //         std::string content; // received content
+        //         responseHeaderParameters response_header_parameters;
 
-        if (method == "GET")
-        {
-            if (url.empty())
-            {
-                try
-                {
-                    response_header_parameters.mime_type = "text/html";
+        //         if (method == "GET")
+        //         {
+        //             if (url.empty())
+        //             {
+        //                 try
+        //                 {
+        //                     response_header_parameters.mime_type = "text/html";
 
-#ifndef DISABLE_HTTPS
-                    network_util_.sendDataToHttpsHost("www.example.com", "/", 443, header, content, true);
-#else
-                    network_util_.sendDataToHttpHost("www.example.com", "/", 80, header, content);
-#endif
-                }
-                catch (const std::exception &e)
-                {
-                    log_e("Error: %s\n", e.what());
-                }
-                catch (...)
-                {
-                    log_e("Unknown error occurred while sending data.\n");
-                }
-            }
-            else if (strcmp(url.c_str(), "helloworld") == 0)
-            {
-                response_header_parameters.mime_type = "text/html";
+        // #ifndef DISABLE_HTTPS
+        //                     network_util_.sendDataToHttpsHost("www.example.com", "/", 443, header, content, true);
+        // #else
+        //                     network_util_.sendDataToHttpHost("www.example.com", "/", 80, header, content);
+        // #endif
+        //                 }
+        //                 catch (const std::exception &e)
+        //                 {
+        //                     log_e("Error: %s\n", e.what());
+        //                 }
+        //                 catch (...)
+        //                 {
+        //                     log_e("Unknown error occurred while sending data.\n");
+        //                 }
+        //             }
+        //             else if (strcmp(url.c_str(), "helloworld") == 0)
+        //             {
+        //                 response_header_parameters.mime_type = "text/html";
 
-                content = "<html><body><h1>Hello world</h1></body></html>";
-            }
-            else
-            {
-                response_header_parameters.status = 404;
-                content = "<html><body><h1>404 Not Found!</h1></body></html>";
-            }
+        //                 content = "<html><body><h1>Hello world</h1></body></html>";
+        //             }
+        //             else
+        //             {
+        //                 response_header_parameters.status = 404;
+        //                 content = "<html><body><h1>404 Not Found!</h1></body></html>";
+        //             }
 
-// send data to client
-#ifndef DISABLE_HTTPS
-            network_util_.sendDataToHttpsSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
-            network_util_.sendDataToHttpsSocket(client_id, content);
-#else
-            network_util_.sendDataToHttpSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
-            network_util_.sendDataToHttpSocket(client_id, content);
-#endif
-        }
+        // // send data to client
+        // #ifndef DISABLE_HTTPS
+        //             network_util_.sendDataToHttpsSocket(client_id, network_util_.makeResponseHeader(response_header_parameters));
+        //             network_util_.sendDataToHttpsSocket(client_id, content);
+        // #else
+        //             network_util_.sendDataToHttpSocket(client_id, network_util_.makeResponseHeader(response_header_parameters));
+        //             network_util_.sendDataToHttpSocket(client_id, content);
+        // #endif
+        //         }
     }
 
 private:
@@ -107,6 +106,12 @@ int main(int argc, char **argv)
 {
     cppNetworkUtil server;
     MyServerHandler handler(server);
+
+    server.print_cppNetworkUtilVersion();
+    server.print_opensslVersion();
+    server.print_nghttp2Version();
+    server.print_zlibVersion();
+    std::cout << "\n";
 
     try
     {

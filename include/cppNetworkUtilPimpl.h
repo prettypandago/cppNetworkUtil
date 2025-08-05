@@ -247,6 +247,8 @@ public:
      */
     std::map<std::string, multipartData> parseMultipart_Pimpl(const std::string &boundary, const std::string &body);
 
+    static int alpnSelect(ssl_st *ssl, const unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg);
+
     /**
      * @brief Send data to the socket using HTTP protocol
      *
@@ -308,11 +310,6 @@ public:
      */
     void sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA = true);
 
-    /**
-     * @brief Print the OpenSSL version
-     */
-    void printOpensslVersion_Pimpl();
-
     /*
      * @brief Run the server with the specified port and callback
      *
@@ -331,6 +328,26 @@ public:
      * @throw Unable to get the number of CPU cores
      */
     void run_Pimpl(int port, serverCallback *callback);
+
+    /**
+     * @brief Print the OpenSSL version
+     */
+    void print_opensslVersion_Pimpl();
+
+    /**
+     * @brief Print the Nghttp2 version
+     */
+    void print_nghttp2Version_Pimpl();
+
+    /**
+     * @brief Print the Zlib version
+     */
+    void print_zlibVersion_Pimpl();
+
+    /**
+     * @brief Print the cppNetworkUtil version
+     */
+    void print_cppNetworkUtilVersion_Pimpl();
 
 private:
     ssl_ctx_st *ssl_ctx_server; // 服务器端 SSL 上下文

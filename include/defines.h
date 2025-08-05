@@ -10,7 +10,10 @@
 #define NAME "cppNetworkUtil"
 
 // Do not modify the following macros unless you know what you are doing
-#define PROTOCOL "HTTP/1.1"
+#define VERSION "1.0.0"
+
+const unsigned char ALPN_PROTOCOLS[] = "\x02h2\x08http/1.1";
+const unsigned int ALPN_PROTOCOLS_LEN = sizeof(ALPN_PROTOCOLS) - 1; // -1 for null terminator
 
 #define RFC1123FMT "%a, %d %b %Y %H:%M:%S GMT"
 

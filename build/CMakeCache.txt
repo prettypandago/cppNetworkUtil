@@ -218,11 +218,17 @@ LIB_EAY:FILEPATH=D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libcrypt
 //Path to a file.
 OPENSSL_INCLUDE_DIR:PATH=D:/YYProject/vscode-project/cppNetworkUtil/openssl/include
 
+//Arguments to supply to pkg-config
+PKG_CONFIG_ARGN:STRING=
+
+//pkg-config executable
+PKG_CONFIG_EXECUTABLE:FILEPATH=C:/msys64/mingw64/bin/pkg-config.exe
+
 //Path to a library.
 SSL_EAY:FILEPATH=D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libssl.a
 
 //Dependencies for the target
-cppNetworkUtilLib_LIB_DEPENDS:STATIC=general;OpenSSL::SSL;general;OpenSSL::Crypto;
+cppNetworkUtilLib_LIB_DEPENDS:STATIC=general;D:/YYProject/vscode-project/cppNetworkUtil/nghttp2/lib/libnghttp2.a;general;D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libssl.a;general;D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libcrypto.a;general;D:/YYProject/vscode-project/cppNetworkUtil/zlib/lib/libz.a;
 
 //Value Computed by CMake
 cppNetworkUtil_BINARY_DIR:STATIC=D:/YYProject/vscode-project/cppNetworkUtil/build
@@ -382,10 +388,41 @@ CMAKE_TAPI-ADVANCED:INTERNAL=1
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding OpenSSL
 FIND_PACKAGE_MESSAGE_DETAILS_OpenSSL:INTERNAL=[D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libcrypto.a][D:/YYProject/vscode-project/cppNetworkUtil/openssl/include][found components: SSL Crypto ][v3.5.0()]
+//Details about finding PkgConfig
+FIND_PACKAGE_MESSAGE_DETAILS_PkgConfig:INTERNAL=[C:/msys64/mingw64/bin/pkg-config.exe][v0.29.2()]
 //ADVANCED property for variable: LIB_EAY
 LIB_EAY-ADVANCED:INTERNAL=1
+NGHTTP2_CFLAGS:INTERNAL=
+NGHTTP2_CFLAGS_I:INTERNAL=
+NGHTTP2_CFLAGS_OTHER:INTERNAL=
+NGHTTP2_FOUND:INTERNAL=
+NGHTTP2_INCLUDEDIR:INTERNAL=
+NGHTTP2_LIBDIR:INTERNAL=
+NGHTTP2_LIBS:INTERNAL=
+NGHTTP2_LIBS_L:INTERNAL=
+NGHTTP2_LIBS_OTHER:INTERNAL=
+NGHTTP2_LIBS_PATHS:INTERNAL=
+NGHTTP2_MODULE_NAME:INTERNAL=
+NGHTTP2_PREFIX:INTERNAL=
+NGHTTP2_STATIC_CFLAGS:INTERNAL=
+NGHTTP2_STATIC_CFLAGS_I:INTERNAL=
+NGHTTP2_STATIC_CFLAGS_OTHER:INTERNAL=
+NGHTTP2_STATIC_LIBDIR:INTERNAL=
+NGHTTP2_STATIC_LIBS:INTERNAL=
+NGHTTP2_STATIC_LIBS_L:INTERNAL=
+NGHTTP2_STATIC_LIBS_OTHER:INTERNAL=
+NGHTTP2_STATIC_LIBS_PATHS:INTERNAL=
+NGHTTP2_VERSION:INTERNAL=
+NGHTTP2_nghttp2_INCLUDEDIR:INTERNAL=
+NGHTTP2_nghttp2_LIBDIR:INTERNAL=
+NGHTTP2_nghttp2_PREFIX:INTERNAL=
+NGHTTP2_nghttp2_VERSION:INTERNAL=
 //ADVANCED property for variable: OPENSSL_INCLUDE_DIR
 OPENSSL_INCLUDE_DIR-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: PKG_CONFIG_ARGN
+PKG_CONFIG_ARGN-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: PKG_CONFIG_EXECUTABLE
+PKG_CONFIG_EXECUTABLE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: SSL_EAY
 SSL_EAY-ADVANCED:INTERNAL=1
 

@@ -782,6 +782,7 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/fibersapi.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/fileapi.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/fltwinerror.h
+ C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/getopt.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/guiddef.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/handleapi.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/heapapi.h
@@ -789,6 +790,8 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/in6addr.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/inaddr.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/interlockedapi.h
+ C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/inttypes.h
+ C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/io.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ioapiset.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/isguids.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/jobapi.h
@@ -907,6 +910,7 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/timeapi.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/timezoneapi.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/tvout.h
+ C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/unistd.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/unknwn.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/unknwnbase.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/urlmon.h
@@ -945,6 +949,7 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ws2tcpip.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypes.h
  C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypesbase.h
+ C:/Program Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/zconf.h
  D:/YYProject/vscode-project/cppNetworkUtil/include/color.h
  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil.h
  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtilPimpl.h
@@ -952,6 +957,8 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj
  D:/YYProject/vscode-project/cppNetworkUtil/include/log.h
  D:/YYProject/vscode-project/cppNetworkUtil/include/serverCallback.h
  D:/YYProject/vscode-project/cppNetworkUtil/include/threadPool.h
+ D:/YYProject/vscode-project/cppNetworkUtil/nghttp2/include/nghttp2/nghttp2.h
+ D:/YYProject/vscode-project/cppNetworkUtil/nghttp2/include/nghttp2/nghttp2ver.h
  D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/asn1.h
  D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/asn1err.h
  D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/async.h
@@ -1021,6 +1028,7 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj
  D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/x509.h
  D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/x509_vfy.h
  D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/x509err.h
+ D:/YYProject/vscode-project/cppNetworkUtil/zlib/include/zlib.h
 
 CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj
  D:/YYProject/vscode-project/cppNetworkUtil/src/threadPool.cpp

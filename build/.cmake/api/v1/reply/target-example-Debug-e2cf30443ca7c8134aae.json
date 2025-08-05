@@ -14,9 +14,7 @@
 		"commands" : 
 		[
 			"add_executable",
-			"link_directories",
-			"target_link_libraries",
-			"include_directories"
+			"target_link_libraries"
 		],
 		"files" : 
 		[
@@ -30,37 +28,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 234,
+				"line" : 113,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 187,
+				"line" : 116,
 				"parent" : 0
 			},
 			{
-				"command" : 2,
+				"command" : 1,
 				"file" : 0,
-				"line" : 238,
-				"parent" : 0
-			},
-			{
-				"command" : 2,
-				"file" : 0,
-				"line" : 214,
-				"parent" : 0
-			},
-			{
-				"command" : 3,
-				"file" : 0,
-				"line" : 182,
-				"parent" : 0
-			},
-			{
-				"command" : 3,
-				"file" : 0,
-				"line" : 184,
+				"line" : 86,
 				"parent" : 0
 			}
 		]
@@ -77,13 +57,20 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 5,
+					"backtrace" : 2,
 					"path" : "D:/YYProject/vscode-project/cppNetworkUtil/include"
 				},
 				{
-					"backtrace" : 6,
-					"isSystem" : true,
+					"backtrace" : 2,
+					"path" : "D:/YYProject/vscode-project/cppNetworkUtil/nghttp2/include"
+				},
+				{
+					"backtrace" : 2,
 					"path" : "D:/YYProject/vscode-project/cppNetworkUtil/openssl/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "D:/YYProject/vscode-project/cppNetworkUtil/zlib/include"
 				}
 			],
 			"language" : "CXX",
@@ -104,7 +91,7 @@
 	"dependencies" : 
 	[
 		{
-			"backtrace" : 3,
+			"backtrace" : 2,
 			"id" : "cppNetworkUtilLib::@6890427a1f51a3e7e1df"
 		}
 	],
@@ -119,36 +106,41 @@
 			},
 			{
 				"backtrace" : 2,
-				"fragment" : "-LD:\\YYProject\\vscode-project\\cppNetworkUtil\\openssl\\lib",
-				"role" : "libraryPath"
-			},
-			{
-				"backtrace" : 3,
 				"fragment" : "libcppNetworkUtilLib.a",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 3,
+				"fragment" : "D:\\YYProject\\vscode-project\\cppNetworkUtil\\nghttp2\\lib\\libnghttp2.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
 				"fragment" : "D:\\YYProject\\vscode-project\\cppNetworkUtil\\openssl\\lib\\libssl.a",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 3,
 				"fragment" : "D:\\YYProject\\vscode-project\\cppNetworkUtil\\openssl\\lib\\libcrypto.a",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 3,
+				"fragment" : "D:\\YYProject\\vscode-project\\cppNetworkUtil\\zlib\\lib\\libz.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
 				"fragment" : "-lws2_32",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 3,
 				"fragment" : "-lgdi32",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 3,
 				"fragment" : "-lcrypt32",
 				"role" : "libraries"
 			},

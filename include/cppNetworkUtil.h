@@ -91,22 +91,13 @@ public:
     std::string get_client_connections_request_data(SOCKET client_socket);
 
     /**
-     * @brief Get the client connections recv header
+     * @brief Get the client connections recv headers
      *
      * @param client_socket (SOCKET) Client socket
      *
-     * @return Client header
+     * @return Client headers
      */
-    std::string get_client_connections_request_header(SOCKET client_socket);
-
-    /**
-     * @brief Get the client connections recv content
-     *
-     * @param client_socket (SOCKET) Client socket
-     *
-     * @return Client content
-     */
-    std::string get_client_connections_request_content(SOCKET client_socket);
+    std::map<std::string, std::string> get_client_connections_request_headers(SOCKET client_socket);
 
     /**
      * @brief Get the method in the GET request header
@@ -219,7 +210,7 @@ public:
      *
      * @return header
      */
-    std::string buildResponseHeader(responseHeaderParameters parameters);
+    std::string makeResponseHeader(responseHeaderParameters parameters);
 
     /**
      * @brief Make a request header
@@ -228,7 +219,7 @@ public:
      *
      * @return header
      */
-    std::string buildRequestHeader(requestHeaderParameters parameter);
+    std::string makeRequestHeader(requestHeaderParameters parameter);
 
     /**
      * @brief Decode a URL-encoded string
@@ -362,11 +353,6 @@ public:
     cppNetworkUtil(const cppNetworkUtil &) = delete;
     cppNetworkUtil &operator=(const cppNetworkUtil &) = delete;
 
-    /**
-     * @brief Print the OpenSSL version
-     */
-    void printOpensslVersion();
-
     /*
      * @brief Run the server with the specified port and callback
      *
@@ -385,6 +371,26 @@ public:
      * @throw Unable to get the number of CPU cores
      */
     void run(int port, serverCallback *callback);
+
+    /**
+     * @brief Print the OpenSSL version
+     */
+    void print_opensslVersion();
+
+    /**
+     * @brief Print the Nghttp2 version
+     */
+    void print_nghttp2Version();
+
+    /**
+     * @brief Print the Zlib version
+     */
+    void print_zlibVersion();
+
+    /**
+     * @brief Print the cppNetworkUtil version
+     */
+    void print_cppNetworkUtilVersion();
 
 private:
     std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // pimpl implementation pointer
