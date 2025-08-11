@@ -18,43 +18,15 @@ public:
         std::string request_header = network_util_.get_client_connections_request_header(client_id);
         std::string request_content = network_util_.get_client_connections_request_content(client_id);
 
-        std::string method;
-        // Get method from the header
-        try
-        {
-            method = network_util_.getHeaderMethod(request_header);
-        }
-        catch (const std::exception &e)
-        {
-            log_e("Error getting header method: %s\n", e.what());
-        }
-        catch (...)
-        {
-            log_e("Unknown error occurred while getting header method.\n");
-        }
-
-        std::string url;
-        // Get url from the header
-        try
-        {
-            url = network_util_.getGetHeaderUrl(request_header);
-        }
-        catch (const std::exception &e)
-        {
-            log_e("Error getting GET header URL: %s\n", e.what());
-        }
-        catch (...)
-        {
-            log_e("Unknown error occurred while getting GET header URL.\n");
-        }
+        std::map<std::string, std::string> parsed_header = network_util_.getParsedHeader(request_header);
 
         std::string header;  // received header
         std::string content; // received content
         responseHeaderParameters response_header_parameters;
 
-        if (method == "GET")
+        if (parsed_header["method"] == "GET")
         {
-            if (url.empty())
+            if (parsed_header["url"].empty())
             {
                 try
                 {
@@ -75,7 +47,7 @@ public:
                     log_e("Unknown error occurred while sending data.\n");
                 }
             }
-            else if (strcmp(url.c_str(), "helloworld") == 0)
+            else if (strcmp(parsed_header["url"].c_str(), "helloworld") == 0)
             {
                 response_header_parameters.mime_type = "text/html";
 
@@ -89,10 +61,10 @@ public:
 
 // send data to client
 #ifndef DISABLE_HTTPS
-            network_util_.sendDataToHttpsSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
+            network_util_.sendDataToHttpsSocket(client_id, network_util_.makeResponseHeader(response_header_parameters));
             network_util_.sendDataToHttpsSocket(client_id, content);
 #else
-            network_util_.sendDataToHttpSocket(client_id, network_util_.buildResponseHeader(response_header_parameters));
+            network_util_.sendDataToHttpSocket(client_id, network_util_.makeResponseHeader(response_header_parameters));
             network_util_.sendDataToHttpSocket(client_id, content);
 #endif
         }

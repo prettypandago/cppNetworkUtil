@@ -109,27 +109,27 @@ public:
     std::string get_client_connections_request_content(SOCKET client_socket);
 
     /**
-     * @brief Get the method in the GET request header
+     * @brief parse header (mapkey: method url http_version ...)
      *
-     * @param buffer (const std::string) Received string
-     *
-     * @throw Invalid request line: No space found after method
-     *
-     * @return method
-     */
-    std::string getHeaderMethod(const std::string buffer);
-
-    /**
-     * @brief Get the url in the GET request header
-     *
-     * @param buffer (const std::string) Received string
+     * @param header (const std::string &) request header
      *
      * @throw Invalid request line: No space found after method
      * @throw Invalid request line: No space found after url
+     * @throw Invalid request line: No \r\n found after http version
      *
-     * @return url
+     * @return parsed map request header
      */
-    std::string getGetHeaderUrl(const std::string buffer);
+    std::map<std::string, std::string> getParsedHeader(const std::string &header);
+
+    /**
+     * @brief Get the value of a specific header field in the HTTP request header
+     *
+     * @param headers (const std::string &) The HTTP request header string
+     * @param key (const std::string &) The key of the header field to retrieve
+     *
+     * @return The value of the specified header field, or an empty string if not found
+     */
+    std::string getHeaderValue(const std::string &headers, const std::string &key);
 
     /**
      * @brief Get the content size in the http request header
@@ -144,16 +144,6 @@ public:
      * @return content size
      */
     int getContentSize(const std::string buffer);
-
-    /**
-     * @brief Get the value of a specific header field in the HTTP request header
-     *
-     * @param headers (const std::string &) The HTTP request header string
-     * @param key (const std::string &) The key of the header field to retrieve
-     *
-     * @return The value of the specified header field, or an empty string if not found
-     */
-    std::string getHeaderValue(const std::string &headers, const std::string &key);
 
     /**
      * @brief Calculates the size of the POST content from the given buffer.
@@ -219,7 +209,7 @@ public:
      *
      * @return header
      */
-    std::string buildResponseHeader(responseHeaderParameters parameters);
+    std::string makeResponseHeader(responseHeaderParameters parameters);
 
     /**
      * @brief Make a request header
@@ -228,7 +218,7 @@ public:
      *
      * @return header
      */
-    std::string buildRequestHeader(requestHeaderParameters parameter);
+    std::string makeRequestHeader(requestHeaderParameters parameter);
 
     /**
      * @brief Decode a URL-encoded string
@@ -362,11 +352,6 @@ public:
     cppNetworkUtil(const cppNetworkUtil &) = delete;
     cppNetworkUtil &operator=(const cppNetworkUtil &) = delete;
 
-    /**
-     * @brief Print the OpenSSL version
-     */
-    void printOpensslVersion();
-
     /*
      * @brief Run the server with the specified port and callback
      *
@@ -385,6 +370,16 @@ public:
      * @throw Unable to get the number of CPU cores
      */
     void run(int port, serverCallback *callback);
+
+    /**
+     * @brief Print the openSSL version
+     */
+    void print_opensslVersion();
+
+    /**
+     * @brief Print the cppNetworkUtil version
+     */
+    void print_cppNetworkUtilVersion();
 
 private:
     std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // pimpl implementation pointer

@@ -31,56 +31,84 @@ cppNetworkUtilPimpl::~cppNetworkUtilPimpl()
     EVP_cleanup(); // 清理 OpenSSL 资源
 }
 
-std::string cppNetworkUtilPimpl::getHeaderMethod_Pimpl(const std::string buffer)
+std::map<std::string, std::string> cppNetworkUtilPimpl::getParsedHeader_Pimpl(const std::string &header)
 {
-    std::string method;
+    std::map<std::string, std::string> parsed_header;
 
-    // 1. 查找第一个空格，它将 Method 与 URL 分开。
-    size_t space_pos = buffer.find(' ');
-    if (space_pos == std::string::npos)
-    {
-        // 如果没有找到空格，说明请求行格式不正确
-        throw std::runtime_error("Invalid request line: No space found after method");
-    }
-
-    // 2. 提取 Method
-    // 从字符串开头到第一个空格的位置就是 Method
-    method = buffer.substr(0, space_pos);
-
-    return method;
-}
-
-std::string cppNetworkUtilPimpl::getGetHeaderUrl_Pimpl(const std::string buffer)
-{
-    std::string url;
-
-    // 1. 查找第一个空格，它将 Method 与 URL 分开。
-    size_t frist_space_pos = buffer.find(' ');
+    // 查找第一个空格，它将 Method 与 URL 分开。
+    size_t frist_space_pos = header.find(' ');
     if (frist_space_pos == std::string::npos)
     {
         // 如果没有找到空格，说明请求行格式不正确
         throw std::runtime_error("Invalid request line: No space found after method");
     }
 
-    // 2. 查找第二个空格，它将 URL 与 PROTOCOL 分开。
-    size_t second_space_pos = buffer.find(' ', frist_space_pos + 1);
+    // 提取 Method
+    // 从字符串开头到第一个空格的位置就是 Method
+    parsed_header["method"] = header.substr(0, frist_space_pos);
+
+    // 查找第二个空格，它将 URL 与 PROTOCOL 分开。
+    size_t second_space_pos = header.find(' ', frist_space_pos + 1);
     if (second_space_pos == std::string::npos)
     {
         // 如果没有找到空格，说明请求行格式不正确
         throw std::runtime_error("Invalid request line: No space found after url");
     }
 
-    // 2. 提取 URL
+    // 取 URL
     // 从字符串第一个空格到第二个空格的位置就是 URL
     // 注意: substr的第二个参数是长度, 在这里踩坑了
-    url = buffer.substr(frist_space_pos + 1, second_space_pos - frist_space_pos - 1);
+    parsed_header["url"] = header.substr(frist_space_pos + 1, second_space_pos - frist_space_pos - 1);
 
-    if (url[0] == '/')
+    if (parsed_header["url"][0] == '/')
     {
-        url.erase(0, 1); // 去除'/'
+        parsed_header["url"].erase(0, 1); // 去除'/'
     }
 
-    return url;
+    // 提取 HTTP 版本
+    // 从第二个空格到行尾（或\r\n）为 HTTP 版本
+    size_t line_end_pos = header.find("\r\n", second_space_pos + 1);
+    if (line_end_pos == std::string::npos)
+    {
+        throw std::runtime_error("Invalid request line: No \r\n found after http version");
+    }
+    parsed_header["http_version"] = header.substr(second_space_pos + 1, line_end_pos - second_space_pos - 1);
+
+    // 解析剩余的请求头字段
+    size_t headers_start = header.find("\r\n");
+    if (headers_start != std::string::npos)
+    {
+        headers_start += 2; // 跳过请求行后的 "\r\n"
+        size_t headers_end = header.find("\r\n\r\n", headers_start);
+        if (headers_end == std::string::npos)
+            headers_end = header.length();
+
+        std::string headers_section = header.substr(headers_start, headers_end - headers_start);
+        std::istringstream stream(headers_section);
+        std::string line;
+        while (std::getline(stream, line))
+        {
+            // 移除行尾的 '\r'
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back();
+            size_t colon_pos = line.find(':');
+            if (colon_pos != std::string::npos)
+            {
+                std::string key = line.substr(0, colon_pos);
+                std::string value = line.substr(colon_pos + 1);
+                // 去除 value 前后的空白
+                size_t first = value.find_first_not_of(" \t");
+                size_t last = value.find_last_not_of(" \t");
+                if (first != std::string::npos && last != std::string::npos)
+                    value = value.substr(first, last - first + 1);
+                else
+                    value = "";
+                parsed_header[key] = value;
+            }
+        }
+    }
+
+    return parsed_header;
 }
 
 int cppNetworkUtilPimpl::getContentSize_Pimpl(const std::string buffer)
@@ -280,15 +308,16 @@ std::string cppNetworkUtilPimpl::getPostContentBody_Pimpl(const std::string buff
     return body;
 }
 
-std::string cppNetworkUtilPimpl::buildResponseHeader_Pimpl(responseHeaderParameters parameter)
+std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(responseHeaderParameters parameter)
 {
     std::string buffer;
 
-    std::string title = "Unknown";
-    if (parameter.status == 200)
-        title = "OK";
-    else if (parameter.status == 404)
-        title = "Not Found";
+    std::string title;
+    auto it = http_code.find(parameter.status);
+    if (it != http_code.end())
+        title = it->second;
+    else
+        title = "Unknown";
 
     char *timebuf = new char[100];
     time_t now_date = time((time_t *)0);
@@ -326,16 +355,16 @@ std::string cppNetworkUtilPimpl::buildResponseHeader_Pimpl(responseHeaderParamet
         buffer += "\r\n";
     }
 
+#ifndef DISABLE_HTTPS
     if (parameter.Strict_Transport_Security_max_age > 0 && !parameter.Strict_Transport_Security_includeSubDomains.empty())
     {
         buffer += "Strict-Transport-Security: max-age=";
         buffer += std::to_string(parameter.Strict_Transport_Security_max_age);
-        if (!parameter.Strict_Transport_Security_includeSubDomains.empty())
-        {
-            buffer += "; includeSubDomains";
-        }
+        buffer += "; ";
+        buffer += parameter.Strict_Transport_Security_includeSubDomains;
         buffer += "\r\n";
     }
+#endif
 
     if (!parameter.Cache_Control.empty())
     {
@@ -360,7 +389,7 @@ std::string cppNetworkUtilPimpl::buildResponseHeader_Pimpl(responseHeaderParamet
     return buffer;
 }
 
-std::string cppNetworkUtilPimpl::buildRequestHeader_Pimpl(requestHeaderParameters parameter)
+std::string cppNetworkUtilPimpl::makeRequestHeader_Pimpl(requestHeaderParameters parameter)
 {
     std::string buffer;
 
@@ -679,11 +708,6 @@ std::map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(c
     return parsedParts; // 返回所有解析出的部分
 }
 
-void cppNetworkUtilPimpl::printOpensslVersion_Pimpl()
-{
-    std::cout << "OpenSSL version: " << OpenSSL_version(OPENSSL_VERSION) << std::endl;
-}
-
 void cppNetworkUtilPimpl::sendDataToHttpSocket_Pimpl(SOCKET socket, const std::string &data)
 {
     send(socket, data.data(), data.length(), 0); // 发送数据到套接字
@@ -741,7 +765,7 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
         throw std::runtime_error("Failed to connect to server");
     }
 
-    std::string request_header_str = buildRequestHeader_Pimpl(
+    std::string request_header_str = makeRequestHeader_Pimpl(
         requestHeaderParameters{
             "GET", "close", host, path, port});
     int bytes_sent = send(sock, request_header_str.data(), request_header_str.length(), 0);
@@ -1067,7 +1091,7 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
     }
 
     // 发送HTTPS请求 (HTTP协议部分)
-    std::string request_header = buildRequestHeader_Pimpl(
+    std::string request_header = makeRequestHeader_Pimpl(
         requestHeaderParameters{
             "GET", "close", host, path, port});
 
@@ -1563,4 +1587,14 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
 #endif
         closesocket(client_socket); // 关闭套接字
     }
+}
+
+void cppNetworkUtilPimpl::print_cppNetworkUtilVersion_Pimpl()
+{
+    std::cout << "cppNetworkUtil version: " << VERSION << "\n";
+}
+
+void cppNetworkUtilPimpl::print_opensslVersion_Pimpl()
+{
+    std::cout << "openSSL version: " << OpenSSL_version(OPENSSL_VERSION) << "\n";
 }

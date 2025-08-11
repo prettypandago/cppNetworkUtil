@@ -51,6 +51,69 @@ struct bio_st; // 用于 OpenSSL 的 BIO
 // 向前申明
 class serverCallback; // 回调接口
 
+const std::map<int, std::string> http_code = {
+    {100, "Continue"},
+    {101, "Switching Protocols"},
+    {102, "Processing"},
+    {200, "OK"},
+    {201, "Created"},
+    {202, "Accepted"},
+    {203, "Non-Authoritative Information"},
+    {204, "No Content"},
+    {205, "Reset Content"},
+    {206, "Partial Content"},
+    {207, "Multi-Status"},
+    {208, "Already Reported"},
+    {226, "IM Used"},
+    {300, "Multiple Choices"},
+    {301, "Moved Permanently"},
+    {302, "Found"},
+    {303, "See Other"},
+    {304, "Not Modified"},
+    {305, "Use Proxy"},
+    {307, "Temporary Redirect"},
+    {308, "Permanent Redirect"},
+    {400, "Bad Request"},
+    {401, "Unauthorized"},
+    {402, "Payment Required"},
+    {403, "Forbidden"},
+    {404, "Not Found"},
+    {405, "Method Not Allowed"},
+    {406, "Not Acceptable"},
+    {407, "Proxy Authentication Required"},
+    {408, "Request Timeout"},
+    {409, "Conflict"},
+    {410, "Gone"},
+    {411, "Length Required"},
+    {412, "Precondition Failed"},
+    {413, "Payload Too Large"},
+    {414, "URI Too Long"},
+    {415, "Unsupported Media Type"},
+    {416, "Range Not Satisfiable"},
+    {417, "Expectation Failed"},
+    {418, "I'm a teapot"},
+    {421, "Misdirected Request"},
+    {422, "Unprocessable Entity"},
+    {423, "Locked"},
+    {424, "Failed Dependency"},
+    {425, "Too Early"},
+    {426, "Upgrade Required"},
+    {428, "Precondition Required"},
+    {429, "Too Many Requests"},
+    {431, "Request Header Fields Too Large"},
+    {451, "Unavailable For Legal Reasons"},
+    {500, "Internal Server Error"},
+    {501, "Not Implemented"},
+    {502, "Bad Gateway"},
+    {503, "Service Unavailable"},
+    {504, "Gateway Timeout"},
+    {505, "HTTP Version Not Supported"},
+    {506, "Variant Also Negotiates"},
+    {507, "Insufficient Storage"},
+    {508, "Loop Detected"},
+    {510, "Not Extended"},
+    {511, "Network Authentication Required"}};
+
 class cppNetworkUtilPimpl
 {
 public:
@@ -69,27 +132,27 @@ public:
     std::map<SOCKET, clientConnectionInfo> client_connections; // 存储客户端连接信息
 
     /**
-     * @brief Get the method in the GET request header
+     * @brief parse header (mapkey: method url http_version ...)
      *
-     * @param buffer (const std::string) Received string
-     *
-     * @throw Invalid request line: No space found after method
-     *
-     * @return method
-     */
-    std::string getHeaderMethod_Pimpl(const std::string buffer);
-
-    /**
-     * @brief Get the url in the GET request header
-     *
-     * @param buffer (const std::string) Received string
+     * @param header (const std::string &) request header
      *
      * @throw Invalid request line: No space found after method
      * @throw Invalid request line: No space found after url
+     * @throw Invalid request line: No \r\n found after http version
      *
-     * @return url
+     * @return parsed map request header
      */
-    std::string getGetHeaderUrl_Pimpl(const std::string buffer);
+    std::map<std::string, std::string> getParsedHeader_Pimpl(const std::string &header);
+
+    /**
+     * @brief Get the value of a specific header field in the HTTP request header
+     *
+     * @param headers (const std::string &) The HTTP request header string
+     * @param key (const std::string &) The key of the header field to retrieve
+     *
+     * @return The value of the specified header field, or an empty string if not found
+     */
+    std::string getHeaderValue_Pimpl(const std::string &headers, const std::string &key);
 
     /**
      * @brief Get the content size in the http request header
@@ -104,16 +167,6 @@ public:
      * @return content size
      */
     int getContentSize_Pimpl(const std::string buffer);
-
-    /**
-     * @brief Get the value of a specific header field in the HTTP request header
-     *
-     * @param headers (const std::string &) The HTTP request header string
-     * @param key (const std::string &) The key of the header field to retrieve
-     *
-     * @return The value of the specified header field, or an empty string if not found
-     */
-    std::string getHeaderValue_Pimpl(const std::string &headers, const std::string &key);
 
     /**
      * @brief Calculates the size of the POST content from the given buffer.
@@ -179,7 +232,7 @@ public:
      *
      * @return header
      */
-    std::string buildResponseHeader_Pimpl(responseHeaderParameters parameters);
+    std::string makeResponseHeader_Pimpl(responseHeaderParameters parameters);
 
     /**
      * @brief Make a request header
@@ -188,7 +241,7 @@ public:
      *
      * @return header
      */
-    std::string buildRequestHeader_Pimpl(requestHeaderParameters parameter);
+    std::string makeRequestHeader_Pimpl(requestHeaderParameters parameter);
 
     /**
      * @brief Decode a URL-encoded string
@@ -308,11 +361,6 @@ public:
      */
     void sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA = true);
 
-    /**
-     * @brief Print the OpenSSL version
-     */
-    void printOpensslVersion_Pimpl();
-
     /*
      * @brief Run the server with the specified port and callback
      *
@@ -331,6 +379,16 @@ public:
      * @throw Unable to get the number of CPU cores
      */
     void run_Pimpl(int port, serverCallback *callback);
+
+    /**
+     * @brief Print the cppNetowrkUtil version
+     */
+    void print_cppNetworkUtilVersion_Pimpl();
+
+    /**
+     * @brief Print the openSSL version
+     */
+    void print_opensslVersion_Pimpl();
 
 private:
     ssl_ctx_st *ssl_ctx_server; // 服务器端 SSL 上下文

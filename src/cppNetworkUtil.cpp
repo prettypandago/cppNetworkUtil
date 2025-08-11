@@ -30,24 +30,19 @@ std::string cppNetworkUtil::get_client_connections_request_content(SOCKET client
     return pimpl_->client_connections[client_socket].request_content; // 获取客户端接收缓冲区
 }
 
-std::string cppNetworkUtil::getHeaderMethod(const std::string buffer)
+std::map<std::string, std::string> cppNetworkUtil::getParsedHeader(const std::string &header)
 {
-    return pimpl_->getHeaderMethod_Pimpl(buffer);
-}
-
-std::string cppNetworkUtil::getGetHeaderUrl(const std::string buffer)
-{
-    return pimpl_->getGetHeaderUrl_Pimpl(buffer);
-}
-
-int cppNetworkUtil::getContentSize(const std::string buffer)
-{
-    return pimpl_->getContentSize_Pimpl(buffer);
+    return pimpl_->getParsedHeader_Pimpl(header);
 }
 
 std::string cppNetworkUtil::getHeaderValue(const std::string &headers, const std::string &key)
 {
     return pimpl_->getHeaderValue_Pimpl(headers, key);
+}
+
+int cppNetworkUtil::getContentSize(const std::string buffer)
+{
+    return pimpl_->getContentSize_Pimpl(buffer);
 }
 
 int cppNetworkUtil::getPostContentSize(const std::string &buffer)
@@ -70,14 +65,14 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
     return pimpl_->getPostContentBody_Pimpl(buffer);
 }
 
-std::string cppNetworkUtil::buildResponseHeader(responseHeaderParameters parameters)
+std::string cppNetworkUtil::makeResponseHeader(responseHeaderParameters parameters)
 {
-    return pimpl_->buildResponseHeader_Pimpl(parameters);
+    return pimpl_->makeResponseHeader_Pimpl(parameters);
 }
 
-std::string cppNetworkUtil::buildRequestHeader(requestHeaderParameters parameter)
+std::string cppNetworkUtil::makeRequestHeader(requestHeaderParameters parameter)
 {
-    return pimpl_->buildRequestHeader_Pimpl(parameter);
+    return pimpl_->makeRequestHeader_Pimpl(parameter);
 }
 
 std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
@@ -129,12 +124,17 @@ cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>(
 
 cppNetworkUtil::~cppNetworkUtil() = default; // unique_ptr 会自动管理内存
 
-void cppNetworkUtil::printOpensslVersion()
-{
-    pimpl_->printOpensslVersion_Pimpl();
-}
-
 void cppNetworkUtil::run(int port, serverCallback *callback)
 {
     pimpl_->run_Pimpl(port, callback);
+}
+
+void cppNetworkUtil::print_opensslVersion()
+{
+    pimpl_->print_opensslVersion_Pimpl();
+}
+
+void cppNetworkUtil::print_cppNetworkUtilVersion()
+{
+    pimpl_->print_cppNetworkUtilVersion_Pimpl();
 }

@@ -11,6 +11,7 @@
 
 // Do not modify the following macros unless you know what you are doing
 #define PROTOCOL "HTTP/1.1"
+#define VERSION "1.0.0"
 
 #define RFC1123FMT "%a, %d %b %Y %H:%M:%S GMT"
 
@@ -22,33 +23,6 @@
 
 #define INFINITY 2147483647
 
-// HTTP status code
-#define HTTP_OK 200
-#define HTTP_CREATED 201
-#define HTTP_ACCEPTED 202
-#define HTTP_NO_CONTENT 204
-#define HTTP_MOVED_PERMANENTLY 301
-#define HTTP_FOUND 302
-#define HTTP_NOT_MODIFIED 304
-#define HTTP_BAD_REQUEST 400
-#define HTTP_UNAUTHORIZED 401
-#define HTTP_FORBIDDEN 403
-#define HTTP_NOT_FOUND 404
-#define HTTP_METHOD_NOT_ALLOWED 405
-#define HTTP_REQUEST_TIMEOUT 408
-#define HTTP_CONFLICT 409
-#define HTTP_GONE 410
-#define HTTP_LENGTH_REQUIRED 411
-#define HTTP_PAYLOAD_TOO_LARGE 413
-#define HTTP_URI_TOO_LONG 414
-#define HTTP_UNSUPPORTED_MEDIA_TYPE 415
-#define HTTP_TOO_MANY_REQUESTS 429
-#define HTTP_INTERNAL_SERVER_ERROR 500
-#define HTTP_NOT_IMPLEMENTED 501
-#define HTTP_BAD_GATEWAY 502
-#define HTTP_SERVICE_UNAVAILABLE 503
-#define HTTP_GATEWAY_TIMEOUT 504
-
 struct responseHeaderParameters
 {
     int status;                                              // status code
@@ -59,7 +33,7 @@ struct responseHeaderParameters
     std::string Strict_Transport_Security_includeSubDomains; // Strict-Transport-Security header
     std::string Cache_Control;                               // Cache-Control header
 
-    responseHeaderParameters(int in_status = 200, std::string in_mime_type = "*/*", std::string in_content_language = "en-us", std::string in_cookie = "", int in_Strict_Transport_Security_max_age = 31536000, std::string in_Strict_Transport_Security_includeSubDomains = "preload", std::string in_Cache_Control = "no-cache") : status(in_status), mime_type(in_mime_type), content_language(in_content_language), cookie(in_cookie), Strict_Transport_Security_max_age(in_Strict_Transport_Security_max_age), Strict_Transport_Security_includeSubDomains(in_Strict_Transport_Security_includeSubDomains), Cache_Control(in_Cache_Control) {}
+    responseHeaderParameters(int in_status = 200, std::string in_mime_type = "*/*", std::string in_content_language = "en-us", std::string in_cookie = "", int in_Strict_Transport_Security_max_age = 31536000, std::string in_Strict_Transport_Security_includeSubDomains = "includeSubDomains; preload", std::string in_Cache_Control = "no-cache") : status(in_status), mime_type(in_mime_type), content_language(in_content_language), cookie(in_cookie), Strict_Transport_Security_max_age(in_Strict_Transport_Security_max_age), Strict_Transport_Security_includeSubDomains(in_Strict_Transport_Security_includeSubDomains), Cache_Control(in_Cache_Control) {}
 };
 
 struct requestHeaderParameters
