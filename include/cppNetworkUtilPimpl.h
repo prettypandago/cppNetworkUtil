@@ -125,6 +125,7 @@ public:
         ssl_st *ssl;
         std::string ip;
         int port;
+        std::string family;
         std::string request_data;
         std::string request_header;
         std::string request_content;

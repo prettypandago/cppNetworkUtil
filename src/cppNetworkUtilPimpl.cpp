@@ -1354,7 +1354,7 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
 #endif
 
     // create socket
-    SOCKET server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    SOCKET server_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     if (server_socket == INVALID_SOCKET)
     {
 #ifdef _WIN32
@@ -1364,8 +1364,20 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
     }
 
     // set SO_REUSEADDR options
+    bool set_SO_REUSEADDR_options_success = true;
+    // 允许同时监听同个端口
     int optval = 1;
-    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == -1)
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+    {
+        set_SO_REUSEADDR_options_success = false;
+    }
+    // 允许监听 IPv4 和 IPv6
+    optval = 0;
+    if (setsockopt(server_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+    {
+        set_SO_REUSEADDR_options_success = false;
+    }
+    if (!set_SO_REUSEADDR_options_success)
     {
         closesocket(server_socket);
 #ifdef _WIN32
@@ -1375,14 +1387,14 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
     }
 
     // set server address
-    struct sockaddr_in server_address;
+    struct sockaddr_in6 server_address;
     memset(&server_address, 0, sizeof(server_address));
-    server_address.sin_family = AF_INET;         // use IPv4
-    server_address.sin_addr.s_addr = INADDR_ANY; // listen 0.0.0.0, all address
-    server_address.sin_port = htons(port);       // set port
+    server_address.sin6_family = AF_INET6;  // use IPv6
+    server_address.sin6_addr = in6addr_any; // listen 0.0.0.0, all address
+    server_address.sin6_port = htons(port); // set port
 
     // bind socket
-    if (bind(server_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == SOCKET_ERROR)
+    if (bind(server_socket, (const struct sockaddr *)&server_address, sizeof(server_address)) == SOCKET_ERROR)
     {
         closesocket(server_socket);
 #ifdef _WIN32
@@ -1392,7 +1404,7 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
     }
 
     // listen for connections
-    if (listen(server_socket, 1) == SOCKET_ERROR)
+    if (listen(server_socket, SOMAXCONN) == SOCKET_ERROR)
     {
         closesocket(server_socket);
 #ifdef _WIN32
@@ -1430,7 +1442,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
 
     while (1)
     {
-        struct sockaddr_in client_address;
+        struct sockaddr_storage client_address;
         socklen_t client_len = sizeof(client_address);
         SOCKET client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_len);
         if (client_socket == INVALID_SOCKET)
@@ -1466,9 +1478,6 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             continue; // 继续等待下一个连接
         }
 #endif
-
-        client_connections[client_socket].ip = inet_ntoa(((struct sockaddr_in *)&client_address)->sin_addr); // 获取客户端 IP 地址
-        client_connections[client_socket].port = ntohs(((struct sockaddr_in *)&client_address)->sin_port);   // 获取客户端端口号
 
         std::string request_data;
 
@@ -1552,10 +1561,6 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             }
         }
 
-#ifndef DISABLE_HTTPS
-        client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
-#endif
-        client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
         // 分离请求体
         size_t header_end_pos = request_data.find("\r\n\r\n");
         std::string request_header, request_content;
@@ -1569,6 +1574,27 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             request_header = request_data;
             request_content = "";
         }
+
+        if (client_address.ss_family == AF_INET)
+        {
+            // IPv4 连接
+            struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&client_address;
+            inet_ntop(AF_INET, &(ipv4_addr->sin_addr), client_connections[client_socket].ip.data(), client_connections[client_socket].ip.size());
+            client_connections[client_socket].port = ntohs(ipv4_addr->sin_port);
+            client_connections[client_socket].family = "ipv4";
+        }
+        else if (client_address.ss_family == AF_INET6)
+        {
+            // IPv6 连接
+            struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&client_address;
+            inet_ntop(AF_INET6, &(ipv6_addr->sin6_addr), client_connections[client_socket].ip.data(), client_connections[client_socket].ip.size());
+            client_connections[client_socket].port = ntohs(ipv6_addr->sin6_port);
+            client_connections[client_socket].family = "ipv6";
+        }
+#ifndef DISABLE_HTTPS
+        client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
+#endif
+        client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
         client_connections[client_socket].request_header = request_header;
         client_connections[client_socket].request_content = request_content;
 
