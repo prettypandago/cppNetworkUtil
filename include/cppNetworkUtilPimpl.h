@@ -228,6 +228,18 @@ public:
     std::string getPostContentBody_Pimpl(const std::string buffer);
 
     /**
+     * @brief Returns the standard textual description for a given HTTP status code.
+     *
+     * This function takes an integer representing an HTTP status code (e.g., 200, 404)
+     * and returns the corresponding standard reason phrase as a string (e.g., "OK", "Not Found").
+     *
+     * @param code The HTTP status code to look up.
+     *
+     * @return std::string The standard textual description for the provided HTTP status code.
+     */
+    std::string getHttpCodeText_Pimpl(int code);
+
+    /**
      * @brief Make a response header
      *
      * @param parameters (std::map<std::string, std::string> parameters) parameters

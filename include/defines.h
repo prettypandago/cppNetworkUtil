@@ -3,7 +3,7 @@
 #include <string>
 
 // Adjust the macro definition here
-#define IS_DEBUG // Enable debug mode
+// #define IS_DEBUG // Enable debug mode
 // #define DISABLE_HTTPS                 // Disable HTTPS support
 // #define DISABLE_PRINT_LISTEN_INFO     // Disable printing listen info
 #define PUBLIC_KEY_PATH "server.crt"  // Default public key path

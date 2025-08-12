@@ -45,6 +45,11 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
     return pimpl_->getPostContentBody_Pimpl(buffer);
 }
 
+std::string cppNetworkUtil::getHttpCodeText(int code)
+{
+    return pimpl_->getHttpCodeText_Pimpl(code);
+}
+
 std::string cppNetworkUtil::makeResponseHeader(std::map<std::string, std::string> parameters)
 {
     return pimpl_->makeResponseHeader_Pimpl(parameters);

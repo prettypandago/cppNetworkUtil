@@ -308,18 +308,26 @@ std::string cppNetworkUtilPimpl::getPostContentBody_Pimpl(const std::string buff
     return body;
 }
 
+std::string cppNetworkUtilPimpl::getHttpCodeText_Pimpl(int code)
+{
+    std::string text;
+
+    auto it = http_code.find(code);
+    if (it != http_code.end())
+        text = it->second;
+    else
+        text = "Unknown";
+
+    return text;
+}
+
 std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(std::map<std::string, std::string> parameters)
 {
     std::string buffer;
 
     if (parameters.count("status") && parameters.count("connection"))
     {
-        std::string title;
-        auto it = http_code.find(std::stoi(parameters["status"]));
-        if (it != http_code.end())
-            title = it->second;
-        else
-            title = "Unknown";
+        std::string title = getHttpCodeText_Pimpl(std::stoi(parameters["status"]));
 
         buffer += PROTOCOL;
         buffer += " ";
