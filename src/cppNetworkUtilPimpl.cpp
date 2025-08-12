@@ -1653,9 +1653,10 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
                 Location += ":";
                 Location += std::to_string(https_port);
             }
-            log_d("Location=%s\n", Location.data());
+            // log_d("Location=%s\n", Location.data());
             sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl({{"status", "301"}, {"connection", "close"}, {"Location", Location}}));
             closesocket(client_socket);
+            continue;
         }
 #endif
 
