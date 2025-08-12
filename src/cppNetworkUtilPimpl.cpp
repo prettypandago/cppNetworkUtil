@@ -308,80 +308,51 @@ std::string cppNetworkUtilPimpl::getPostContentBody_Pimpl(const std::string buff
     return body;
 }
 
-std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(responseHeaderParameters parameter)
+std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(std::map<std::string, std::string> parameters)
 {
     std::string buffer;
 
-    std::string title;
-    auto it = http_code.find(parameter.status);
-    if (it != http_code.end())
-        title = it->second;
+    if (parameters.count("status") && parameters.count("connection"))
+    {
+        std::string title;
+        auto it = http_code.find(std::stoi(parameters["status"]));
+        if (it != http_code.end())
+            title = it->second;
+        else
+            title = "Unknown";
+
+        buffer += PROTOCOL;
+        buffer += " ";
+        buffer += parameters["status"];
+        buffer += " ";
+        buffer += title;
+        buffer += "\r\n";
+
+        buffer += "Connection: ";
+        buffer += parameters["connection"];
+        buffer += "\r\n";
+    }
     else
-        title = "Unknown";
+    {
+        throw std::runtime_error("Missing required fields");
+    }
 
     char *timebuf = new char[100];
     time_t now_date = time((time_t *)0);
     strftime(timebuf, sizeof(timebuf), RFC1123FMT, gmtime(&now_date));
 
-    buffer += PROTOCOL;
-    buffer += " ";
-    buffer += std::to_string(parameter.status);
-    buffer += " ";
-    buffer += title;
-    buffer += "\r\n";
-
     buffer += "Server: ";
     buffer += NAME;
     buffer += "\r\n";
 
-    if (!parameter.mime_type.empty())
+    if (parameters["enable_hsts"] == "true")
+        buffer += "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload\r\n";
+
+    for (const auto &pair : parameters)
     {
-        buffer += "Content-Type: ";
-        buffer += parameter.mime_type;
-        buffer += "\r\n";
+        if (pair.first != "status" && pair.first != "connection" && pair.first != "enable_hsts")
+            buffer += pair.first + ": " + pair.second + "\r\n";
     }
-
-    if (!parameter.content_language.empty())
-    {
-        buffer += "Content-Language: ";
-        buffer += parameter.content_language;
-        buffer += "\r\n";
-    }
-
-    if (!parameter.cookie.empty())
-    {
-        buffer += "Set-Cookie: ";
-        buffer += parameter.cookie;
-        buffer += "\r\n";
-    }
-
-#ifndef DISABLE_HTTPS
-    if (parameter.Strict_Transport_Security_max_age > 0 && !parameter.Strict_Transport_Security_includeSubDomains.empty())
-    {
-        buffer += "Strict-Transport-Security: max-age=";
-        buffer += std::to_string(parameter.Strict_Transport_Security_max_age);
-        buffer += "; ";
-        buffer += parameter.Strict_Transport_Security_includeSubDomains;
-        buffer += "\r\n";
-    }
-#endif
-
-    if (!parameter.Cache_Control.empty())
-    {
-        buffer += "Cache-Control: ";
-        buffer += parameter.Cache_Control;
-        buffer += "\r\n";
-    }
-
-    if (!parameter.cookie.empty())
-    {
-        buffer += "Set-Cookie: ";
-        buffer += parameter.cookie;
-        buffer += "\r\n";
-    }
-
-    buffer += "Connection: close\r\n";
-
     buffer += "\r\n";
 
     delete[] timebuf;
@@ -389,31 +360,42 @@ std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(responseHeaderParamete
     return buffer;
 }
 
-std::string cppNetworkUtilPimpl::makeRequestHeader_Pimpl(requestHeaderParameters parameter)
+std::string cppNetworkUtilPimpl::makeRequestHeader_Pimpl(std::map<std::string, std::string> parameters)
 {
     std::string buffer;
 
-    buffer += parameter.method;
-    buffer += " ";
-    buffer += parameter.path;  // 使用 path 字段
-    buffer += " HTTP/1.1\r\n"; // 使用 HTTP/1.1 协议
-
-    buffer += "Host: ";
-    buffer += parameter.host;
-    buffer += "\r\n";
-
-    if (parameter.port != 80) // 如果端口不是默认的80，则添加端口号
+    if (parameters.count("method") && parameters.count("path") && parameters.count("host"))
     {
-        buffer += "Port: ";
-        buffer += std::to_string(parameter.port);
+        buffer += parameters["method"] + " " + parameters["path"] + " " + PROTOCOL + "\r\n";
+        buffer += "Host: " + parameters["host"];
+        if (parameters.count("port") && parameters["port"] != "80" && parameters["port"] != "443")
+        {
+            buffer += ":" + parameters["port"];
+        }
         buffer += "\r\n";
     }
+    else
+    {
+        throw std::runtime_error("Missing required fields");
+    }
 
-    buffer += "Connection: ";
-    buffer += parameter.connection;
+    if (parameters.count("connection"))
+    {
+        buffer += "Connection: " + parameters["connection"] + "\r\n";
+    }
+    else
+    {
+        buffer += "Connection: close\r\n";
+    }
+
+    for (const auto &kv : parameters)
+    {
+        if (kv.first == "method" || kv.first == "path" || kv.first == "host" || kv.first == "port" || kv.first == "connection")
+            continue;
+        buffer += kv.first + ": " + kv.second + "\r\n";
+    }
+
     buffer += "\r\n";
-
-    buffer += "\r\n"; // 请求头结束
 
     return buffer;
 }
@@ -743,10 +725,10 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
 
-    struct hostent *server_host = gethostbyname(host.c_str());
+    struct hostent *server_host = gethostbyname(host.data());
     if (server_host == NULL)
     {
-        log_e("Failed to resolve host: %s\n", host.c_str());
+        log_e("Failed to resolve host: %s\n", host.data());
         closesocket(sock);
 #ifdef _WIN32
         WSACleanup();
@@ -765,9 +747,7 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
         throw std::runtime_error("Failed to connect to server");
     }
 
-    std::string request_header_str = makeRequestHeader_Pimpl(
-        requestHeaderParameters{
-            "GET", "close", host, path, port});
+    std::string request_header_str = makeRequestHeader_Pimpl({{"method", "GET"}, {"host", host}, {"path", path}, {"port", std::to_string(port)}, {"connection", "close"}});
     int bytes_sent = send(sock, request_header_str.data(), request_header_str.length(), 0);
     if (bytes_sent == SOCKET_ERROR)
     {
@@ -861,7 +841,7 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
             }
             catch (const std::exception &e)
             {
-                log_e("Failed to parse chunk size '%s': {%s}\n", chunk_size_str.c_str(), e.what());
+                log_e("Failed to parse chunk size '%s': {%s}\n", chunk_size_str.data(), e.what());
                 closesocket(sock);
 #ifdef _WIN32
                 WSACleanup();
@@ -870,7 +850,7 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
             }
             catch (...)
             {
-                log_e("Failed to parse chunk size '%s' with unknown error\n", chunk_size_str.c_str());
+                log_e("Failed to parse chunk size '%s' with unknown error\n", chunk_size_str.data());
                 closesocket(sock);
 #ifdef _WIN32
                 WSACleanup();
@@ -1025,7 +1005,7 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
     }
 
     // 创建BIO连接
-    BIO *bio = BIO_new_connect((char *)(std::string(host) + ":" + std::to_string(port)).c_str());
+    BIO *bio = BIO_new_connect((char *)(std::string(host) + ":" + std::to_string(port)).data());
     if (bio == nullptr)
     {
         SSL_free(ssl_conn);
@@ -1091,9 +1071,7 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
     }
 
     // 发送HTTPS请求 (HTTP协议部分)
-    std::string request_header = makeRequestHeader_Pimpl(
-        requestHeaderParameters{
-            "GET", "close", host, path, port});
+    std::string request_header = makeRequestHeader_Pimpl({{"method", "GET"}, {"host", host}, {"path", path}, {"port", std::to_string(port)}, {"connection", "close"}});
 
     int bytes_written = SSL_write(ssl_conn, request_header.data(), request_header.length());
     // std::cout << "Sent " << bytes_written << " bytes request." << std::endl;
@@ -1186,13 +1164,13 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
             }
             catch (const std::exception &e)
             {
-                log_e("Failed to parse chunk size '%s': {%s}\n", chunk_size_str.c_str(), e.what());
+                log_e("Failed to parse chunk size '%s': {%s}\n", chunk_size_str.data(), e.what());
                 SSL_free(ssl_conn); // Ensure SSL object is freed on error
                 throw std::runtime_error("Failed to parse chunk size");
             }
             catch (...)
             {
-                log_e("Failed to parse chunk size '%s' with unknown error\n", chunk_size_str.c_str());
+                log_e("Failed to parse chunk size '%s' with unknown error\n", chunk_size_str.data());
                 SSL_free(ssl_conn); // Ensure SSL object is freed on error
                 throw std::runtime_error("Failed to parse chunk size with unknown error");
             }
@@ -1314,7 +1292,7 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
     }
 }
 
-void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
+void cppNetworkUtilPimpl::run_Pimpl(serverCallback *callback, int http_port, int https_port)
 {
     // WSA startup
 #ifdef _WIN32
@@ -1354,8 +1332,8 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
 #endif
 
     // create socket
-    SOCKET server_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-    if (server_socket == INVALID_SOCKET)
+    SOCKET http_server_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+    if (http_server_socket == INVALID_SOCKET)
     {
 #ifdef _WIN32
         WSACleanup();
@@ -1367,54 +1345,125 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
     bool set_SO_REUSEADDR_options_success = true;
     // 允许同时监听同个端口
     int optval = 1;
-    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+    if (setsockopt(http_server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == SOCKET_ERROR)
     {
         set_SO_REUSEADDR_options_success = false;
     }
     // 允许监听 IPv4 和 IPv6
     optval = 0;
-    if (setsockopt(server_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+    if (setsockopt(http_server_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&optval, sizeof(optval)) == SOCKET_ERROR)
     {
         set_SO_REUSEADDR_options_success = false;
     }
     if (!set_SO_REUSEADDR_options_success)
     {
-        closesocket(server_socket);
+        closesocket(http_server_socket);
 #ifdef _WIN32
         WSACleanup();
 #endif
         throw("Setsockopt failed");
     }
 
+#ifndef DISABLE_HTTPS
+    SOCKET https_server_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+    if (https_server_socket == INVALID_SOCKET)
+    {
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw("Create socket failed");
+    }
+
+    // set SO_REUSEADDR options
+    set_SO_REUSEADDR_options_success = true;
+    // 允许同时监听同个端口
+    optval = 1;
+    if (setsockopt(https_server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+    {
+        set_SO_REUSEADDR_options_success = false;
+    }
+    // 允许监听 IPv4 和 IPv6
+    optval = 0;
+    if (setsockopt(https_server_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+    {
+        set_SO_REUSEADDR_options_success = false;
+    }
+    if (!set_SO_REUSEADDR_options_success)
+    {
+        closesocket(https_server_socket);
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw("Setsockopt failed");
+    }
+#endif
+
     // set server address
-    struct sockaddr_in6 server_address;
-    memset(&server_address, 0, sizeof(server_address));
-    server_address.sin6_family = AF_INET6;  // use IPv6
-    server_address.sin6_addr = in6addr_any; // listen 0.0.0.0, all address
-    server_address.sin6_port = htons(port); // set port
+    // http
+    struct sockaddr_in6 http_server_address;
+    memset(&http_server_address, 0, sizeof(http_server_address));
+    http_server_address.sin6_family = AF_INET6;       // use IPv6
+    http_server_address.sin6_addr = in6addr_any;      // listen 0.0.0.0, all address
+    http_server_address.sin6_port = htons(http_port); // set port
+// https
+#ifndef DISABLE_HTTPS
+    struct sockaddr_in6 https_server_address;
+    memset(&https_server_address, 0, sizeof(https_server_address));
+    https_server_address.sin6_family = AF_INET6;        // use IPv6
+    https_server_address.sin6_addr = in6addr_any;       // listen 0.0.0.0, all address
+    https_server_address.sin6_port = htons(https_port); // set port
+#endif
 
     // bind socket
-    if (bind(server_socket, (const struct sockaddr *)&server_address, sizeof(server_address)) == SOCKET_ERROR)
+    // http
+    if (bind(http_server_socket, (const struct sockaddr *)&http_server_address, sizeof(http_server_address)) == SOCKET_ERROR)
     {
-        closesocket(server_socket);
+        closesocket(http_server_socket);
 #ifdef _WIN32
         WSACleanup();
 #endif
         throw("Bind failed");
     }
+    // https
+#ifndef DISABLE_HTTPS
+    if (bind(https_server_socket, (const struct sockaddr *)&https_server_address, sizeof(https_server_address)) == SOCKET_ERROR)
+    {
+        closesocket(http_server_socket);
+        closesocket(https_server_socket);
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw("Bind failed");
+    }
+#endif
 
     // listen for connections
-    if (listen(server_socket, SOMAXCONN) == SOCKET_ERROR)
+    if (listen(http_server_socket, SOMAXCONN) == SOCKET_ERROR)
     {
-        closesocket(server_socket);
+        closesocket(http_server_socket);
 #ifdef _WIN32
         WSACleanup();
 #endif
         throw("Listen failed");
     }
+#ifndef DISABLE_HTTPS
+    if (listen(https_server_socket, SOMAXCONN) == SOCKET_ERROR)
+    {
+        closesocket(http_server_socket);
+        closesocket(https_server_socket);
+#ifdef _WIN32
+        WSACleanup();
+#endif
+        throw("Listen failed");
+    }
+#endif
 
 #ifndef DISABLE_PRINT_LISTEN_INFO
-    printf("Listening on 0.0.0.0:%d\n", port);
+#ifndef DISABLE_HTTPS
+    printf("Listening on 0.0.0.0:%d\n", https_port);
+#else
+    printf("Listening on 0.0.0.0:%d\n", http_port);
+#endif
 #endif
 
     unsigned int cores = std::thread::hardware_concurrency();
@@ -1425,11 +1474,15 @@ void cppNetworkUtilPimpl::run_Pimpl(int port, serverCallback *callback)
     }
     threadPool threadPool(cores); // 创建一个线程池
 
-    threadPool.enqueue([this, server_socket, callback]()
-                       { this->process(server_socket, callback); }); // 将处理函数添加到线程池中
+    threadPool.enqueue([this, http_server_socket, callback, http_port, https_port]()
+                       { this->process(http_server_socket, callback, false, http_port, https_port); }); // 将处理函数添加到线程池中
+#ifndef DISABLE_HTTPS
+    threadPool.enqueue([this, https_server_socket, callback, http_port, https_port]()
+                       { this->process(https_server_socket, callback, true, http_port, https_port); }); // 将处理函数添加到线程池中
+#endif
 }
 
-void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback)
+void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback, bool enable_https, int http_port, int https_port)
 {
     if (server_socket == INVALID_SOCKET)
     {
@@ -1450,34 +1503,37 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             log_e("Accept failed, errno: %d\n", errno);
             continue;
         }
+        // log_d("enable_https=%d\n", (int)enable_https);
 
-#ifndef DISABLE_HTTPS
-        // 为每个连接创建 SSL 结构并执行 SSL 握手
-        SSL *ssl_conn = SSL_new(ssl_ctx_server);
-        if (!ssl_conn)
+        ssl_st *ssl_conn = nullptr;
+        if (enable_https)
         {
-            HANDLE_ERROR("Unable to create SSL structure");
-            // throw("Unable to create SSL structure"); //直接throw会退出循环
-            continue; // 继续等待下一个连接
-        }
-        SSL_set_fd(ssl_conn, client_socket); // 将套接字描述符与 SSL 结构关联
+            // 为每个连接创建 SSL 结构并执行 SSL 握手
+            ssl_conn = SSL_new(ssl_ctx_server);
+            if (!ssl_conn)
+            {
+                HANDLE_ERROR("Unable to create SSL structure");
+                // throw("Unable to create SSL structure"); //直接throw会退出循环
+                continue; // 继续等待下一个连接
+            }
+            SSL_set_fd(ssl_conn, client_socket); // 将套接字描述符与 SSL 结构关联
 
-        // 绑定 BIO 到套接字，告诉 OpenSSL 这个 BIO 不负责关闭底层套接字
-        BIO *bio = BIO_new_socket(client_socket, BIO_NOCLOSE);
-        SSL_set_bio(ssl_conn, bio, bio);
+            // 绑定 BIO 到套接字，告诉 OpenSSL 这个 BIO 不负责关闭底层套接字
+            BIO *bio = BIO_new_socket(client_socket, BIO_NOCLOSE);
+            SSL_set_bio(ssl_conn, bio, bio);
 
-        // 执行 SSL/TLS 握手
-        if (SSL_accept(ssl_conn) <= 0)
-        {
-            // 握手失败，打印 OpenSSL 错误信息
-            HANDLE_ERROR("SSL accept failed");
-            SSL_shutdown(ssl_conn);     // 尝试执行 SSL 关闭握手
-            SSL_free(ssl_conn);         // 释放 SSL 结构
-            closesocket(client_socket); // 关闭客户端套接字
-            // throw("SSL accept failed");
-            continue; // 继续等待下一个连接
+            // 执行 SSL/TLS 握手
+            if (SSL_accept(ssl_conn) <= 0)
+            {
+                // 握手失败，打印 OpenSSL 错误信息
+                HANDLE_ERROR("SSL accept failed");
+                SSL_shutdown(ssl_conn);     // 尝试执行 SSL 关闭握手
+                SSL_free(ssl_conn);         // 释放 SSL 结构
+                closesocket(client_socket); // 关闭客户端套接字
+                // throw("SSL accept failed");
+                continue; // 继续等待下一个连接
+            }
         }
-#endif
 
         std::string request_data;
 
@@ -1488,11 +1544,14 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         char temp_buffer[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果直接作为 C 字符串打印的话
         memset(temp_buffer, 0, BUFFERSIZE);
         // 接收数据
-#ifdef DISABLE_HTTPS
-        recvd = recv(client_socket, temp_buffer, BUFFERSIZE, 0);
-#else
-        recvd = SSL_read(ssl_conn, temp_buffer, BUFFERSIZE);
-#endif
+        if (enable_https)
+        {
+            recvd = SSL_read(ssl_conn, temp_buffer, BUFFERSIZE);
+        }
+        else
+        {
+            recvd = recv(client_socket, temp_buffer, BUFFERSIZE, 0);
+        }
         if (recvd > 0)
         {
             // 只附加实际接收到的字节数
@@ -1510,10 +1569,11 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         {
             // 发生error
             log_e("An error occurred receiving, errno: %d\n", errno);
-#ifndef DISABLE_HTTPS
-            SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
-            SSL_free(ssl_conn);     // 释放 SSL 结构
-#endif
+            if (enable_https)
+            {
+                SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
+                SSL_free(ssl_conn);     // 释放 SSL 结构
+            }
             closesocket(client_socket); // 关闭客户端套接字
             break;                      // 继续等待下一个连接
         }
@@ -1536,12 +1596,14 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         {
             char temp_buffer_in_do_while[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果您直接作为 C 字符串打印的话
             memset(temp_buffer_in_do_while, 0, BUFFERSIZE);
-#ifdef DISABLE_HTTPS
-            recvd = recv(client_socket, temp_buffer_in_do_while, BUFFERSIZE, 0);
-#else
-            recvd = SSL_read(ssl_conn, temp_buffer_in_do_while, BUFFERSIZE);
-#endif
-
+            if (enable_https)
+            {
+                recvd = SSL_read(ssl_conn, temp_buffer_in_do_while, BUFFERSIZE);
+            }
+            else
+            {
+                recvd = recv(client_socket, temp_buffer_in_do_while, BUFFERSIZE, 0);
+            }
             if (recvd > 0)
             {
                 // 只附加实际接收到的字节数
@@ -1575,6 +1637,33 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             request_content = "";
         }
 
+#ifndef DISABLE_HTTPS
+        if (!enable_https)
+        {
+            std::map<std::string, std::string> parsed_header = getParsedHeader_Pimpl(request_header);
+
+            std::string Location;
+            Location += "https://";
+            Location += parsed_header["Host"];
+            if (!parsed_header["url"].empty())
+                Location += "/";
+            Location += parsed_header["url"];
+            if (https_port != 443)
+            {
+                Location += ":";
+                Location += std::to_string(https_port);
+            }
+            log_d("Location=%s\n", Location.data());
+            sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl({{"status", "301"}, {"connection", "close"}, {"Location", Location}}));
+            closesocket(client_socket);
+        }
+#endif
+
+        if (enable_https)
+        {
+            client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
+        }
+        client_connections[client_socket].is_https_connection = enable_https;
         if (client_address.ss_family == AF_INET)
         {
             // IPv4 连接
@@ -1591,9 +1680,6 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
             client_connections[client_socket].port = ntohs(ipv6_addr->sin6_port);
             client_connections[client_socket].family = "ipv6";
         }
-#ifndef DISABLE_HTTPS
-        client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
-#endif
         client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
         client_connections[client_socket].request_header = request_header;
         client_connections[client_socket].request_content = request_content;
@@ -1607,10 +1693,11 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         {
             log_e("No callback provided to process the request\n");
         }
-#ifndef DISABLE_HTTPS
-        SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
-        SSL_free(ssl_conn);     // 释放 SSL 结构
-#endif
+        if (enable_https)
+        {
+            SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
+            SSL_free(ssl_conn);     // 释放 SSL 结构
+        }
         closesocket(client_socket); // 关闭套接字
     }
 }

@@ -120,9 +120,10 @@ public:
     cppNetworkUtilPimpl();
     ~cppNetworkUtilPimpl();
 
-    struct clientConnectionInfo
+    struct clientConnectionInfo_Pimpl
     {
         ssl_st *ssl;
+        bool is_https_connection;
         std::string ip;
         int port;
         std::string family;
@@ -130,7 +131,7 @@ public:
         std::string request_header;
         std::string request_content;
     };
-    std::map<SOCKET, clientConnectionInfo> client_connections; // 存储客户端连接信息
+    std::map<SOCKET, clientConnectionInfo_Pimpl> client_connections; // 存储客户端连接信息
 
     /**
      * @brief parse header (mapkey: method url http_version ...)
@@ -227,22 +228,26 @@ public:
     std::string getPostContentBody_Pimpl(const std::string buffer);
 
     /**
-     * @brief Make a request header
+     * @brief Make a response header
      *
-     * @param parameters (headerParameters) parameter
+     * @param parameters (std::map<std::string, std::string> parameters) parameters
      *
-     * @return header
+     * @throw Missing required fields
+     *
+     * @return response header
      */
-    std::string makeResponseHeader_Pimpl(responseHeaderParameters parameters);
+    std::string makeResponseHeader_Pimpl(std::map<std::string, std::string> parameters);
 
     /**
      * @brief Make a request header
      *
-     * @param parameter (requestHeaderParameters) parameter
+     * @param parameters (std::map<std::string, std::string> parameters) parameters
      *
-     * @return header
+     * @throw Missing required fields
+     *
+     * @return request header
      */
-    std::string makeRequestHeader_Pimpl(requestHeaderParameters parameter);
+    std::string makeRequestHeader_Pimpl(std::map<std::string, std::string> parameters);
 
     /**
      * @brief Decode a URL-encoded string
@@ -379,7 +384,7 @@ public:
      * @throw Listen failed
      * @throw Unable to get the number of CPU cores
      */
-    void run_Pimpl(int port, serverCallback *callback);
+    void run_Pimpl(serverCallback *callback, int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT);
 
     /**
      * @brief Print the cppNetowrkUtil version
@@ -402,8 +407,11 @@ private:
     /*
      * @brief Process incoming connections and handle requests
      *
-     * @param server_socket (SOCKET) The server socket to accept connections on
+     * @param server_socket (SOCKET) The server socket to accept connections from
      * @param callback (serverCallback *) The callback to handle server events
+     * @param enable_https (bool) Whether to enable HTTPS support
+     * @param http_port (int) The HTTP port to listen on
+     * @param https_port (int) The HTTPS port to listen on
      *
      * @throw Invalid server socket
      * @throw No callback provided to process the request
@@ -411,5 +419,5 @@ private:
      * This function runs in a loop, accepting incoming client connections and processing their requests.
      * It uses the provided callback to notify the user of received data.
      */
-    void process(SOCKET server_socket, serverCallback *callback);
+    void process(SOCKET server_socket, serverCallback *callback, bool enable_https, int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT);
 };

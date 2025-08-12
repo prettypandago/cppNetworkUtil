@@ -61,52 +61,25 @@ typedef int SOCKET;
 class cppNetworkUtil
 {
 public:
-    int port = DEFAULT_SERVER_PORT; // server listen port
+    struct clientConnectionInfo
+    {
+        bool is_https_connection;
+        std::string ip;
+        int port;
+        std::string family;
+        std::string request_data;
+        std::string request_header;
+        std::string request_content;
+    };
 
     /**
-     * @brief Get the client connections IP address
+     * @brief Get the client connection info
      *
      * @param client_socket (SOCKET) Client socket
      *
-     * @return Client IP address
+     * @return Client connection info
      */
-    std::string get_client_connections_ip(SOCKET client_socket);
-
-    /**
-     * @brief Get the client connections port
-     *
-     * @param client_socket (SOCKET) Client socket
-     *
-     * @return Client port
-     */
-    int get_client_connections_port(SOCKET client_socket);
-
-    /**
-     * @brief Get the client connections request data
-     *
-     * @param client_socket (SOCKET) Client socket
-     *
-     * @return Client request data
-     */
-    std::string get_client_connections_request_data(SOCKET client_socket);
-
-    /**
-     * @brief Get the client connections recv header
-     *
-     * @param client_socket (SOCKET) Client socket
-     *
-     * @return Client header
-     */
-    std::string get_client_connections_request_header(SOCKET client_socket);
-
-    /**
-     * @brief Get the client connections recv content
-     *
-     * @param client_socket (SOCKET) Client socket
-     *
-     * @return Client content
-     */
-    std::string get_client_connections_request_content(SOCKET client_socket);
+    clientConnectionInfo getClientConnectionsInfo(SOCKET client_socket);
 
     /**
      * @brief parse header (mapkey: method url http_version ...)
@@ -203,22 +176,26 @@ public:
     std::string getPostContentBody(const std::string buffer);
 
     /**
-     * @brief Make a request header
+     * @brief Make a response header
      *
-     * @param parameters (headerParameters) parameter
+     * @param parameters (std::map<std::string, std::string> parameters) parameters
      *
-     * @return header
+     * @throw Missing required fields
+     *
+     * @return response header
      */
-    std::string makeResponseHeader(responseHeaderParameters parameters);
+    std::string makeResponseHeader(std::map<std::string, std::string> parameters);
 
     /**
      * @brief Make a request header
      *
-     * @param parameter (requestHeaderParameters) parameter
+     * @param parameters (std::map<std::string, std::string> parameters) parameters
      *
-     * @return header
+     * @throw Missing required fields
+     *
+     * @return request header
      */
-    std::string makeRequestHeader(requestHeaderParameters parameter);
+    std::string makeRequestHeader(std::map<std::string, std::string> parameters);
 
     /**
      * @brief Decode a URL-encoded string
@@ -369,7 +346,7 @@ public:
      * @throw Listen failed
      * @throw Unable to get the number of CPU cores
      */
-    void run(int port, serverCallback *callback);
+    void run(serverCallback *callback, int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT);
 
     /**
      * @brief Print the openSSL version

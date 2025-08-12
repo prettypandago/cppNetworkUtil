@@ -5,29 +5,9 @@
 #include "defines.h"
 #include "log.h"
 
-std::string cppNetworkUtil::get_client_connections_ip(SOCKET client_socket)
+cppNetworkUtil::clientConnectionInfo cppNetworkUtil::getClientConnectionsInfo(SOCKET client_socket)
 {
-    return pimpl_->client_connections[client_socket].ip; // 获取客户端 IP 地址
-}
-
-int cppNetworkUtil::get_client_connections_port(SOCKET client_socket)
-{
-    return pimpl_->client_connections[client_socket].port; // 获取客户端端口号
-}
-
-std::string cppNetworkUtil::get_client_connections_request_data(SOCKET client_socket)
-{
-    return pimpl_->client_connections[client_socket].request_data; // 获取客户端接收缓冲区
-}
-
-std::string cppNetworkUtil::get_client_connections_request_header(SOCKET client_socket)
-{
-    return pimpl_->client_connections[client_socket].request_header; // 获取客户端接收缓冲区
-}
-
-std::string cppNetworkUtil::get_client_connections_request_content(SOCKET client_socket)
-{
-    return pimpl_->client_connections[client_socket].request_content; // 获取客户端接收缓冲区
+    return cppNetworkUtil::clientConnectionInfo{pimpl_->client_connections[client_socket].is_https_connection, pimpl_->client_connections[client_socket].ip, pimpl_->client_connections[client_socket].port, pimpl_->client_connections[client_socket].family, pimpl_->client_connections[client_socket].request_data, pimpl_->client_connections[client_socket].request_header, pimpl_->client_connections[client_socket].request_content};
 }
 
 std::map<std::string, std::string> cppNetworkUtil::getParsedHeader(const std::string &header)
@@ -65,14 +45,14 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
     return pimpl_->getPostContentBody_Pimpl(buffer);
 }
 
-std::string cppNetworkUtil::makeResponseHeader(responseHeaderParameters parameters)
+std::string cppNetworkUtil::makeResponseHeader(std::map<std::string, std::string> parameters)
 {
     return pimpl_->makeResponseHeader_Pimpl(parameters);
 }
 
-std::string cppNetworkUtil::makeRequestHeader(requestHeaderParameters parameter)
+std::string cppNetworkUtil::makeRequestHeader(std::map<std::string, std::string> parameters)
 {
-    return pimpl_->makeRequestHeader_Pimpl(parameter);
+    return pimpl_->makeRequestHeader_Pimpl(parameters);
 }
 
 std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
@@ -124,9 +104,9 @@ cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>(
 
 cppNetworkUtil::~cppNetworkUtil() = default; // unique_ptr 会自动管理内存
 
-void cppNetworkUtil::run(int port, serverCallback *callback)
+void cppNetworkUtil::run(serverCallback *callback, int http_port, int https_port)
 {
-    pimpl_->run_Pimpl(port, callback);
+    pimpl_->run_Pimpl(callback, http_port, https_port);
 }
 
 void cppNetworkUtil::print_opensslVersion()

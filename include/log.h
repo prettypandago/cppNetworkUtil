@@ -77,13 +77,14 @@
 
 // 错误处理宏，用于打印 OpenSSL 错误并退出
 #ifdef IS_DEBUG
-#define HANDLE_ERROR(msg)            \
-    do                               \
-    {                                \
-        printf(RED);                 \
-        ERR_print_errors_fp(stderr); \
-        printf("Error: %s\n", msg);  \
-        printf(NONE);                \
+#define HANDLE_ERROR(msg)                  \
+    do                                     \
+    {                                      \
+        log_e("Openssl error: %s\n", msg); \
+        log_e("Openssl error: ");          \
+        printf(RED);                       \
+        ERR_print_errors_fp(stderr);       \
+        printf(NONE);                      \
     } while (0)
 #else
 #define HANDLE_ERROR(msg) \
