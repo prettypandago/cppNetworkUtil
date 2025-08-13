@@ -1,6 +1,8 @@
 #pragma once
 
+#include <regex>
 #include <string>
+#include <vector>
 
 // Adjust the macro definition here
 // #define IS_DEBUG // Enable debug mode
@@ -22,6 +24,38 @@
 
 #define INFINITY 2147483647
 
+struct requestContext
+{
+    bool is_https_connection;
+    std::string ip;
+    int port;
+    std::string family;
+    std::string request_data;
+    std::string request_headers;
+    std::string request_content;
+    std::unordered_map<std::string, std::string> path_params;
+    std::unordered_map<std::string, std::string> query_params;
+    std::unordered_map<std::string, std::string> parsed_request_headers;
+};
+
+struct responseContext
+{
+    int status;
+    std::unordered_map<std::string, std::string> response_headers;
+    std::string response_content;
+};
+
+using routeHandler =
+    std::function<void(const requestContext &, responseContext &)>; // 路由处理函数类型：接收请求和响应的引用
+
+// 路由信息结构体
+struct routeInfo
+{
+    std::regex path_regex;
+    std::vector<std::string> param_names;
+    routeHandler handler;
+};
+
 // 用于存储解析过的post的multipart数据
 struct multipartData
 {
@@ -29,7 +63,9 @@ struct multipartData
     std::string filename;
     std::string content_type;
 
-    multipartData() : data(""), filename(""), content_type("") {}
+    multipartData() : data(""), filename(""), content_type("")
+    {
+    }
 
     void print() const
     {
@@ -46,6 +82,8 @@ struct multipartData
             printf("Data: %s\n", data.data());
         }
         printf("\n");
-        //		std::std::cout << "name:" << name << "  Data (partial): " << data.substr(0, std::min((size_t)50, data.length())) << (data.length() > 50 ? "..." : "") << "\n" << "filename" << filename << "content_type=" << content_type << "\n";
+        //		std::std::cout << "name:" << name << "  Data (partial): " << data.substr(0, std::min((size_t)50,
+        // data.length())) << (data.length() > 50 ? "..." : "") << "\n" << "filename" << filename << "content_type=" <<
+        // content_type << "\n";
     }
 };

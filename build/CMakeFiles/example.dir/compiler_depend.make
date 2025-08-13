@@ -82,8 +82,11 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/istream.tcc \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_classes.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_classes.tcc \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_conv.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_facets.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_facets.tcc \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_facets_nonio.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_facets_nonio.tcc \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/localefwd.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/memoryfwd.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/move.h \
@@ -97,6 +100,18 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/ptr_traits.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/range_access.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/refwrap.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex.tcc \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_automaton.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_automaton.tcc \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_compiler.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_compiler.tcc \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_constants.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_error.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_executor.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_executor.tcc \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_scanner.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_scanner.tcc \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/shared_ptr.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/shared_ptr_atomic.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/shared_ptr_base.h \
@@ -121,10 +136,12 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_queue.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_raw_storage_iter.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_relops.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_stack.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_tempbuf.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_tree.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_uninitialized.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_vector.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stream_iterator.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/streambuf.tcc \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/streambuf_iterator.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/string_view.tcc \
@@ -136,6 +153,7 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/unordered_map.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/uses_allocator.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/vector.tcc \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bitset \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/cctype \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/cerrno \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/chrono \
@@ -168,7 +186,9 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/iosfwd \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/iostream \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/istream \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/iterator \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/limits \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/locale \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/map \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/memory \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/mutex \
@@ -180,7 +200,9 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/pstl/pstl_config.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/queue \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/ratio \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/regex \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/sstream \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/stack \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/stdexcept \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/stdlib.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/streambuf \
@@ -206,7 +228,9 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/error_constants.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/gthr-default.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/gthr.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/messages_members.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/os_defines.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/time_members.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/cetintrin.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/cldemoteintrin.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/clflushoptintrin.h \
@@ -471,8 +495,7 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   D:/YYProject/vscode-project/cppNetworkUtil/include/color.h \
   D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil.h \
   D:/YYProject/vscode-project/cppNetworkUtil/include/defines.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/log.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/serverCallback.h
+  D:/YYProject/vscode-project/cppNetworkUtil/include/log.h
 
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/winnetwk.h:
@@ -567,6 +590,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pthread_signal.h:
 
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/time_members.h:
+
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/avx512cdintrin.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/_mingw.h:
@@ -602,6 +627,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/mstcpip.h:
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/avx512vbmiintrin.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/avx512vbmivlintrin.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/locale:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/concept_check.h:
 
@@ -739,6 +766,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/specstrings.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_classes.tcc:
 
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_conv.h:
+
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/qos.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_facets.h:
@@ -746,6 +775,14 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/winbase.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_facets.tcc:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_facets_nonio.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sec_api/stdlib_s.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/mmiscapi.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/locale_facets_nonio.tcc:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/unknwn.h:
 
@@ -801,6 +838,52 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/apisetcconv.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/refwrap.h:
 
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex.tcc:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_automaton.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/processenv.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_automaton.tcc:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_compiler.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_relops.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_compiler.tcc:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_constants.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/unknwnbase.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack8.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/locale.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_error.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/synchapi.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sdks/_mingw_ddk.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_construct.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_executor.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/_mingw_mac.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_executor.tcc:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sal.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_scanner.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/processtopologyapi.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_scanner.tcc:
+
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/shared_ptr.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/waitpkgintrin.h:
@@ -835,12 +918,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_bvector.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/synchapi.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sdks/_mingw_ddk.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_construct.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_deque.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_heap.h:
@@ -867,7 +944,7 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_queue.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_relops.h:
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_stack.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_tempbuf.h:
 
@@ -876,6 +953,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/concurrencysal
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_uninitialized.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stl_vector.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/stream_iterator.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/stdio.h:
 
@@ -926,6 +1005,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/ctype_inline.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/vector.tcc:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bitset:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wchar.h:
 
@@ -1023,6 +1104,10 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/iostream:
 
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ktmtypes.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/iterator:
+
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/map:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/memory:
@@ -1045,9 +1130,15 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/datetimeapi.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/pstl/pstl_config.h:
 
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/objbase.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/regex:
+
 D:/YYProject/vscode-project/cppNetworkUtil/include/color.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/sstream:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/stack:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/stdlib.h:
 
@@ -1100,6 +1191,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sys/types.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/gthr.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/x86_64-w64-mingw32/bits/messages_members.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/cetintrin.h:
 
@@ -1195,8 +1288,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/xtestintrin.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/_mingw_mac.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/_mingw_off_t.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/_mingw_unicode.h:
@@ -1263,14 +1354,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ioapiset.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/knownfolders.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ktmtypes.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/unknwnbase.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack8.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/locale.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/lzexpand.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/malloc.h:
@@ -1281,17 +1364,11 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/memoryapi.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/mmeapi.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sec_api/stdlib_s.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/mmiscapi.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/mmsystem.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/rpcasync.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/namespaceapi.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/objbase.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/objectarray.h:
 
@@ -1313,11 +1390,7 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/poppack.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/process.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/processenv.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/processthreadsapi.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/processtopologyapi.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/profileapi.h:
 
@@ -1342,8 +1415,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/reason.h:
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/rpcdcep.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/rpcndr.h:
-
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sal.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/timezoneapi.h:
 
@@ -1416,5 +1487,3 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypesbase.h:
 D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil.h:
 
 D:/YYProject/vscode-project/cppNetworkUtil/include/log.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/include/serverCallback.h:

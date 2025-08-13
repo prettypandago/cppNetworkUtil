@@ -1,16 +1,15 @@
 #include "cppNetworkUtilPimpl.h" // 这里包含实现类的定义
 #include "cppNetworkUtil.h"
-#include "serverCallback.h"
 
 #include "defines.h"
 #include "log.h"
 
-cppNetworkUtil::clientConnectionInfo cppNetworkUtil::getClientConnectionsInfo(SOCKET client_socket)
+requestContext cppNetworkUtil::getClientConnectionsInfo(SOCKET client_socket)
 {
-    return cppNetworkUtil::clientConnectionInfo{pimpl_->client_connections[client_socket].is_https_connection, pimpl_->client_connections[client_socket].ip, pimpl_->client_connections[client_socket].port, pimpl_->client_connections[client_socket].family, pimpl_->client_connections[client_socket].request_data, pimpl_->client_connections[client_socket].request_header, pimpl_->client_connections[client_socket].request_content};
+    return requestContext{pimpl_->client_connections[client_socket].is_https_connection, pimpl_->client_connections[client_socket].ip, pimpl_->client_connections[client_socket].port, pimpl_->client_connections[client_socket].family, pimpl_->client_connections[client_socket].request_data, pimpl_->client_connections[client_socket].request_header, pimpl_->client_connections[client_socket].request_content};
 }
 
-std::map<std::string, std::string> cppNetworkUtil::getParsedHeader(const std::string &header)
+std::unordered_map<std::string, std::string> cppNetworkUtil::getParsedHeader(const std::string &header)
 {
     return pimpl_->getParsedHeader_Pimpl(header);
 }
@@ -50,9 +49,9 @@ std::string cppNetworkUtil::getHttpCodeText(int code)
     return pimpl_->getHttpCodeText_Pimpl(code);
 }
 
-std::string cppNetworkUtil::makeResponseHeader(std::map<std::string, std::string> parameters)
+std::string cppNetworkUtil::makeResponseHeader(int status, std::unordered_map<std::string, std::string> parameters)
 {
-    return pimpl_->makeResponseHeader_Pimpl(parameters);
+    return pimpl_->makeResponseHeader_Pimpl(status, parameters);
 }
 
 std::string cppNetworkUtil::makeRequestHeader(std::map<std::string, std::string> parameters)
@@ -70,12 +69,12 @@ std::map<std::string, std::string> cppNetworkUtil::parseUrlEncodedFormBody(const
     return pimpl_->parseUrlEncodedFormBody_Pimpl(encoded_string);
 }
 
-std::vector<std::string> cppNetworkUtil::getURLParameterRestfulapi(std::string url)
+std::vector<std::string> cppNetworkUtil::cutUrlPath(std::string path)
 {
-    return pimpl_->getURLParameterRestfulapi_Pimpl(url);
+    return pimpl_->cutUrlPath_Pimpl(path);
 }
 
-std::map<std::string, std::string> cppNetworkUtil::parseUrlQueryParameters(const std::string &url)
+std::unordered_map<std::string, std::string> cppNetworkUtil::parseUrlQueryParameters(const std::string &url)
 {
     return pimpl_->parseUrlQueryParameters_Pimpl(url);
 }
@@ -109,9 +108,9 @@ cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>(
 
 cppNetworkUtil::~cppNetworkUtil() = default; // unique_ptr 会自动管理内存
 
-void cppNetworkUtil::run(serverCallback *callback, int http_port, int https_port)
+void cppNetworkUtil::run(int http_port, int https_port)
 {
-    pimpl_->run_Pimpl(callback, http_port, https_port);
+    pimpl_->run_Pimpl(http_port, https_port);
 }
 
 void cppNetworkUtil::print_opensslVersion()
@@ -122,4 +121,39 @@ void cppNetworkUtil::print_opensslVersion()
 void cppNetworkUtil::print_cppNetworkUtilVersion()
 {
     pimpl_->print_cppNetworkUtilVersion_Pimpl();
+}
+
+void cppNetworkUtil::get(const std::string &path_pattern, routeHandler handler)
+{
+    pimpl_->registerRoute_Pimpl("GET", path_pattern, std::move(handler));
+}
+
+void cppNetworkUtil::post(const std::string &path_pattern, routeHandler handler)
+{
+    pimpl_->registerRoute_Pimpl("POST", path_pattern, std::move(handler));
+}
+
+void cppNetworkUtil::put(const std::string &path_pattern, routeHandler handler)
+{
+    pimpl_->registerRoute_Pimpl("PUT", path_pattern, std::move(handler));
+}
+
+void cppNetworkUtil::delete_(const std::string &path_pattern, routeHandler handler)
+{
+    pimpl_->registerRoute_Pimpl("DELETE", path_pattern, std::move(handler));
+}
+
+void cppNetworkUtil::patch(const std::string &path_pattern, routeHandler handler)
+{
+    pimpl_->registerRoute_Pimpl("PATCH", path_pattern, std::move(handler));
+}
+
+responseContext cppNetworkUtil::handleRequest(const requestContext &req)
+{
+    return pimpl_->handleRequest_Pimpl(req);
+}
+
+void cppNetworkUtil::on(int status_code, routeHandler handler)
+{
+    return pimpl_->setErrorHandler_Pimpl(status_code, handler);
 }

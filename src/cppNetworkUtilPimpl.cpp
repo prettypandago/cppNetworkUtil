@@ -1,8 +1,7 @@
 #include "cppNetworkUtilPimpl.h"
-#include "serverCallback.h"
 
-#include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/ssl.h>
 
 cppNetworkUtilPimpl::cppNetworkUtilPimpl() : ssl_ctx_server(nullptr), ssl_ctx_client(nullptr), ssl(nullptr)
 {
@@ -31,9 +30,9 @@ cppNetworkUtilPimpl::~cppNetworkUtilPimpl()
     EVP_cleanup(); // 清理 OpenSSL 资源
 }
 
-std::map<std::string, std::string> cppNetworkUtilPimpl::getParsedHeader_Pimpl(const std::string &header)
+std::unordered_map<std::string, std::string> cppNetworkUtilPimpl::getParsedHeader_Pimpl(const std::string &header)
 {
-    std::map<std::string, std::string> parsed_header;
+    std::unordered_map<std::string, std::string> parsed_header;
 
     // 查找第一个空格，它将 Method 与 URL 分开。
     size_t frist_space_pos = header.find(' ');
@@ -59,11 +58,6 @@ std::map<std::string, std::string> cppNetworkUtilPimpl::getParsedHeader_Pimpl(co
     // 从字符串第一个空格到第二个空格的位置就是 URL
     // 注意: substr的第二个参数是长度, 在这里踩坑了
     parsed_header["url"] = header.substr(frist_space_pos + 1, second_space_pos - frist_space_pos - 1);
-
-    if (parsed_header["url"][0] == '/')
-    {
-        parsed_header["url"].erase(0, 1); // 去除'/'
-    }
 
     // 提取 HTTP 版本
     // 从第二个空格到行尾（或\r\n）为 HTTP 版本
@@ -228,7 +222,8 @@ std::string cppNetworkUtilPimpl::getPostContentType_Pimpl(const std::string &buf
 
     // 提取Content-Type的值
     size_t typeStart = pos;
-    while (pos < buffer.length() && buffer[pos] != ';' && buffer[pos] != '\r' && buffer[pos] != '\n' && buffer[pos] != '\0')
+    while (pos < buffer.length() && buffer[pos] != ';' && buffer[pos] != '\r' && buffer[pos] != '\n' &&
+           buffer[pos] != '\0')
         pos++;
     std::string contentType = buffer.substr(typeStart, pos - typeStart);
 
@@ -321,17 +316,18 @@ std::string cppNetworkUtilPimpl::getHttpCodeText_Pimpl(int code)
     return text;
 }
 
-std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(std::map<std::string, std::string> parameters)
+std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(int status,
+                                                          std::unordered_map<std::string, std::string> parameters)
 {
     std::string buffer;
 
-    if (parameters.count("status") && parameters.count("connection"))
+    if (parameters.count("connection"))
     {
-        std::string title = getHttpCodeText_Pimpl(std::stoi(parameters["status"]));
+        std::string title = getHttpCodeText_Pimpl(status);
 
         buffer += PROTOCOL;
         buffer += " ";
-        buffer += parameters["status"];
+        buffer += std::to_string(status);
         buffer += " ";
         buffer += title;
         buffer += "\r\n";
@@ -398,7 +394,8 @@ std::string cppNetworkUtilPimpl::makeRequestHeader_Pimpl(std::map<std::string, s
 
     for (const auto &kv : parameters)
     {
-        if (kv.first == "method" || kv.first == "path" || kv.first == "host" || kv.first == "port" || kv.first == "connection")
+        if (kv.first == "method" || kv.first == "path" || kv.first == "host" || kv.first == "port" ||
+            kv.first == "connection")
             continue;
         buffer += kv.first + ": " + kv.second + "\r\n";
     }
@@ -486,18 +483,18 @@ std::map<std::string, std::string> cppNetworkUtilPimpl::parseUrlEncodedFormBody_
     return formData;
 }
 
-// 解析url路径
-std::vector<std::string> cppNetworkUtilPimpl::getURLParameterRestfulapi_Pimpl(std::string url)
+// 切分url路径
+std::vector<std::string> cppNetworkUtilPimpl::cutUrlPath_Pimpl(std::string path)
 {
     std::vector<std::string> parts;
 
     // 如果路径以斜杠开头，则去除它
-    if (!url.empty() && url[0] == '/')
+    if (!path.empty() && path[0] == '/')
     {
-        url = url.substr(1);
+        path = path.substr(1);
     }
 
-    std::stringstream ss(url);
+    std::stringstream ss(path);
     std::string segment;
 
     // 使用 getline 分隔符 '/' 读取
@@ -512,9 +509,9 @@ std::vector<std::string> cppNetworkUtilPimpl::getURLParameterRestfulapi_Pimpl(st
     return parts;
 }
 
-std::map<std::string, std::string> cppNetworkUtilPimpl::parseUrlQueryParameters_Pimpl(const std::string &url)
+std::unordered_map<std::string, std::string> cppNetworkUtilPimpl::parseUrlQueryParameters_Pimpl(const std::string &url)
 {
-    std::map<std::string, std::string> params;
+    std::unordered_map<std::string, std::string> params;
     size_t question_pos = url.find('?');
     if (question_pos == std::string::npos || question_pos + 1 >= url.length())
         return params;
@@ -540,7 +537,8 @@ std::map<std::string, std::string> cppNetworkUtilPimpl::parseUrlQueryParameters_
 }
 
 // 解析 multipart 数据
-std::map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::string &boundary, const std::string &body)
+std::map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::string &boundary,
+                                                                               const std::string &body)
 {
     std::map<std::string, multipartData> parsedParts; // 存储所有解析出的部分
     std::string delimiter = "--" + boundary;          // 每个部分的开始分隔符
@@ -592,8 +590,9 @@ std::map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(c
 
         std::string headers = part.substr(0, headersEnd);
         std::string headers_lower = headers;
-        transform(headers_lower.begin(), headers_lower.end(), headers_lower.begin(), ::toupper);           // 提取头部字符串
-        std::string data = part.substr(headersEnd + (part.find("\r\n\r\n") != std::string::npos ? 4 : 2)); // 提取数据字符串，跳过分隔符长度
+        transform(headers_lower.begin(), headers_lower.end(), headers_lower.begin(), ::toupper); // 提取头部字符串
+        std::string data = part.substr(
+            headersEnd + (part.find("\r\n\r\n") != std::string::npos ? 4 : 2)); // 提取数据字符串，跳过分隔符长度
 
         std::string name;
 
@@ -708,7 +707,8 @@ void cppNetworkUtilPimpl::sendDataToHttpsSocket_Pimpl(SOCKET socket, const std::
     SSL_write(client_connections[socket].ssl, data.data(), data.length()); // 发送数据到 SSL 套接字
 }
 
-void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content)
+void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port,
+                                                   std::string &header, std::string &content)
 {
 #ifdef _WIN32
     WSADATA wsaData;
@@ -755,7 +755,8 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
         throw std::runtime_error("Failed to connect to server");
     }
 
-    std::string request_header_str = makeRequestHeader_Pimpl({{"method", "GET"}, {"host", host}, {"path", path}, {"port", std::to_string(port)}, {"connection", "close"}});
+    std::string request_header_str = makeRequestHeader_Pimpl(
+        {{"method", "GET"}, {"host", host}, {"path", path}, {"port", std::to_string(port)}, {"connection", "close"}});
     int bytes_sent = send(sock, request_header_str.data(), request_header_str.length(), 0);
     if (bytes_sent == SOCKET_ERROR)
     {
@@ -900,7 +901,8 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
                 {
                     char data_buffer[BUFFERSIZE + 1];
                     memset(data_buffer, '\0', sizeof(data_buffer));
-                    int bytes_read_data = recv(sock, data_buffer, std::min((long)BUFFERSIZE, bytes_needed_for_chunk), 0);
+                    int bytes_read_data =
+                        recv(sock, data_buffer, std::min((long)BUFFERSIZE, bytes_needed_for_chunk), 0);
                     if (bytes_read_data <= 0)
                     {
                         HANDLE_ERROR("Failed to read from socket during chunk data reception");
@@ -908,7 +910,8 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
 #ifdef _WIN32
                         WSACleanup();
 #endif
-                        throw std::runtime_error("Incomplete chunk data: connection closed unexpectedly or socket read error");
+                        throw std::runtime_error(
+                            "Incomplete chunk data: connection closed unexpectedly or socket read error");
                     }
                     content.append(data_buffer, bytes_read_data);
                     bytes_needed_for_chunk -= bytes_read_data;
@@ -982,7 +985,8 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
 #endif
 }
 
-void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA)
+void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port,
+                                                    std::string &header, std::string &content, bool enable_CA)
 {
 #ifdef _WIN32
     // Windows Sockets 初始化
@@ -1079,7 +1083,8 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
     }
 
     // 发送HTTPS请求 (HTTP协议部分)
-    std::string request_header = makeRequestHeader_Pimpl({{"method", "GET"}, {"host", host}, {"path", path}, {"port", std::to_string(port)}, {"connection", "close"}});
+    std::string request_header = makeRequestHeader_Pimpl(
+        {{"method", "GET"}, {"host", host}, {"path", path}, {"port", std::to_string(port)}, {"connection", "close"}});
 
     int bytes_written = SSL_write(ssl_conn, request_header.data(), request_header.length());
     // std::cout << "Sent " << bytes_written << " bytes request." << std::endl;
@@ -1217,7 +1222,8 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
                 {
                     char data_buffer[BUFFERSIZE + 1];
                     memset(data_buffer, '\0', sizeof(data_buffer));
-                    int bytes_read_data = SSL_read(ssl_conn, data_buffer, std::min((long)BUFFERSIZE, bytes_needed_for_chunk));
+                    int bytes_read_data =
+                        SSL_read(ssl_conn, data_buffer, std::min((long)BUFFERSIZE, bytes_needed_for_chunk));
                     if (bytes_read_data <= 0)
                     {
                         int err = SSL_get_error(ssl_conn, bytes_read_data);
@@ -1226,7 +1232,8 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
                             HANDLE_ERROR("SSL read failed during chunk data reception");
                         }
                         SSL_free(ssl_conn); // Ensure SSL object is freed on error
-                        throw std::runtime_error("Incomplete chunk data: connection closed unexpectedly or SSL read error");
+                        throw std::runtime_error(
+                            "Incomplete chunk data: connection closed unexpectedly or SSL read error");
                     }
                     content.append(data_buffer, bytes_read_data);
                     bytes_needed_for_chunk -= bytes_read_data;
@@ -1300,7 +1307,7 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
     }
 }
 
-void cppNetworkUtilPimpl::run_Pimpl(serverCallback *callback, int http_port, int https_port)
+void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port)
 {
     // WSA startup
 #ifdef _WIN32
@@ -1386,7 +1393,8 @@ void cppNetworkUtilPimpl::run_Pimpl(serverCallback *callback, int http_port, int
     set_SO_REUSEADDR_options_success = true;
     // 允许同时监听同个端口
     optval = 1;
-    if (setsockopt(https_server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+    if (setsockopt(https_server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) ==
+        SOCKET_ERROR)
     {
         set_SO_REUSEADDR_options_success = false;
     }
@@ -1424,7 +1432,8 @@ void cppNetworkUtilPimpl::run_Pimpl(serverCallback *callback, int http_port, int
 
     // bind socket
     // http
-    if (bind(http_server_socket, (const struct sockaddr *)&http_server_address, sizeof(http_server_address)) == SOCKET_ERROR)
+    if (bind(http_server_socket, (const struct sockaddr *)&http_server_address, sizeof(http_server_address)) ==
+        SOCKET_ERROR)
     {
         closesocket(http_server_socket);
 #ifdef _WIN32
@@ -1434,7 +1443,8 @@ void cppNetworkUtilPimpl::run_Pimpl(serverCallback *callback, int http_port, int
     }
     // https
 #ifndef DISABLE_HTTPS
-    if (bind(https_server_socket, (const struct sockaddr *)&https_server_address, sizeof(https_server_address)) == SOCKET_ERROR)
+    if (bind(https_server_socket, (const struct sockaddr *)&https_server_address, sizeof(https_server_address)) ==
+        SOCKET_ERROR)
     {
         closesocket(http_server_socket);
         closesocket(https_server_socket);
@@ -1482,23 +1492,35 @@ void cppNetworkUtilPimpl::run_Pimpl(serverCallback *callback, int http_port, int
     }
     threadPool threadPool(cores); // 创建一个线程池
 
-    threadPool.enqueue([this, http_server_socket, callback, http_port, https_port]()
-                       { this->process(http_server_socket, callback, false, http_port, https_port); }); // 将处理函数添加到线程池中
+    try
+    {
+        threadPool.enqueue([this, http_server_socket, http_port, https_port]() {
+            this->process(http_server_socket, false, http_port, https_port);
+        }); // 将处理函数添加到线程池中
 #ifndef DISABLE_HTTPS
-    threadPool.enqueue([this, https_server_socket, callback, http_port, https_port]()
-                       { this->process(https_server_socket, callback, true, http_port, https_port); }); // 将处理函数添加到线程池中
+        threadPool.enqueue([this, https_server_socket, http_port, https_port]() {
+            this->process(https_server_socket, true, http_port, https_port);
+        }); // 将处理函数添加到线程池中
 #endif
+    }
+    catch (const std::exception &e)
+    {
+        log_d("Sorry! Your program crashed. I caught this exception in the outermost function. This is the error it "
+              "threw: %s\n",
+              e.what());
+    }
+    catch (...)
+    {
+        log_e("Sorry! Your program crashed. I caught the exception in the outermost function, but could not identify "
+              "the error thrown.");
+    }
 }
 
-void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback, bool enable_https, int http_port, int https_port)
+void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int http_port, int https_port)
 {
     if (server_socket == INVALID_SOCKET)
     {
         throw("Invalid server socket");
-    }
-    if (!callback)
-    {
-        throw("No callback provided to process the request");
     }
 
     while (1)
@@ -1648,13 +1670,11 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
 #ifndef DISABLE_HTTPS
         if (!enable_https)
         {
-            std::map<std::string, std::string> parsed_header = getParsedHeader_Pimpl(request_header);
+            std::unordered_map<std::string, std::string> parsed_header = getParsedHeader_Pimpl(request_header);
 
             std::string Location;
             Location += "https://";
             Location += parsed_header["Host"];
-            if (!parsed_header["url"].empty())
-                Location += "/";
             Location += parsed_header["url"];
             if (https_port != 443)
             {
@@ -1662,7 +1682,8 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
                 Location += std::to_string(https_port);
             }
             // log_d("Location=%s\n", Location.data());
-            sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl({{"status", "301"}, {"connection", "close"}, {"Location", Location}}));
+            sendDataToHttpSocket_Pimpl(
+                client_socket, makeResponseHeader_Pimpl(301, {{"connection", "close"}, {"Location", Location}}));
             closesocket(client_socket);
             continue;
         }
@@ -1677,7 +1698,8 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         {
             // IPv4 连接
             struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&client_address;
-            inet_ntop(AF_INET, &(ipv4_addr->sin_addr), client_connections[client_socket].ip.data(), client_connections[client_socket].ip.size());
+            inet_ntop(AF_INET, &(ipv4_addr->sin_addr), client_connections[client_socket].ip.data(),
+                      client_connections[client_socket].ip.size());
             client_connections[client_socket].port = ntohs(ipv4_addr->sin_port);
             client_connections[client_socket].family = "ipv4";
         }
@@ -1685,23 +1707,55 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, serverCallback *callback
         {
             // IPv6 连接
             struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&client_address;
-            inet_ntop(AF_INET6, &(ipv6_addr->sin6_addr), client_connections[client_socket].ip.data(), client_connections[client_socket].ip.size());
+            inet_ntop(AF_INET6, &(ipv6_addr->sin6_addr), client_connections[client_socket].ip.data(),
+                      client_connections[client_socket].ip.size());
             client_connections[client_socket].port = ntohs(ipv6_addr->sin6_port);
             client_connections[client_socket].family = "ipv6";
         }
         client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
         client_connections[client_socket].request_header = request_header;
         client_connections[client_socket].request_content = request_content;
+        client_connections[client_socket].parsed_request_headers = getParsedHeader_Pimpl(request_header); // 解析请求头
+        client_connections[client_socket].query_params =
+            parseUrlQueryParameters_Pimpl(client_connections[client_socket].parsed_request_headers["url"]);
 
-        // 调用用户的函数
-        if (callback)
+        std::string url = client_connections[client_socket].parsed_request_headers["url"];
+        size_t query_pos = url.find('?');
+        if (query_pos != std::string::npos)
         {
-            callback->onDataReceived(client_socket);
+            // 找到了 '?'，分割 URL 路径和查询参数
+            client_connections[client_socket].parsed_request_headers["url"] = url.substr(0, query_pos);
         }
         else
         {
-            log_e("No callback provided to process the request\n");
+            // 没有查询参数，整个 URL 都是路径
+            client_connections[client_socket].parsed_request_headers["url"] = url;
         }
+
+        requestContext req;
+        req.is_https_connection = client_connections[client_socket].is_https_connection;
+        req.ip = client_connections[client_socket].ip;
+        req.port = client_connections[client_socket].port;
+        req.family = client_connections[client_socket].family;
+        req.request_data = client_connections[client_socket].request_data;
+        req.request_content = client_connections[client_socket].request_content;
+        req.request_headers = client_connections[client_socket].request_header;
+        req.parsed_request_headers = client_connections[client_socket].parsed_request_headers;
+        req.query_params = client_connections[client_socket].query_params;
+
+        responseContext res = handleRequest_Pimpl(req);
+        // send data to client
+        if (enable_https)
+        {
+            sendDataToHttpsSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(res.status, res.response_headers));
+            sendDataToHttpsSocket_Pimpl(client_socket, res.response_content);
+        }
+        else
+        {
+            sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(res.status, res.response_headers));
+            sendDataToHttpSocket_Pimpl(client_socket, res.response_content);
+        }
+
         if (enable_https)
         {
             SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
@@ -1719,4 +1773,195 @@ void cppNetworkUtilPimpl::print_cppNetworkUtilVersion_Pimpl()
 void cppNetworkUtilPimpl::print_opensslVersion_Pimpl()
 {
     std::cout << "openSSL version: " << OpenSSL_version(OPENSSL_VERSION) << "\n";
+}
+
+void cppNetworkUtilPimpl::registerRoute_Pimpl(const std::string &method, const std::string &path_pattern,
+                                              routeHandler handler)
+{
+    routeInfo info;
+
+    std::string pattern = path_pattern;
+    size_t query_pos = pattern.find('?');
+    if (query_pos != std::string::npos)
+    {
+        pattern = pattern.substr(0, query_pos);
+    }
+
+    std::string regex_str = "^";
+    std::vector<std::string> param_names;
+    bool in_param_group = false;
+    std::string current_param_name;
+
+    for (size_t i = 0; i < pattern.length(); ++i)
+    {
+        char c = pattern[i];
+
+        if (c == '{')
+        {
+            if (in_param_group)
+            {
+                // 嵌套花括号
+                throw std::runtime_error("Invalid route pattern: Nested braces.");
+            }
+            in_param_group = true;
+            current_param_name.clear();
+            continue;
+        }
+
+        if (c == '}')
+        {
+            if (!in_param_group)
+            {
+                // 意外的 '}'
+                throw std::runtime_error("Invalid route pattern: Unexpected '}'.");
+            }
+            in_param_group = false;
+            if (current_param_name.empty())
+            {
+                // '{...}' 中缺少参数名
+                throw std::runtime_error("Invalid route pattern: Missing parameter name.");
+            }
+            param_names.push_back(current_param_name);
+            regex_str += "([^/]+)"; // 默认匹配，因为自定义正则已经在':'处处理了
+            continue;
+        }
+
+        if (in_param_group)
+        {
+            if (c == ':')
+            {
+                if (current_param_name.empty())
+                {
+                    // '{:...}' 中缺少参数名
+                    throw std::runtime_error("Invalid route pattern: Missing parameter name before colon.");
+                }
+
+                size_t brace_pos = pattern.find('}', i + 1);
+                if (brace_pos == std::string::npos)
+                {
+                    // 缺少 '}'
+                    throw std::runtime_error("Invalid route pattern: Mismatched braces.");
+                }
+
+                std::string custom_regex = pattern.substr(i + 1, brace_pos - i - 1);
+                regex_str += "(" + custom_regex + ")";
+
+                param_names.push_back(current_param_name);
+
+                i = brace_pos;          // **关键修复**: 跳转到 '}' 的位置
+                in_param_group = false; // 退出参数捕获组
+                continue;
+            }
+            else
+            {
+                current_param_name += c;
+            }
+        }
+        else
+        {
+            // 在花括号外部，转义特殊字符
+            if (std::string(".*+?^$|()[]{}").find(c) != std::string::npos)
+            {
+                regex_str += '\\';
+            }
+            regex_str += c;
+        }
+    }
+
+    if (in_param_group)
+    {
+        // 缺少 '}'
+        throw std::runtime_error("Invalid route pattern: Unmatched opening brace.");
+    }
+
+    regex_str += "$";
+
+    // 设置路由信息
+    info.param_names = param_names;
+    info.handler = handler;
+    try
+    {
+        info.path_regex = std::regex(regex_str);
+    }
+    catch (const std::regex_error &e)
+    {
+        std::cerr << "Regex Error for pattern '" << path_pattern << "': " << e.what() << std::endl;
+        std::cerr << "Generated regex string was: " << regex_str << std::endl;
+        throw;
+    }
+
+    routes[method].push_back(std::move(info));
+}
+
+responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &req)
+{
+    responseContext res;
+
+    // 设置默认的头
+    res.response_headers["Content-Type"] = "*/*";
+    res.status = 200;
+    res.response_headers["connection"] = "close";
+    if (req.is_https_connection)
+        res.response_headers["enable_hsts"] = "true";
+
+    if (routes.find(req.parsed_request_headers.at("method")) == routes.end())
+    {
+        res.status = 405;
+
+        // 检查是否注册了 405 错误处理函数
+        auto handler_it = error_handlers.find(405);
+        if (handler_it != error_handlers.end())
+        {
+            // 调用自定义的 405 错误处理函数
+            handler_it->second(req, res);
+        }
+        else
+        {
+            // 如果没有，返回默认的 405 响应
+            res.response_content = getHttpCodeText_Pimpl(405);
+        }
+
+        return res;
+    }
+
+    for (const auto &route : routes[req.parsed_request_headers.at("method")])
+    {
+        std::smatch match_results;
+        if (std::regex_match(req.parsed_request_headers.at("url"), match_results, route.path_regex))
+        {
+            requestContext matched_req = req;
+            for (size_t i = 0; i < route.param_names.size(); ++i)
+            {
+                if (i + 1 < match_results.size())
+                {
+                    matched_req.path_params[route.param_names[i]] = match_results[i + 1].str();
+                }
+            }
+
+            route.handler(matched_req, res);
+            return res;
+        }
+    }
+
+    res.status = 404;
+
+    // 检查是否注册了 404 错误处理函数
+    auto handler_it = error_handlers.find(404);
+    if (handler_it != error_handlers.end())
+    {
+        // 调用自定义的 404 错误处理函数
+        handler_it->second(req, res);
+    }
+    else
+    {
+        // 如果没有，返回默认的 404 响应
+        res.response_content = getHttpCodeText_Pimpl(404);
+    }
+
+    return res;
+}
+
+void cppNetworkUtilPimpl::setErrorHandler_Pimpl(int status_code, routeHandler handler)
+{
+    error_handlers[status_code] = std::move(handler);
 }

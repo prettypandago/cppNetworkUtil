@@ -2,7 +2,6 @@
 
 // Forward declaration of implementation class
 class cppNetworkUtilPimpl;
-class serverCallback;
 
 // include
 #include <iostream>
@@ -61,17 +60,6 @@ typedef int SOCKET;
 class cppNetworkUtil
 {
 public:
-    struct clientConnectionInfo
-    {
-        bool is_https_connection;
-        std::string ip;
-        int port;
-        std::string family;
-        std::string request_data;
-        std::string request_header;
-        std::string request_content;
-    };
-
     /**
      * @brief Get the client connection info
      *
@@ -79,7 +67,7 @@ public:
      *
      * @return Client connection info
      */
-    clientConnectionInfo getClientConnectionsInfo(SOCKET client_socket);
+    requestContext getClientConnectionsInfo(SOCKET client_socket);
 
     /**
      * @brief parse header (mapkey: method url http_version ...)
@@ -92,7 +80,7 @@ public:
      *
      * @return parsed map request header
      */
-    std::map<std::string, std::string> getParsedHeader(const std::string &header);
+    std::unordered_map<std::string, std::string> getParsedHeader(const std::string &header);
 
     /**
      * @brief Get the value of a specific header field in the HTTP request header
@@ -190,13 +178,14 @@ public:
     /**
      * @brief Make a response header
      *
-     * @param parameters (std::map<std::string, std::string> parameters) parameters
+     * @param status (int) HTTP status code
+     * @param parameters (std::unordered_map<std::string, std::string>) parameters
      *
      * @throw Missing required fields
      *
      * @return response header
      */
-    std::string makeResponseHeader(std::map<std::string, std::string> parameters);
+    std::string makeResponseHeader(int status, std::unordered_map<std::string, std::string> parameters);
 
     /**
      * @brief Make a request header
@@ -232,13 +221,13 @@ public:
     std::map<std::string, std::string> parseUrlEncodedFormBody(const std::string &encoded_string);
 
     /**
-     * @brief Parse URL parameters from a RESTful API style URL
+     * @brief Cut url path
      *
-     * @param url (std::string) The URL to parse
+     * @param (std::string) url path
      *
-     * @return A vector of strings representing the parameters in the URL
+     * @return a cut std::vector<std::string>
      */
-    std::vector<std::string> getURLParameterRestfulapi(std::string url);
+    std::vector<std::string> cutUrlPath(std::string path);
 
     /**
      * @brief Parse URL parameters from URL query string
@@ -247,9 +236,9 @@ public:
      *
      * @throw Invalid URL format
      *
-     * @return A map of key-value pairs representing the query parameters
+     * @return A unordered map of key-value pairs representing the query parameters
      */
-    std::map<std::string, std::string> parseUrlQueryParameters(const std::string &url);
+    std::unordered_map<std::string, std::string> parseUrlQueryParameters(const std::string &url);
 
     /**
      * @brief Parses a multipart/form-data HTTP body using the specified boundary.
@@ -344,8 +333,8 @@ public:
     /*
      * @brief Run the server with the specified port and callback
      *
-     * @param port (int) The port number to run the server on
-     * @param callback (serverCallback *) The callback to handle server events
+     * @param http_port (int) The http port number to run the server on
+     * @param https_port (int) The https port number to run the server on
      *
      * @throw WSAStartup failed
      * @throw Unable to create SSL context
@@ -358,7 +347,7 @@ public:
      * @throw Listen failed
      * @throw Unable to get the number of CPU cores
      */
-    void run(serverCallback *callback, int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT);
+    void run(int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT);
 
     /**
      * @brief Print the openSSL version
@@ -369,6 +358,70 @@ public:
      * @brief Print the cppNetworkUtil version
      */
     void print_cppNetworkUtilVersion();
+
+    /**
+     * @brief Register a route for the GET method
+     *
+     * @param path_pattern The path pattern to match
+     * @param handler The route handler function
+     */
+    void get(const std::string &path_pattern, routeHandler handler);
+
+    /**
+     * @brief Register a route for the POST method
+     *
+     * @param path_pattern The path pattern to match
+     * @param handler The route handler function
+     */
+    void post(const std::string &path_pattern, routeHandler handler);
+
+    /**
+     * @brief Register a route for the PUT method
+     *
+     * @param path_pattern The path pattern to match
+     * @param handler The route handler function
+     */
+    void put(const std::string &path_pattern, routeHandler handler);
+
+    /**
+     * @brief Register a route for the DELETE method
+     *
+     * @param path_pattern The path pattern to match
+     * @param handler The route handler function
+     */
+    void delete_(const std::string &path_pattern, routeHandler handler);
+
+    /**
+     * @brief Register a route for the PATCH method
+     *
+     * @param path_pattern The path pattern to match
+     * @param handler The route handler function
+     */
+    void patch(const std::string &path_pattern, routeHandler handler);
+
+    /**
+     * @brief Handles an incoming request and generates a corresponding response.
+     *
+     * This function processes the provided request context and returns a response context
+     * containing the results of the request handling. It is intended to be used internally
+     * within the implementation (Pimpl) of the network utility.
+     *
+     * @param req The context of the incoming request to be handled.
+     *
+     * @return responseContext The context containing the response to the request.
+     */
+    responseContext handleRequest(const requestContext &req);
+
+    /**
+     * @brief Sets a custom error handler for a specific HTTP status code.
+     *
+     * Associates the given route handler with the specified status code.
+     * When an error with the provided status code occurs, the handler will be invoked.
+     *
+     * @param status_code The HTTP status code to handle (e.g., 404, 500).
+     * @param handler The function or callable object to handle the error.
+     */
+    void on(int status_code, routeHandler handler);
 
 private:
     std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // pimpl implementation pointer
