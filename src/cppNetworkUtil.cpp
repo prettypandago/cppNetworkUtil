@@ -1,12 +1,18 @@
-#include "cppNetworkUtilPimpl.h" // 这里包含实现类的定义
 #include "cppNetworkUtil.h"
+#include "cppNetworkUtilPimpl.h" // 这里包含实现类的定义
 
 #include "defines.h"
 #include "log.h"
 
 requestContext cppNetworkUtil::getClientConnectionsInfo(SOCKET client_socket)
 {
-    return requestContext{pimpl_->client_connections[client_socket].is_https_connection, pimpl_->client_connections[client_socket].ip, pimpl_->client_connections[client_socket].port, pimpl_->client_connections[client_socket].family, pimpl_->client_connections[client_socket].request_data, pimpl_->client_connections[client_socket].request_header, pimpl_->client_connections[client_socket].request_content};
+    return requestContext{pimpl_->client_connections[client_socket].is_https_connection,
+                          pimpl_->client_connections[client_socket].ip,
+                          pimpl_->client_connections[client_socket].port,
+                          pimpl_->client_connections[client_socket].family,
+                          pimpl_->client_connections[client_socket].request_data,
+                          pimpl_->client_connections[client_socket].request_header,
+                          pimpl_->client_connections[client_socket].request_content};
 }
 
 std::unordered_map<std::string, std::string> cppNetworkUtil::getParsedHeader(const std::string &header)
@@ -79,7 +85,8 @@ std::unordered_map<std::string, std::string> cppNetworkUtil::parseUrlQueryParame
     return pimpl_->parseUrlQueryParameters_Pimpl(url);
 }
 
-std::map<std::string, multipartData> cppNetworkUtil::parseMultipart(const std::string &boundary, const std::string &body)
+std::map<std::string, multipartData> cppNetworkUtil::parseMultipart(const std::string &boundary,
+                                                                    const std::string &body)
 {
     return pimpl_->parseMultipart_Pimpl(boundary, body);
 }
@@ -94,17 +101,21 @@ void cppNetworkUtil::sendDataToHttpsSocket(SOCKET socket, const std::string data
     pimpl_->sendDataToHttpsSocket_Pimpl(socket, data);
 }
 
-void cppNetworkUtil::sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content)
+void cppNetworkUtil::sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header,
+                                        std::string &content)
 {
     pimpl_->sendDataToHttpHost_Pimpl(host, path, port, header, content);
 }
 
-void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA)
+void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::string &path, int port,
+                                         std::string &header, std::string &content, bool enable_CA)
 {
     pimpl_->sendDataToHttpsHost_Pimpl(host, path, port, header, content, enable_CA);
 }
 
-cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>()) {}
+cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>())
+{
+}
 
 cppNetworkUtil::~cppNetworkUtil() = default; // unique_ptr 会自动管理内存
 
@@ -123,37 +134,12 @@ void cppNetworkUtil::print_cppNetworkUtilVersion()
     pimpl_->print_cppNetworkUtilVersion_Pimpl();
 }
 
-void cppNetworkUtil::get(const std::string &path_pattern, routeHandler handler)
+void cppNetworkUtil::on(const std::string &method, const std::string &path_pattern, routeHandler handler)
 {
-    pimpl_->registerRoute_Pimpl("GET", path_pattern, std::move(handler));
+    pimpl_->on_Pimpl(method, path_pattern, std::move(handler));
 }
 
-void cppNetworkUtil::post(const std::string &path_pattern, routeHandler handler)
+void cppNetworkUtil::on(const std::string &method, int status_code, routeHandler handler)
 {
-    pimpl_->registerRoute_Pimpl("POST", path_pattern, std::move(handler));
-}
-
-void cppNetworkUtil::put(const std::string &path_pattern, routeHandler handler)
-{
-    pimpl_->registerRoute_Pimpl("PUT", path_pattern, std::move(handler));
-}
-
-void cppNetworkUtil::delete_(const std::string &path_pattern, routeHandler handler)
-{
-    pimpl_->registerRoute_Pimpl("DELETE", path_pattern, std::move(handler));
-}
-
-void cppNetworkUtil::patch(const std::string &path_pattern, routeHandler handler)
-{
-    pimpl_->registerRoute_Pimpl("PATCH", path_pattern, std::move(handler));
-}
-
-responseContext cppNetworkUtil::handleRequest(const requestContext &req)
-{
-    return pimpl_->handleRequest_Pimpl(req);
-}
-
-void cppNetworkUtil::on(int status_code, routeHandler handler)
-{
-    return pimpl_->setErrorHandler_Pimpl(status_code, handler);
+    pimpl_->on_Pimpl(method, status_code, std::move(handler));
 }

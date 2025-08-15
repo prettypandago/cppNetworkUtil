@@ -134,8 +134,7 @@ class cppNetworkUtilPimpl
     };
     std::map<SOCKET, clientConnectionInfo_Pimpl> client_connections; // 存储客户端连接信息
 
-    std::unordered_map<std::string, std::vector<routeInfo>> routes; // 储存路由信息
-    std::unordered_map<int, routeHandler> error_handlers;           // 储存错误路由信息
+    std::unordered_map<std::string, std::vector<routeInfo>> handlers; // 储存路由信息
 
     /**
      * @brief parse header (mapkey: method url http_version ...)
@@ -417,16 +416,40 @@ class cppNetworkUtilPimpl
     void print_opensslVersion_Pimpl();
 
     /**
-     * @brief Registers a route handler for a specific HTTP method and path pattern.
+     * @brief Register a route handler for a specific HTTP method and path pattern.
      *
-     * Associates the given handler with the specified HTTP method and path pattern.
-     * When a request matches the method and path pattern, the corresponding handler will be invoked.
+     * This function allows you to define how the server should respond to requests
+     * that match a specific HTTP method (e.g., GET, POST) and a path pattern.
      *
-     * @param method The HTTP method (e.g., "GET", "POST") for which the route is registered.
-     * @param path_pattern The path pattern to match incoming requests (e.g., "/api/items/:id").
-     * @param handler The function or callable object to handle requests matching the method and path pattern.
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param path_pattern The path pattern to match against incoming requests.
+     * @param handler The function or callable object that will handle the request.
      */
-    void registerRoute_Pimpl(const std::string &method, const std::string &path_pattern, routeHandler handler);
+    void on_Pimpl(const std::string &method, const std::string &path_pattern, routeHandler handler);
+
+    /**
+     * @brief Register a route handler for a specific HTTP method and status code.
+     *
+     * This function allows you to define how the server should respond to requests
+     * that match a specific HTTP method and status code.
+     *
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param status_code The HTTP status code for which the handler is registered.
+     * @param handler The function or callable object that will handle the request.
+     */
+    void on_Pimpl(const std::string &method, int status_code, routeHandler handler);
+
+    /**
+     * @brief Invokes the error handler for a specific HTTP status code.
+     *
+     * This function is called when an error occurs during request processing,
+     * allowing the server to respond with a custom error message or handling logic.
+     *
+     * @param status_code The HTTP status code indicating the type of error (e.g., 404, 500).
+     * @param req The request context containing information about the incoming request.
+     * @param res The response context to be modified by the error handler.
+     */
+    void invokeErrorHandler_Pimpl(int status_code, const requestContext &req, responseContext &res);
 
     /**
      * @brief Handles an incoming request and generates a corresponding response.
@@ -441,16 +464,16 @@ class cppNetworkUtilPimpl
      */
     responseContext handleRequest_Pimpl(const requestContext &req);
 
-    /**
-     * @brief Sets a custom error handler for a specific HTTP status code.
-     *
-     * Associates the given route handler with the specified status code.
-     * When an error with the provided status code occurs, the handler will be invoked.
-     *
-     * @param status_code The HTTP status code to handle (e.g., 404, 500).
-     * @param handler The function or callable object to handle the error.
-     */
-    void setErrorHandler_Pimpl(int status_code, routeHandler handler);
+    // /**
+    //  * @brief Sets a custom error handler for a specific HTTP status code.
+    //  *
+    //  * Associates the given route handler with the specified status code.
+    //  * When an error with the provided status code occurs, the handler will be invoked.
+    //  *
+    //  * @param status_code The HTTP status code to handle (e.g., 404, 500).
+    //  * @param handler The function or callable object to handle the error.
+    //  */
+    // void setErrorHandler_Pimpl(int status_code, routeHandler handler);
 
   private:
     ssl_ctx_st *ssl_ctx_server; // 服务器端 SSL 上下文

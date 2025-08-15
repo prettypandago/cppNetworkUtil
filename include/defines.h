@@ -54,6 +54,7 @@ struct routeInfo
     std::regex path_regex;
     std::vector<std::string> param_names;
     routeHandler handler;
+    std::string path_pattern_or_status;
 };
 
 // 用于存储解析过的post的multipart数据

@@ -1775,10 +1775,11 @@ void cppNetworkUtilPimpl::print_opensslVersion_Pimpl()
     std::cout << "openSSL version: " << OpenSSL_version(OPENSSL_VERSION) << "\n";
 }
 
-void cppNetworkUtilPimpl::registerRoute_Pimpl(const std::string &method, const std::string &path_pattern,
-                                              routeHandler handler)
+void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const std::string &path_pattern, routeHandler handler)
 {
     routeInfo info;
+    info.path_pattern_or_status = path_pattern; // 存储原始路径模式
+    info.handler = std::move(handler);
 
     std::string pattern = path_pattern;
     size_t query_pos = pattern.find('?');
@@ -1788,7 +1789,6 @@ void cppNetworkUtilPimpl::registerRoute_Pimpl(const std::string &method, const s
     }
 
     std::string regex_str = "^";
-    std::vector<std::string> param_names;
     bool in_param_group = false;
     std::string current_param_name;
 
@@ -1800,7 +1800,6 @@ void cppNetworkUtilPimpl::registerRoute_Pimpl(const std::string &method, const s
         {
             if (in_param_group)
             {
-                // 嵌套花括号
                 throw std::runtime_error("Invalid route pattern: Nested braces.");
             }
             in_param_group = true;
@@ -1812,16 +1811,14 @@ void cppNetworkUtilPimpl::registerRoute_Pimpl(const std::string &method, const s
         {
             if (!in_param_group)
             {
-                // 意外的 '}'
                 throw std::runtime_error("Invalid route pattern: Unexpected '}'.");
             }
             in_param_group = false;
             if (current_param_name.empty())
             {
-                // '{...}' 中缺少参数名
                 throw std::runtime_error("Invalid route pattern: Missing parameter name.");
             }
-            param_names.push_back(current_param_name);
+            info.param_names.push_back(current_param_name);
             regex_str += "([^/]+)"; // 默认匹配，因为自定义正则已经在':'处处理了
             continue;
         }
@@ -1832,23 +1829,19 @@ void cppNetworkUtilPimpl::registerRoute_Pimpl(const std::string &method, const s
             {
                 if (current_param_name.empty())
                 {
-                    // '{:...}' 中缺少参数名
                     throw std::runtime_error("Invalid route pattern: Missing parameter name before colon.");
                 }
-
                 size_t brace_pos = pattern.find('}', i + 1);
                 if (brace_pos == std::string::npos)
                 {
-                    // 缺少 '}'
                     throw std::runtime_error("Invalid route pattern: Mismatched braces.");
                 }
-
                 std::string custom_regex = pattern.substr(i + 1, brace_pos - i - 1);
                 regex_str += "(" + custom_regex + ")";
 
-                param_names.push_back(current_param_name);
+                info.param_names.push_back(current_param_name); // 再次添加，确保名称正确
 
-                i = brace_pos;          // **关键修复**: 跳转到 '}' 的位置
+                i = brace_pos;          // 关键: 跳转到 '}' 的位置
                 in_param_group = false; // 退出参数捕获组
                 continue;
             }
@@ -1870,15 +1863,11 @@ void cppNetworkUtilPimpl::registerRoute_Pimpl(const std::string &method, const s
 
     if (in_param_group)
     {
-        // 缺少 '}'
         throw std::runtime_error("Invalid route pattern: Unmatched opening brace.");
     }
 
     regex_str += "$";
 
-    // 设置路由信息
-    info.param_names = param_names;
-    info.handler = handler;
     try
     {
         info.path_regex = std::regex(regex_str);
@@ -1890,13 +1879,70 @@ void cppNetworkUtilPimpl::registerRoute_Pimpl(const std::string &method, const s
         throw;
     }
 
-    routes[method].push_back(std::move(info));
+    // 将路由信息添加到对应的请求方法下
+    handlers[method].push_back(std::move(info));
+}
+
+void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, int status_code, routeHandler handler)
+{
+    routeInfo info;
+    info.path_pattern_or_status = std::to_string(status_code); // 存储状态码字符串
+    info.handler = std::move(handler);
+    // 错误处理不需要 path_regex 和 param_names
+    handlers[method].push_back(std::move(info));
+}
+
+void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const requestContext &req, responseContext &res)
+{
+    std::string method = req.parsed_request_headers.at("method"); // 获取实际请求方法
+    std::string status_code_str = std::to_string(status_code);
+
+    // 查找优先级：特定方法+状态码 -> 通用方法+状态码 -> 默认处理
+
+    // 1. 尝试查找特定请求方法和特定状态码的 handler
+    auto method_it = handlers.find(method);
+    if (method_it != handlers.end())
+    {
+        for (const auto &route_info : method_it->second)
+        {
+            if (route_info.path_pattern_or_status == status_code_str)
+            {
+                route_info.handler(req, res);
+                res.status = status_code;
+                return;
+            }
+        }
+    }
+
+    // 2. 尝试查找通用方法 "*" 和特定状态码的 handler
+    auto generic_method_it = handlers.find("*");
+    if (generic_method_it != handlers.end())
+    {
+        for (const auto &route_info : generic_method_it->second)
+        {
+            if (route_info.path_pattern_or_status == status_code_str)
+            {
+                route_info.handler(req, res);
+                res.status = status_code;
+                return;
+            }
+        }
+    }
+
+    // 3. 如果都没有找到，回退到默认处理
+    res.status = status_code;
+    res.response_content = getHttpCodeText_Pimpl(status_code);
+    res.response_headers["status"] = std::to_string(res.status);
+    // 如果想在这里设置Content-Type等，确保响应完整
+    if (res.response_headers.find("Content-Type") == res.response_headers.end())
+    {
+        res.response_headers["Content-Type"] = "text/plain";
+    }
 }
 
 responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &req)
 {
     responseContext res;
-
     // 设置默认的头
     res.response_headers["Content-Type"] = "*/*";
     res.status = 200;
@@ -1904,64 +1950,81 @@ responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &r
     if (req.is_https_connection)
         res.response_headers["enable_hsts"] = "true";
 
-    if (routes.find(req.parsed_request_headers.at("method")) == routes.end())
+    // 获取请求方法和 URL
+    const std::string &method = req.parsed_request_headers.at("method");
+    const std::string &url = req.parsed_request_headers.at("url");
+
+    // --- 路由匹配阶段 ---
+    // 查找优先级：特定方法 -> 通用方法 "*"
+
+    std::vector<const std::string *> methods_to_check;
+    methods_to_check.push_back(&method);
+    if (method != "*")
     {
-        res.status = 405;
-
-        // 检查是否注册了 405 错误处理函数
-        auto handler_it = error_handlers.find(405);
-        if (handler_it != error_handlers.end())
-        {
-            // 调用自定义的 405 错误处理函数
-            handler_it->second(req, res);
-        }
-        else
-        {
-            // 如果没有，返回默认的 405 响应
-            res.response_content = getHttpCodeText_Pimpl(405);
-        }
-
-        return res;
+        static const std::string generic_method = "*";
+        methods_to_check.push_back(&generic_method);
     }
 
-    for (const auto &route : routes[req.parsed_request_headers.at("method")])
+    for (const std::string *current_method_ptr : methods_to_check)
     {
-        std::smatch match_results;
-        if (std::regex_match(req.parsed_request_headers.at("url"), match_results, route.path_regex))
+        const std::string &current_method = *current_method_ptr;
+        auto method_handlers_it = handlers.find(current_method);
+
+        if (method_handlers_it != handlers.end())
         {
-            requestContext matched_req = req;
-            for (size_t i = 0; i < route.param_names.size(); ++i)
+            // 遍历所有注册的路由信息
+            for (const auto &route_info : method_handlers_it->second)
             {
-                if (i + 1 < match_results.size())
+                // 判断是否是路径路由（通过检查其是否不为数字）
+                bool is_path_route = true;
+                if (!route_info.path_pattern_or_status.empty() &&
+                    std::all_of(route_info.path_pattern_or_status.begin(), route_info.path_pattern_or_status.end(),
+                                ::isdigit))
                 {
-                    matched_req.path_params[route.param_names[i]] = match_results[i + 1].str();
+                    is_path_route = false;
+                }
+
+                if (is_path_route)
+                {
+                    std::smatch match_results;
+                    try
+                    {
+                        if (std::regex_match(url, match_results, route_info.path_regex))
+                        {
+                            requestContext matched_req = req; // 复制请求上下文
+                            for (size_t i = 0; i < route_info.param_names.size(); ++i)
+                            {
+                                if (i + 1 < match_results.size())
+                                {
+                                    matched_req.path_params[route_info.param_names[i]] = match_results[i + 1].str();
+                                }
+                            }
+
+                            // 调用用户定义的路由处理函数
+                            route_info.handler(matched_req, res);
+
+                            // 检查用户处理函数是否设置了错误状态码
+                            if (res.status <= 199 || res.status >= 300)
+                            {
+                                invokeErrorHandler_Pimpl(res.status, matched_req, res);
+                            }
+
+                            return res; // 找到了并处理了，直接返回
+                        }
+                    }
+                    catch (const std::regex_error &e)
+                    {
+                        std::cerr << "Runtime Regex Error for pattern '" << route_info.path_pattern_or_status
+                                  << "': " << e.what() << std::endl;
+                        invokeErrorHandler_Pimpl(500, req, res);
+                        return res;
+                    }
                 }
             }
-
-            route.handler(matched_req, res);
-            return res;
         }
     }
 
-    res.status = 404;
-
-    // 检查是否注册了 404 错误处理函数
-    auto handler_it = error_handlers.find(404);
-    if (handler_it != error_handlers.end())
-    {
-        // 调用自定义的 404 错误处理函数
-        handler_it->second(req, res);
-    }
-    else
-    {
-        // 如果没有，返回默认的 404 响应
-        res.response_content = getHttpCodeText_Pimpl(404);
-    }
-
+    // --- 路由匹配失败，进入错误处理阶段 ---
+    invokeErrorHandler_Pimpl(404, req, res);
     return res;
-}
-
-void cppNetworkUtilPimpl::setErrorHandler_Pimpl(int status_code, routeHandler handler)
-{
-    error_handlers[status_code] = std::move(handler);
 }

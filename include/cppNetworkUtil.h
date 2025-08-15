@@ -8,23 +8,23 @@ class cppNetworkUtilPimpl;
 
 #ifdef _WIN32
 
+#include <shlobj.h>
+#include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <windows.h>
-#include <shlobj.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
 #else
 
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <netdb.h>
 #include <errno.h>
 #include <ifaddrs.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 typedef int SOCKET;
 
@@ -35,23 +35,22 @@ typedef int SOCKET;
 
 #endif
 
-#include <map>
-#include <ctime>
-#include <string>
-#include <cstring>
-#include <vector>
-#include <thread>
-#include <sstream>
-#include <fstream> // For std::ifstream
+#include <algorithm> // For std::min
 #include <condition_variable>
-#include <algorithm>  // For std::min
+#include <cstdio>
+#include <cstring>
+#include <ctime>
+#include <fstream>    // For std::ifstream
 #include <functional> // For std::function
 #include <future>     // For std::future, std::packaged_task
-#include <queue>
-#include <mutex>
-#include <cstdio>
-#include <ctime>
+#include <map>
 #include <memory> //For std::unique_ptr
+#include <mutex>
+#include <queue>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <vector>
 
 #include "defines.h"
 #include "log.h"
@@ -59,7 +58,7 @@ typedef int SOCKET;
 // cppNetworkUtil
 class cppNetworkUtil
 {
-public:
+  public:
     /**
      * @brief Get the client connection info
      *
@@ -132,7 +131,8 @@ public:
      *
      * @param buffer The input string containing HTTP request data.
      *
-     * @return A string representing the Content-Type of the POST request. Returns an empty string if the Content-Type cannot be determined.
+     * @return A string representing the Content-Type of the POST request. Returns an empty string if the Content-Type
+     * cannot be determined.
      */
     std::string getPostContentType(const std::string &buffer);
 
@@ -291,7 +291,8 @@ public:
      * @throw shutdown failed
      * @throw Invalid HTTP response format
      */
-    void sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content);
+    void sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header,
+                            std::string &content);
 
     /**
      * @brief Send data to the host using HTTPS protocol
@@ -314,7 +315,8 @@ public:
      * @throw Incomplete chunk data: connection closed unexpectedly or SSL read error
      * @throw Invalid HTTP response format
      */
-    void sendDataToHttpsHost(const std::string &host, const std::string &path, int port, std::string &header, std::string &content, bool enable_CA = true);
+    void sendDataToHttpsHost(const std::string &host, const std::string &path, int port, std::string &header,
+                             std::string &content, bool enable_CA = true);
 
     /**
      * @brief Automatically executed when leaving scope
@@ -360,69 +362,29 @@ public:
     void print_cppNetworkUtilVersion();
 
     /**
-     * @brief Register a route for the GET method
+     * @brief Register a route handler for a specific HTTP method and path pattern.
      *
-     * @param path_pattern The path pattern to match
-     * @param handler The route handler function
+     * This function allows you to define how the server should respond to requests
+     * that match a specific HTTP method (e.g., GET, POST) and a path pattern.
+     *
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param path_pattern The path pattern to match against incoming requests.
+     * @param handler The function or callable object that will handle the request.
      */
-    void get(const std::string &path_pattern, routeHandler handler);
+    void on(const std::string &method, const std::string &path_pattern, routeHandler handler);
 
     /**
-     * @brief Register a route for the POST method
+     * @brief Register a route handler for a specific HTTP method and status code.
      *
-     * @param path_pattern The path pattern to match
-     * @param handler The route handler function
+     * This function allows you to define how the server should respond to requests
+     * that match a specific HTTP method and status code.
+     *
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param status_code The HTTP status code for which the handler is registered.
+     * @param handler The function or callable object that will handle the request.
      */
-    void post(const std::string &path_pattern, routeHandler handler);
+    void on(const std::string &method, int status_code, routeHandler handler);
 
-    /**
-     * @brief Register a route for the PUT method
-     *
-     * @param path_pattern The path pattern to match
-     * @param handler The route handler function
-     */
-    void put(const std::string &path_pattern, routeHandler handler);
-
-    /**
-     * @brief Register a route for the DELETE method
-     *
-     * @param path_pattern The path pattern to match
-     * @param handler The route handler function
-     */
-    void delete_(const std::string &path_pattern, routeHandler handler);
-
-    /**
-     * @brief Register a route for the PATCH method
-     *
-     * @param path_pattern The path pattern to match
-     * @param handler The route handler function
-     */
-    void patch(const std::string &path_pattern, routeHandler handler);
-
-    /**
-     * @brief Handles an incoming request and generates a corresponding response.
-     *
-     * This function processes the provided request context and returns a response context
-     * containing the results of the request handling. It is intended to be used internally
-     * within the implementation (Pimpl) of the network utility.
-     *
-     * @param req The context of the incoming request to be handled.
-     *
-     * @return responseContext The context containing the response to the request.
-     */
-    responseContext handleRequest(const requestContext &req);
-
-    /**
-     * @brief Sets a custom error handler for a specific HTTP status code.
-     *
-     * Associates the given route handler with the specified status code.
-     * When an error with the provided status code occurs, the handler will be invoked.
-     *
-     * @param status_code The HTTP status code to handle (e.g., 404, 500).
-     * @param handler The function or callable object to handle the error.
-     */
-    void on(int status_code, routeHandler handler);
-
-private:
+  private:
     std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // pimpl implementation pointer
 };
