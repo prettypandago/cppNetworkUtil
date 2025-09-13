@@ -134,7 +134,20 @@ class cppNetworkUtilPimpl
     };
     std::map<SOCKET, clientConnectionInfo_Pimpl> client_connections; // 存储客户端连接信息
 
-    std::unordered_map<std::string, std::vector<routeInfo>> handlers; // 储存路由信息
+    // 专门用于固定方法的哈希表
+    std::unordered_map<std::string, std::vector<routeInfo>> fixed_method_handlers;
+
+    // 专门用于正则表达式方法的向量（包括 *）
+    std::vector<std::pair<std::regex, std::vector<routeInfo>>> regex_method_handlers;
+
+    /**
+     * @brief Determine whether a string is a regular expression
+     *
+     * @param s (const std::string &) string
+     *
+     * @return Is regex pattern
+     */
+    bool isRegexPattern_Pimpl(const std::string &s);
 
     /**
      * @brief parse header (mapkey: method url http_version ...)

@@ -8,14 +8,14 @@ int main(int argc, char **argv)
 {
     cppNetworkUtil server;
 
-    // test url: https://127.0.0.1/
-    // response: "Hello, world!"
-    // simple GET request
+    // Test url: https://127.0.0.1/
+    // Response: "Hello, world!"
+    // Simple GET request
     server.on("GET", "/",
               [](const requestContext &req, responseContext &res) { res.response_content = "Hello, world!"; });
 
-    // test url: https://127.0.0.1/test/123?q=profile
-    // response: "User ID: 123, Query: profile"
+    // Test url: https://127.0.0.1/test/123?q=profile
+    // Response: "User ID: 123, Query: profile"
     // url parameters: {id: 123}
     // query parameters: {q: profile}
     server.on("GET", "/test/{id}", [](const requestContext &req, responseContext &res) {
@@ -23,32 +23,32 @@ int main(int argc, char **argv)
         res.response_headers["Content-Type"] = "text/plain";
     });
 
-    // test url: https://127.0.0.1/files/document.pdf
-    // response: "File Name: document, Extension: pdf"
-    // url path support regex
+    // Test url: https://127.0.0.1/files/document.pdf
+    // Response: "File Name: document, Extension: pdf"
+    // Url path support regex
     server.on("GET", "/files/{name:[a-zA-Z0-9]+}.{ext:[a-zA-Z]+}", [](const requestContext &req, responseContext &res) {
         res.response_content = "File Name: " + req.path_params.at("name") + ", Extension: " + req.path_params.at("ext");
         res.response_headers["Content-Type"] = "text/plain";
     });
 
-    // test url: https://127.0.0.1/badrequest
-    // response: Bad Request
+    // Test url: https://127.0.0.1/badrequest
+    // Response: Bad Request
     // This route is intentionally set to return a 400 Bad Request status code.
-    // This is useful for testing error handling.
+    // This is useful for Testing error handling.
     server.on("GET", "/badrequest", [](const requestContext &req, responseContext &res) {
         res.status = 400; // Bad Request
     });
 
-    // test url: https://127.0.0.1/forallmethod
-    // response: Your method is: (request method, e.g., GET, POST, etc.)
-    // set method to "*" to handle all methods
+    // Test url: https://127.0.0.1/forallmethod
+    // Response: Your method is: (request method, e.g., GET, POST, etc.)
+    // Set method to "*" to handle all methods
     server.on("*", "/forallmethod", [](const requestContext &req, responseContext &res) {
         res.response_content = "Your method is: " + req.parsed_request_headers.at("method");
         res.response_headers["Content-Type"] = "text/plain";
     });
 
-    // test url: https://127.0.0.1/notfound
-    // response: Page Not Found
+    // Test url: https://127.0.0.1/notfound
+    // Response: Page Not Found
     // The page you requested does not exist.
     // This route is error page for handle.
     server.on("GET", 404, [](const requestContext &req, responseContext &res) {
@@ -57,11 +57,18 @@ int main(int argc, char **argv)
         res.response_headers["Content-Type"] = "text/html";
     });
 
-    // test url: https://127.0.0.1/badrequest
-    // response: Bad request
+    // Test url: https://127.0.0.1/getandpost
+    // Handles all GET and POST requests
+    // Method support regex
+    server.on("^GET|POST$", "/getandpost", [](const requestContext &req, responseContext &res) {
+        res.response_content = "This handles both GET and POST!";
+    });
+
+    // Test url: https://127.0.0.1/badrequest
+    // Response: Bad request
     // The request could not be understood by the server due to malformed syntax. Please check your request and try
     // again.
-    // set method to "*" to handle all methods
+    // Set method to "*" (or ".*", it will automatically convert "*" to ".*") to handle all methods
     server.on("*", 400, [](const requestContext &req, responseContext &res) {
         res.response_content = "<html><body><h1>Bad request</h1><p>The request could not be understood by the server "
                                "due to malformed syntax. Please check your request and try again."
