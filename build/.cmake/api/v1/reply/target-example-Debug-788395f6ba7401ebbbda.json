@@ -14,6 +14,7 @@
 		"commands" : 
 		[
 			"add_executable",
+			"target_link_options",
 			"link_directories",
 			"target_link_libraries",
 			"include_directories"
@@ -36,29 +37,35 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 20,
+				"line" : 70,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 71,
+				"line" : 20,
 				"parent" : 0
 			},
 			{
-				"command" : 2,
+				"command" : 3,
+				"file" : 0,
+				"line" : 76,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
 				"file" : 0,
 				"line" : 47,
 				"parent" : 0
 			},
 			{
-				"command" : 3,
+				"command" : 4,
 				"file" : 0,
 				"line" : 15,
 				"parent" : 0
 			},
 			{
-				"command" : 3,
+				"command" : 4,
 				"file" : 0,
 				"line" : 17,
 				"parent" : 0
@@ -77,11 +84,11 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 5,
+					"backtrace" : 6,
 					"path" : "D:/YYProject/vscode-project/cppNetworkUtil/include"
 				},
 				{
-					"backtrace" : 6,
+					"backtrace" : 7,
 					"isSystem" : true,
 					"path" : "D:/YYProject/vscode-project/cppNetworkUtil/openssl/include"
 				}
@@ -104,7 +111,7 @@
 	"dependencies" : 
 	[
 		{
-			"backtrace" : 3,
+			"backtrace" : 4,
 			"id" : "cppNetworkUtilLib::@6890427a1f51a3e7e1df"
 		}
 	],
@@ -119,36 +126,41 @@
 			},
 			{
 				"backtrace" : 2,
+				"fragment" : "-static",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 3,
 				"fragment" : "-LD:\\YYProject\\vscode-project\\cppNetworkUtil\\openssl\\lib",
 				"role" : "libraryPath"
 			},
 			{
-				"backtrace" : 3,
+				"backtrace" : 4,
 				"fragment" : "libcppNetworkUtilLib.a",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 5,
 				"fragment" : "D:\\YYProject\\vscode-project\\cppNetworkUtil\\openssl\\lib\\libssl.a",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 5,
 				"fragment" : "D:\\YYProject\\vscode-project\\cppNetworkUtil\\openssl\\lib\\libcrypto.a",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 5,
 				"fragment" : "-lws2_32",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 5,
 				"fragment" : "-lgdi32",
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 5,
 				"fragment" : "-lcrypt32",
 				"role" : "libraries"
 			},

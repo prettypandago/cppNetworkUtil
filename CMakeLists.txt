@@ -66,6 +66,11 @@ set(EXECUTABLE_SOURCES
 # 创建名为 example 的可执行文件
 add_executable(example ${EXECUTABLE_SOURCES})
 
+# 为可执行文件添加链接选项
+target_link_options(example PRIVATE
+    "-static"
+)
+
 # 链接可执行文件到你刚刚构建的静态库
 # 由于 cppNetworkUtilLib 使用 PUBLIC 链接了所有依赖，这里的 example 目标会自动继承。
 target_link_libraries(example PRIVATE cppNetworkUtilLib)
