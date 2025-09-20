@@ -400,23 +400,41 @@ class cppNetworkUtilPimpl
                                    std::string &content, bool enable_CA = true);
 
     /*
-     * @brief Run the server with the specified port and callback
+     * @brief Create and bind a socket to the specified port and IP protocol mode
+
+     * @param port (int) The port number to bind the socket to
+     * @param ip_protocol_family (int) The IP protocol family (AF_INET for IPv4, AF_INET6 for IPv6)
+     * @param is_ipv6_only (bool) set is ipv6 only
      *
-     * @param http_port (int) The http port number to run the server on
-     * @param https_port (int) The https port number to run the server on
-     *
-     * @throw WSAStartup failed
-     * @throw Unable to create SSL context
-     * @throw Unable to load certificate PUBLIC KEY
-     * @throw Unable to load private key PRIVATE KEY
-     * @throw Private key does not match the certificate
      * @throw Create socket failed
      * @throw Setsockopt failed
      * @throw Bind failed
      * @throw Listen failed
+     *
+     * @return The created and bound socket
+     */
+    SOCKET createAndBindSocket_Pimpl(int port, int ip_protocol_family, bool is_ipv6_only);
+
+    /*
+     * @brief Run the server with the specified port and callback
+     *
+     * @param http_port (int) The http port number to run the server on
+     * @param https_port (int) The https port number to run the server on
+     * @param behavior_mode (int) The server behavior mode (0: Redirect HTTP request to HTTPS, 1: Handling HTTP and
+     * HTTPS requests)
+     * @param ip_protocol_mode (int) The IP protocol mode (0: IPv4, 1: IPv6, 2: both)
+     *
+     * @throw WSAStartup failed
+     * @throw At least one port must be enabled
+     * @throw Unable to create SSL context
+     * @throw Unable to load certificate PUBLIC KEY
+     * @throw Unable to load private key PRIVATE KEY
+     * @throw Private key does not match the certificate
      * @throw Unable to get the number of CPU cores
      */
-    void run_Pimpl(int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT);
+    void run_Pimpl(int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT,
+                   int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS,
+                   int ip_protocol_mode = IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH);
 
     /**
      * @brief Print the cppNetowrkUtil version
@@ -477,17 +495,6 @@ class cppNetworkUtilPimpl
      */
     responseContext handleRequest_Pimpl(const requestContext &req);
 
-    // /**
-    //  * @brief Sets a custom error handler for a specific HTTP status code.
-    //  *
-    //  * Associates the given route handler with the specified status code.
-    //  * When an error with the provided status code occurs, the handler will be invoked.
-    //  *
-    //  * @param status_code The HTTP status code to handle (e.g., 404, 500).
-    //  * @param handler The function or callable object to handle the error.
-    //  */
-    // void setErrorHandler_Pimpl(int status_code, routeHandler handler);
-
   private:
     ssl_ctx_st *ssl_ctx_server; // 服务器端 SSL 上下文
     ssl_ctx_st *ssl_ctx_client; // 客户端 SSL 上下文
@@ -503,6 +510,8 @@ class cppNetworkUtilPimpl
      * @param enable_https (bool) Whether to enable HTTPS support
      * @param http_port (int) The HTTP port to listen on
      * @param https_port (int) The HTTPS port to listen on
+     * @param behavior_mode (int) The server behavior mode (0: Redirect HTTP request to HTTPS, 1: Handling HTTP and
+     * HTTPS requests)
      *
      * @throw Invalid server socket
      *
@@ -510,5 +519,6 @@ class cppNetworkUtilPimpl
      * It uses the provided callback to notify the user of received data.
      */
     void process(SOCKET server_socket, bool enable_https, int http_port = DEFAULT_HTTP_SERVER_PORT,
-                 int https_port = DEFAULT_HTTPS_SERVER_PORT);
+                 int https_port = DEFAULT_HTTPS_SERVER_PORT,
+                 int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS);
 };

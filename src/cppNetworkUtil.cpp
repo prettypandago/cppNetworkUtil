@@ -119,9 +119,9 @@ cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>(
 
 cppNetworkUtil::~cppNetworkUtil() = default; // unique_ptr 会自动管理内存
 
-void cppNetworkUtil::run(int http_port, int https_port)
+void cppNetworkUtil::run(int http_port, int https_port, int behavior_mode, int ip_protocol_mode)
 {
-    pimpl_->run_Pimpl(http_port, https_port);
+    pimpl_->run_Pimpl(http_port, https_port, behavior_mode, ip_protocol_mode);
 }
 
 void cppNetworkUtil::print_opensslVersion()

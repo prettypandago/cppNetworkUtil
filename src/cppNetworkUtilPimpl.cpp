@@ -355,12 +355,9 @@ std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(int status,
     buffer += NAME;
     buffer += "\r\n";
 
-    if (parameters["enable_hsts"] == "true")
-        buffer += "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload\r\n";
-
     for (const auto &pair : parameters)
     {
-        if (pair.first != "status" && pair.first != "connection" && pair.first != "enable_hsts")
+        if (pair.first != "status" && pair.first != "connection")
             buffer += pair.first + ": " + pair.second + "\r\n";
     }
     buffer += "\r\n";
@@ -1313,181 +1310,152 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
     }
 }
 
-void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port)
+SOCKET cppNetworkUtilPimpl::createAndBindSocket_Pimpl(int port, int ip_protocol_family, bool is_ipv6_only)
 {
-    // WSA startup
+    SOCKET server_socket = socket(ip_protocol_family, SOCK_STREAM, IPPROTO_TCP);
+    if (server_socket == INVALID_SOCKET)
+    {
+        throw std::runtime_error("Create socket failed");
+    }
+
+    bool set_options_success = true;
+    int optval = 1;
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+    {
+        set_options_success = false;
+    }
+
+    if (ip_protocol_family == AF_INET6)
+    {
+        // 设置 IPV6_V6ONLY
+        optval = is_ipv6_only ? 1 : 0;
+        if (setsockopt(server_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char *)&optval, sizeof(optval)) == SOCKET_ERROR)
+        {
+            set_options_success = false;
+        }
+    }
+
+    if (!set_options_success)
+    {
+        closesocket(server_socket);
+        throw std::runtime_error("Setsockopt failed");
+    }
+
+    if (ip_protocol_family == AF_INET6)
+    {
+        struct sockaddr_in6 server_address;
+        memset(&server_address, 0, sizeof(server_address));
+        server_address.sin6_family = AF_INET6;
+        server_address.sin6_addr = in6addr_any;
+        server_address.sin6_port = htons(port);
+        if (bind(server_socket, (const struct sockaddr *)&server_address, sizeof(server_address)) == SOCKET_ERROR)
+        {
+            closesocket(server_socket);
+            throw std::runtime_error("Bind failed");
+        }
+    }
+    else
+    {
+        struct sockaddr_in server_address;
+        memset(&server_address, 0, sizeof(server_address));
+        server_address.sin_family = AF_INET;
+        server_address.sin_addr.s_addr = INADDR_ANY;
+        server_address.sin_port = htons(port);
+        if (bind(server_socket, (const struct sockaddr *)&server_address, sizeof(server_address)) == SOCKET_ERROR)
+        {
+            closesocket(server_socket);
+            throw std::runtime_error("Bind failed");
+        }
+    }
+
+    if (listen(server_socket, SOMAXCONN) == SOCKET_ERROR)
+    {
+        closesocket(server_socket);
+        throw std::runtime_error("Listen failed");
+    }
+
+    return server_socket;
+}
+
+void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port, int behavior_mode, int ip_protocol_mode)
+{
 #ifdef _WIN32
     WSADATA wsaData;
     int initResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (initResult != 0)
     {
-        throw("WSAStartup failed");
+        throw std::runtime_error("WSAStartup failed");
     }
 #endif
 
-#ifndef DISABLE_HTTPS
-    // SSL 上下文
-    if (!ssl_ctx_server)
+    if (http_port == DISABLE_HTTP_REQUEST && https_port == DISABLE_HTTPS_REQUEST)
     {
-        HANDLE_ERROR("Unable to create SSL context");
-        throw("Unable to create SSL context");
+        throw std::runtime_error("At least one port must be enabled");
     }
 
-    // 加载证书和私钥
-    if (SSL_CTX_use_certificate_file(ssl_ctx_server, PUBLIC_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
+    if (https_port != DISABLE_HTTPS_REQUEST)
     {
-        HANDLE_ERROR("Unable to load certificate PUBLIC KEY");
-        throw("Unable to load certificate PUBLIC KEY");
-    }
-    if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
-    {
-        HANDLE_ERROR("Unable to load private key PRIVATE KEY");
-        throw("Unable to load private key PRIVATE KEY");
-    }
-    // 验证私钥是否与证书匹配
-    if (!SSL_CTX_check_private_key(ssl_ctx_server))
-    {
-        HANDLE_ERROR("Private key does not match the certificate");
-        throw("Private key does not match the certificate");
-    }
-#endif
+        // SSL 上下文
+        if (!ssl_ctx_server)
+        {
+            HANDLE_ERROR("Unable to create SSL context");
+            throw("Unable to create SSL context");
+        }
 
-    // create socket
-    SOCKET http_server_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-    if (http_server_socket == INVALID_SOCKET)
-    {
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw("Create socket failed");
-    }
-
-    // set SO_REUSEADDR options
-    bool set_SO_REUSEADDR_options_success = true;
-    // 允许同时监听同个端口
-    int optval = 1;
-    if (setsockopt(http_server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) == SOCKET_ERROR)
-    {
-        set_SO_REUSEADDR_options_success = false;
-    }
-    // 允许监听 IPv4 和 IPv6
-    optval = 0;
-    if (setsockopt(http_server_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&optval, sizeof(optval)) == SOCKET_ERROR)
-    {
-        set_SO_REUSEADDR_options_success = false;
-    }
-    if (!set_SO_REUSEADDR_options_success)
-    {
-        closesocket(http_server_socket);
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw("Setsockopt failed");
+        // 加载证书和私钥
+        if (SSL_CTX_use_certificate_file(ssl_ctx_server, PUBLIC_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
+        {
+            HANDLE_ERROR("Unable to load certificate PUBLIC KEY");
+            throw("Unable to load certificate PUBLIC KEY");
+        }
+        if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
+        {
+            HANDLE_ERROR("Unable to load private key PRIVATE KEY");
+            throw("Unable to load private key PRIVATE KEY");
+        }
+        // 验证私钥是否与证书匹配
+        if (!SSL_CTX_check_private_key(ssl_ctx_server))
+        {
+            HANDLE_ERROR("Private key does not match the certificate");
+            throw("Private key does not match the certificate");
+        }
     }
 
-#ifndef DISABLE_HTTPS
-    SOCKET https_server_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-    if (https_server_socket == INVALID_SOCKET)
+    SOCKET http_server_socket = INVALID_SOCKET;
+    SOCKET https_server_socket = INVALID_SOCKET;
+
+    // 根据 ip_protocol_mode 确定协议族和是否启用 IPv6 独占模式
+    int ip_protocol_family = (ip_protocol_mode == 0) ? AF_INET : AF_INET6;
+    bool is_ipv6_only = (ip_protocol_mode == 1);
+
+    // --- 创建 HTTP 套接字 ---
+    if (http_port != DISABLE_HTTP_REQUEST)
     {
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw("Create socket failed");
+        if (ip_protocol_mode == IP_PROTOCOL_MODE_IPV4_ONLY)
+        { // 仅 IPv4
+            http_server_socket = createAndBindSocket_Pimpl(http_port, AF_INET, false);
+        }
+        else
+        { // IPv6 或双栈
+            http_server_socket = createAndBindSocket_Pimpl(http_port, AF_INET6, is_ipv6_only);
+        }
     }
 
-    // set SO_REUSEADDR options
-    set_SO_REUSEADDR_options_success = true;
-    // 允许同时监听同个端口
-    optval = 1;
-    if (setsockopt(https_server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&optval, sizeof(optval)) ==
-        SOCKET_ERROR)
+    // --- 创建 HTTPS 套接字 ---
+    if (https_port != DISABLE_HTTPS_REQUEST)
     {
-        set_SO_REUSEADDR_options_success = false;
+        if (ip_protocol_mode == IP_PROTOCOL_MODE_IPV4_ONLY)
+        { // 仅 IPv4
+            https_server_socket = createAndBindSocket_Pimpl(https_port, AF_INET, false);
+        }
+        else
+        { // IPv6 或双栈
+            https_server_socket = createAndBindSocket_Pimpl(https_port, AF_INET6, is_ipv6_only);
+        }
     }
-    // 允许监听 IPv4 和 IPv6
-    optval = 0;
-    if (setsockopt(https_server_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&optval, sizeof(optval)) == SOCKET_ERROR)
-    {
-        set_SO_REUSEADDR_options_success = false;
-    }
-    if (!set_SO_REUSEADDR_options_success)
-    {
-        closesocket(https_server_socket);
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw("Setsockopt failed");
-    }
-#endif
-
-    // set server address
-    // http
-    struct sockaddr_in6 http_server_address;
-    memset(&http_server_address, 0, sizeof(http_server_address));
-    http_server_address.sin6_family = AF_INET6;       // use IPv6
-    http_server_address.sin6_addr = in6addr_any;      // listen 0.0.0.0, all address
-    http_server_address.sin6_port = htons(http_port); // set port
-// https
-#ifndef DISABLE_HTTPS
-    struct sockaddr_in6 https_server_address;
-    memset(&https_server_address, 0, sizeof(https_server_address));
-    https_server_address.sin6_family = AF_INET6;        // use IPv6
-    https_server_address.sin6_addr = in6addr_any;       // listen 0.0.0.0, all address
-    https_server_address.sin6_port = htons(https_port); // set port
-#endif
-
-    // bind socket
-    // http
-    if (bind(http_server_socket, (const struct sockaddr *)&http_server_address, sizeof(http_server_address)) ==
-        SOCKET_ERROR)
-    {
-        closesocket(http_server_socket);
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw("Bind failed");
-    }
-    // https
-#ifndef DISABLE_HTTPS
-    if (bind(https_server_socket, (const struct sockaddr *)&https_server_address, sizeof(https_server_address)) ==
-        SOCKET_ERROR)
-    {
-        closesocket(http_server_socket);
-        closesocket(https_server_socket);
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw("Bind failed");
-    }
-#endif
-
-    // listen for connections
-    if (listen(http_server_socket, SOMAXCONN) == SOCKET_ERROR)
-    {
-        closesocket(http_server_socket);
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw("Listen failed");
-    }
-#ifndef DISABLE_HTTPS
-    if (listen(https_server_socket, SOMAXCONN) == SOCKET_ERROR)
-    {
-        closesocket(http_server_socket);
-        closesocket(https_server_socket);
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw("Listen failed");
-    }
-#endif
 
 #ifndef DISABLE_PRINT_LISTEN_INFO
-#ifndef DISABLE_HTTPS
     printf("Listening on 0.0.0.0:%d\n", https_port);
-#else
-    printf("Listening on 0.0.0.0:%d\n", http_port);
-#endif
 #endif
 
     unsigned int cores = std::thread::hardware_concurrency();
@@ -1500,14 +1468,19 @@ void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port)
 
     try
     {
-        threadPool.enqueue([this, http_server_socket, http_port, https_port]() {
-            this->process(http_server_socket, false, http_port, https_port);
-        }); // 将处理函数添加到线程池中
-#ifndef DISABLE_HTTPS
-        threadPool.enqueue([this, https_server_socket, http_port, https_port]() {
-            this->process(https_server_socket, true, http_port, https_port);
-        }); // 将处理函数添加到线程池中
-#endif
+        // 将处理函数添加到线程池中
+        if (http_server_socket != INVALID_SOCKET)
+        {
+            threadPool.enqueue([this, http_server_socket, http_port, https_port, behavior_mode]() {
+                this->process(http_server_socket, false, http_port, https_port, behavior_mode);
+            });
+        }
+        if (https_server_socket != INVALID_SOCKET)
+        {
+            threadPool.enqueue([this, https_server_socket, http_port, https_port, behavior_mode]() {
+                this->process(https_server_socket, true, http_port, https_port, behavior_mode);
+            });
+        }
     }
     catch (const std::exception &e)
     {
@@ -1522,7 +1495,8 @@ void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port)
     }
 }
 
-void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int http_port, int https_port)
+void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int http_port, int https_port,
+                                  int behavior_mode)
 {
     if (server_socket == INVALID_SOCKET)
     {
@@ -1673,8 +1647,8 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
             request_content = "";
         }
 
-#ifndef DISABLE_HTTPS
-        if (!enable_https)
+        if (!enable_https && behavior_mode == BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS &&
+            https_port != DISABLE_HTTPS_REQUEST)
         {
             std::unordered_map<std::string, std::string> parsed_header = getParsedHeader_Pimpl(request_header);
 
@@ -1693,7 +1667,6 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
             closesocket(client_socket);
             continue;
         }
-#endif
 
         if (enable_https)
         {
@@ -1948,7 +1921,7 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status, const requestCont
 
     // 回退到默认处理
     res.status = status;
-    res.response_content = getHttpCodeText_Pimpl(status);
+    res.response_content = std::to_string(status) + getHttpCodeText_Pimpl(status);
     res.response_headers["status"] = std::to_string(res.status);
     if (res.response_headers.find("Content-Type") == res.response_headers.end())
     {
@@ -1964,7 +1937,7 @@ responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &r
     res.status = 200;
     res.response_headers["connection"] = "close";
     if (req.is_https_connection)
-        res.response_headers["enable_hsts"] = "true";
+        res.response_headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
 
     const std::string &method = req.parsed_request_headers.at("method");
     const std::string &url = req.parsed_request_headers.at("url");

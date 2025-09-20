@@ -6,7 +6,6 @@
 
 // Adjust the macro definition here
 // #define IS_DEBUG // Enable debug mode
-// #define DISABLE_HTTPS                 // Disable HTTPS support
 // #define DISABLE_PRINT_LISTEN_INFO     // Disable printing listen info
 #define PUBLIC_KEY_PATH "server.crt"  // Default public key path
 #define PRIVATE_KEY_PATH "server.key" // Default private key path
@@ -19,8 +18,15 @@
 
 #define RFC1123FMT "%a, %d %b %Y %H:%M:%S GMT"
 
-#define DEFAULT_HTTP_SERVER_PORT 80   // Default port for HTTP
-#define DEFAULT_HTTPS_SERVER_PORT 443 // Default port for HTTPS
+#define DEFAULT_HTTP_SERVER_PORT 80                     // Default port for HTTP
+#define DEFAULT_HTTPS_SERVER_PORT 443                   // Default port for HTTPS
+#define BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS 0  // REDIRECT HTTP REQUEST TO HTTPS
+#define BEHAVIOR_MODE_HANDLING_HTTP_AND_HTTPS_REQUEST 1 // HANDLING HTTP AND HTTPS REQUEST
+#define IP_PROTOCOL_MODE_IPV4_ONLY 0                    // ENABLE IP PROTOCOL IPV4 ONLY
+#define IP_PROTOCOL_MODE_IPV6_ONLY 1                    // ENABLE IP PROTOCOL IPV6 ONLY
+#define IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH 2           // ENABLE IP PROTOCOL IPV4 AND IPV6 BOTH
+#define DISABLE_HTTP_REQUEST -1                         // DISABLE HTTP REQUEST
+#define DISABLE_HTTPS_REQUEST -1                        // DISABLE HTTPS REQUEST
 
 #define INFINITY 2147483647
 

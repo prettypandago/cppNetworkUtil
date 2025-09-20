@@ -337,19 +337,21 @@ class cppNetworkUtil
      *
      * @param http_port (int) The http port number to run the server on
      * @param https_port (int) The https port number to run the server on
+     * @param behavior_mode (int) The server behavior mode (0: Redirect HTTP request to HTTPS, 1: Handling HTTP and
+     * HTTPS requests)
+     * @param ip_protocol_mode (int) The IP protocol mode (0: IPv4, 1: IPv6, 2: both)
      *
      * @throw WSAStartup failed
+     * @throw At least one port must be enabled
      * @throw Unable to create SSL context
      * @throw Unable to load certificate PUBLIC KEY
      * @throw Unable to load private key PRIVATE KEY
      * @throw Private key does not match the certificate
-     * @throw Create socket failed
-     * @throw Setsockopt failed
-     * @throw Bind failed
-     * @throw Listen failed
      * @throw Unable to get the number of CPU cores
      */
-    void run(int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT);
+    void run(int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT,
+             int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS,
+             int ip_protocol_mode = IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH);
 
     /**
      * @brief Print the openSSL version
