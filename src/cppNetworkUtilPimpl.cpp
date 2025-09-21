@@ -309,11 +309,11 @@ std::string cppNetworkUtilPimpl::getPostContentBody_Pimpl(const std::string buff
     return body;
 }
 
-std::string cppNetworkUtilPimpl::getHttpCodeText_Pimpl(int code)
+std::string cppNetworkUtilPimpl::getHttpCodeText_Pimpl(int status_code)
 {
     std::string text;
 
-    auto it = http_code.find(code);
+    auto it = http_code.find(status_code);
     if (it != http_code.end())
         text = it->second;
     else
@@ -322,18 +322,18 @@ std::string cppNetworkUtilPimpl::getHttpCodeText_Pimpl(int code)
     return text;
 }
 
-std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(int status,
+std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(int status_code,
                                                           std::unordered_map<std::string, std::string> parameters)
 {
     std::string buffer;
 
     if (parameters.count("connection"))
     {
-        std::string title = getHttpCodeText_Pimpl(status);
+        std::string title = getHttpCodeText_Pimpl(status_code);
 
         buffer += PROTOCOL;
         buffer += " ";
-        buffer += std::to_string(status);
+        buffer += std::to_string(status_code);
         buffer += " ";
         buffer += title;
         buffer += "\r\n";
@@ -357,7 +357,7 @@ std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(int status,
 
     for (const auto &pair : parameters)
     {
-        if (pair.first != "status" && pair.first != "connection")
+        if (pair.first != "status_code" && pair.first != "connection" && pair.first != "" && pair.second != "")
             buffer += pair.first + ": " + pair.second + "\r\n";
     }
     buffer += "\r\n";
@@ -1377,7 +1377,8 @@ SOCKET cppNetworkUtilPimpl::createAndBindSocket_Pimpl(int port, int ip_protocol_
     return server_socket;
 }
 
-void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port, int behavior_mode, int ip_protocol_mode)
+void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port, int behavior_mode, int ip_protocol_mode,
+                                    std::string cert_path, std::string key_path, bool print_listen_info)
 {
 #ifdef _WIN32
     WSADATA wsaData;
@@ -1403,15 +1404,15 @@ void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port, int behavior_
         }
 
         // 加载证书和私钥
-        if (SSL_CTX_use_certificate_file(ssl_ctx_server, PUBLIC_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
+        if (SSL_CTX_use_certificate_file(ssl_ctx_server, cert_path.data(), SSL_FILETYPE_PEM) <= 0)
         {
-            HANDLE_ERROR("Unable to load certificate PUBLIC KEY");
-            throw("Unable to load certificate PUBLIC KEY");
+            HANDLE_ERROR("Unable to load certificate");
+            throw("Unable to load certificate");
         }
-        if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, PRIVATE_KEY_PATH, SSL_FILETYPE_PEM) <= 0)
+        if (SSL_CTX_use_PrivateKey_file(ssl_ctx_server, key_path.data(), SSL_FILETYPE_PEM) <= 0)
         {
-            HANDLE_ERROR("Unable to load private key PRIVATE KEY");
-            throw("Unable to load private key PRIVATE KEY");
+            HANDLE_ERROR("Unable to load private key");
+            throw("Unable to load private key");
         }
         // 验证私钥是否与证书匹配
         if (!SSL_CTX_check_private_key(ssl_ctx_server))
@@ -1454,9 +1455,27 @@ void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port, int behavior_
         }
     }
 
-#ifndef DISABLE_PRINT_LISTEN_INFO
-    printf("Listening on 0.0.0.0:%d\n", https_port);
-#endif
+    // 在创建 HTTP 套接字成功后
+    if (http_server_socket != INVALID_SOCKET && print_listen_info)
+    {
+        std::string ip_version =
+            (ip_protocol_mode == 0) ? "IPv4" : ((ip_protocol_mode == 1) ? "IPv6" : "IPv4 and IPv6");
+        std::string ip_address =
+            (ip_protocol_mode == 0) ? "0.0.0.0" : ((ip_protocol_mode == 1) ? "[::]" : "0.0.0.0 and [::]");
+        std::cout << "Server listening on HTTP (" << ip_version << ") on " << ip_address << ":" << http_port
+                  << std::endl;
+    }
+
+    // 在创建 HTTPS 套接字成功后
+    if (https_server_socket != INVALID_SOCKET && print_listen_info)
+    {
+        std::string ip_version =
+            (ip_protocol_mode == 0) ? "IPv4" : ((ip_protocol_mode == 1) ? "IPv6" : "IPv4 and IPv6");
+        std::string ip_address =
+            (ip_protocol_mode == 0) ? "0.0.0.0" : ((ip_protocol_mode == 1) ? "[::]" : "0.0.0.0 and [::]");
+        std::cout << "Server listening on HTTPS (" << ip_version << ") on " << ip_address << ":" << https_port
+                  << std::endl;
+    }
 
     unsigned int cores = std::thread::hardware_concurrency();
     if (cores <= 0)
@@ -1726,12 +1745,12 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
         // send data to client
         if (enable_https)
         {
-            sendDataToHttpsSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(res.status, res.response_headers));
+            sendDataToHttpsSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(res.status_code, res.response_headers));
             sendDataToHttpsSocket_Pimpl(client_socket, res.response_content);
         }
         else
         {
-            sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(res.status, res.response_headers));
+            sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(res.status_code, res.response_headers));
             sendDataToHttpSocket_Pimpl(client_socket, res.response_content);
         }
 
@@ -1833,8 +1852,8 @@ void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const std::string 
     }
     catch (const std::regex_error &e)
     {
-        std::cerr << "Regex Error for pattern '" << path_pattern << "': " << e.what() << std::endl;
-        std::cerr << "Generated regex string was: " << regex_str << std::endl;
+        log_e("Regex Error for pattern '%s': %s\n", path_pattern.data(), e.what());
+        log_e("Generated regex string was: %s\n", regex_str.data());
         throw;
     }
 
@@ -1847,7 +1866,7 @@ void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const std::string 
         }
         catch (const std::regex_error &e)
         {
-            std::cerr << "Method Regex Error for '" << method << "': " << e.what() << std::endl;
+            log_e("Regex Error for pattern '%s': %s\n", method.data(), e.what());
             throw;
         }
     }
@@ -1857,10 +1876,10 @@ void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const std::string 
     }
 }
 
-void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, int status, routeHandler handler)
+void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, int status_code, routeHandler handler)
 {
     routeInfo info;
-    info.path_pattern_or_status = std::to_string(status);
+    info.path_pattern_or_status = std::to_string(status_code);
     info.handler = std::move(handler);
 
     if (isRegexPattern_Pimpl(method))
@@ -1872,7 +1891,7 @@ void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, int status, routeH
         }
         catch (const std::regex_error &e)
         {
-            std::cerr << "Method Regex Error for '" << method << "': " << e.what() << std::endl;
+            log_e("Regex Error for pattern '%s': %s\n", method.data(), e.what());
             throw;
         }
     }
@@ -1882,9 +1901,9 @@ void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, int status, routeH
     }
 }
 
-void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status, const requestContext &req, responseContext &res)
+void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const requestContext &req, responseContext &res)
 {
-    std::string status_code_str = std::to_string(status);
+    std::string status_code_str = std::to_string(status_code);
     const std::string &method = req.parsed_request_headers.at("method");
 
     // 1. 尝试在固定方法中查找错误处理
@@ -1896,7 +1915,7 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status, const requestCont
             if (route_info.path_pattern_or_status == status_code_str)
             {
                 route_info.handler(req, res);
-                res.status = status;
+                res.status_code = status_code;
                 return;
             }
         }
@@ -1912,7 +1931,7 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status, const requestCont
                 if (route_info.path_pattern_or_status == status_code_str)
                 {
                     route_info.handler(req, res);
-                    res.status = status;
+                    res.status_code = status_code;
                     return;
                 }
             }
@@ -1920,9 +1939,9 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status, const requestCont
     }
 
     // 回退到默认处理
-    res.status = status;
-    res.response_content = std::to_string(status) + getHttpCodeText_Pimpl(status);
-    res.response_headers["status"] = std::to_string(res.status);
+    res.status_code = status_code;
+    res.response_content = std::to_string(status_code) + getHttpCodeText_Pimpl(status_code);
+    res.response_headers["status_code"] = std::to_string(res.status_code);
     if (res.response_headers.find("Content-Type") == res.response_headers.end())
     {
         res.response_headers["Content-Type"] = "text/plain";
@@ -1934,7 +1953,7 @@ responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &r
     responseContext res;
     // 设置默认的头
     res.response_headers["Content-Type"] = "*/*";
-    res.status = 200;
+    res.status_code = 200;
     res.response_headers["connection"] = "close";
     if (req.is_https_connection)
         res.response_headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
@@ -1958,10 +1977,18 @@ responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &r
                             matched_req.path_params[route_info.param_names[i]] = match_results[i + 1].str();
                         }
                     }
+
+                    // 调用 handler 并检查其返回值
                     route_info.handler(matched_req, res);
-                    if (res.status >= 400 && res.status < 600)
+                    bool response_is_final = route_info.handler(matched_req, res);
+                    if (response_is_final)
                     {
-                        invokeErrorHandler_Pimpl(res.status, matched_req, res);
+                        return true; // 立即返回 true，表示响应已完成
+                    }
+
+                    if (res.status_code >= 400 && res.status_code < 600)
+                    {
+                        invokeErrorHandler_Pimpl(res.status_code, matched_req, res);
                     }
                     return true;
                 }

@@ -6,9 +6,6 @@
 
 // Adjust the macro definition here
 // #define IS_DEBUG // Enable debug mode
-// #define DISABLE_PRINT_LISTEN_INFO     // Disable printing listen info
-#define PUBLIC_KEY_PATH "server.crt"  // Default public key path
-#define PRIVATE_KEY_PATH "server.key" // Default private key path
 #define BUFFERSIZE 4096
 #define NAME "cppNetworkUtil"
 
@@ -25,8 +22,13 @@
 #define IP_PROTOCOL_MODE_IPV4_ONLY 0                    // ENABLE IP PROTOCOL IPV4 ONLY
 #define IP_PROTOCOL_MODE_IPV6_ONLY 1                    // ENABLE IP PROTOCOL IPV6 ONLY
 #define IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH 2           // ENABLE IP PROTOCOL IPV4 AND IPV6 BOTH
+#define DEFAULT_CERT_PATH "server.crt"                  // Default public key path
+#define DEFAULT_KEY_PATH "server.key"                   // Default private key path
+#define DEFAULT_PRINT_LISTEN_INFO true                  // Default print listen info
 #define DISABLE_HTTP_REQUEST -1                         // DISABLE HTTP REQUEST
 #define DISABLE_HTTPS_REQUEST -1                        // DISABLE HTTPS REQUEST
+#define END_RESPONSE true                               // End response immediately
+#define CONTINUE_HANDLING false                         // Continue handling (e.g., for error handling)
 
 #define INFINITY 2147483647
 
@@ -46,13 +48,13 @@ struct requestContext
 
 struct responseContext
 {
-    int status;
+    int status_code;
     std::unordered_map<std::string, std::string> response_headers;
     std::string response_content;
 };
 
 using routeHandler =
-    std::function<void(const requestContext &, responseContext &)>; // 路由处理函数类型：接收请求和响应的引用
+    std::function<bool(const requestContext &, responseContext &)>; // 路由处理函数类型：接收请求和响应的引用
 
 // 路由信息结构体
 struct routeInfo

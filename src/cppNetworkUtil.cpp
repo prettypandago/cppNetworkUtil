@@ -55,9 +55,9 @@ std::string cppNetworkUtil::getHttpCodeText(int code)
     return pimpl_->getHttpCodeText_Pimpl(code);
 }
 
-std::string cppNetworkUtil::makeResponseHeader(int status, std::unordered_map<std::string, std::string> parameters)
+std::string cppNetworkUtil::makeResponseHeader(int status_code, std::unordered_map<std::string, std::string> parameters)
 {
-    return pimpl_->makeResponseHeader_Pimpl(status, parameters);
+    return pimpl_->makeResponseHeader_Pimpl(status_code, parameters);
 }
 
 std::string cppNetworkUtil::makeRequestHeader(std::map<std::string, std::string> parameters)
@@ -119,9 +119,10 @@ cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>(
 
 cppNetworkUtil::~cppNetworkUtil() = default; // unique_ptr 会自动管理内存
 
-void cppNetworkUtil::run(int http_port, int https_port, int behavior_mode, int ip_protocol_mode)
+void cppNetworkUtil::run(int http_port, int https_port, int behavior_mode, int ip_protocol_mode, std::string cert_path,
+                         std::string key_path, bool print_listen_info)
 {
-    pimpl_->run_Pimpl(http_port, https_port, behavior_mode, ip_protocol_mode);
+    pimpl_->run_Pimpl(http_port, https_port, behavior_mode, ip_protocol_mode, cert_path, key_path, print_listen_info);
 }
 
 void cppNetworkUtil::print_opensslVersion()

@@ -169,23 +169,23 @@ class cppNetworkUtil
      * This function takes an integer representing an HTTP status code (e.g., 200, 404)
      * and returns the corresponding standard reason phrase as a string (e.g., "OK", "Not Found").
      *
-     * @param code The HTTP status code to look up.
+     * @param status_code The HTTP status code to look up.
      *
      * @return std::string The standard textual description for the provided HTTP status code.
      */
-    std::string getHttpCodeText(int code);
+    std::string getHttpCodeText(int status_code);
 
     /**
      * @brief Make a response header
      *
-     * @param status (int) HTTP status code
+     * @param status_code (int) HTTP status code
      * @param parameters (std::unordered_map<std::string, std::string>) parameters
      *
      * @throw Missing required fields
      *
      * @return response header
      */
-    std::string makeResponseHeader(int status, std::unordered_map<std::string, std::string> parameters);
+    std::string makeResponseHeader(int status_code, std::unordered_map<std::string, std::string> parameters);
 
     /**
      * @brief Make a request header
@@ -340,18 +340,22 @@ class cppNetworkUtil
      * @param behavior_mode (int) The server behavior mode (0: Redirect HTTP request to HTTPS, 1: Handling HTTP and
      * HTTPS requests)
      * @param ip_protocol_mode (int) The IP protocol mode (0: IPv4, 1: IPv6, 2: both)
+     * @param cert_path (std::string) The path to the SSL certificate file
+     * @param key_path (std::string) The path to the SSL private key file
+     * @param print_listen_info (bool) Whether to print listen info
      *
      * @throw WSAStartup failed
      * @throw At least one port must be enabled
      * @throw Unable to create SSL context
-     * @throw Unable to load certificate PUBLIC KEY
-     * @throw Unable to load private key PRIVATE KEY
+     * @throw Unable to load certificate
+     * @throw Unable to load private key
      * @throw Private key does not match the certificate
      * @throw Unable to get the number of CPU cores
      */
     void run(int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT,
              int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS,
-             int ip_protocol_mode = IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH);
+             int ip_protocol_mode = IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH, std::string cert_path = DEFAULT_CERT_PATH,
+             std::string key_path = DEFAULT_KEY_PATH, bool print_listen_info = DEFAULT_PRINT_LISTEN_INFO);
 
     /**
      * @brief Print the openSSL version
