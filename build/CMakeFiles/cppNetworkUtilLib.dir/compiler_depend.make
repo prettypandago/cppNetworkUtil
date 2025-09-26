@@ -193,6 +193,7 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj: D:/YYProject/vscode
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/memory \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/mutex \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/new \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/optional \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/ostream \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/pstl/execution_defs.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/pstl/glue_algorithm_defs.h \
@@ -692,6 +693,7 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj: D:/YYProject/v
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/memory \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/mutex \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/new \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/optional \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/ostream \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/pstl/execution_defs.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/pstl/glue_algorithm_defs.h \
@@ -1599,6 +1601,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/errno.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/postypes.h:
 
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/optional:
+
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/typeinfo:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/predefined_ops.h:
@@ -2279,8 +2283,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/winreg.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/tvout.h:
 
-D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/conf.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/urlmon.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wincon.h:
@@ -2318,6 +2320,8 @@ D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/asyncerr.h:
 D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/buffer.h:
 
 D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/comp.h:
+
+D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/conf.h:
 
 D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/configuration.h:
 

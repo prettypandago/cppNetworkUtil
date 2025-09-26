@@ -710,7 +710,40 @@ void cppNetworkUtilPimpl::sendDataToHttpsSocket_Pimpl(SOCKET socket, const std::
     SSL_write(client_connections[socket].ssl, data.data(), data.length()); // 发送数据到 SSL 套接字
 }
 
+void cppNetworkUtilPimpl::sendDataToHttpsSocket_Pimpl(ssl_st *ssl, const std::string &data)
+{
+    SSL_write(ssl, data.data(), data.length()); // 发送数据到 SSL 套接字
+}
+
+void cppNetworkUtilPimpl::sendDataToSocket_Pimpl(SOCKET socket, const std::string &data)
+{
+    if (client_connections[socket].is_https_connection)
+    {
+        sendDataToHttpsSocket_Pimpl(socket, data);
+    }
+    else
+    {
+        sendDataToHttpSocket_Pimpl(socket, data);
+    }
+}
+
+void cppNetworkUtilPimpl::sendDataChunkToSocket_Pimpl(SOCKET socket, const std::string &data)
+{
+    size_t chunk_size = data.length(); // 数据块大小
+
+    std::stringstream chunk_size_stream;                  // 创建字符串流
+    chunk_size_stream << std::hex << chunk_size;          // 转换为十六进制字符串
+    std::string chunk_size_str = chunk_size_stream.str(); // 获取字符串
+
+    sendDataToSocket_Pimpl(socket, chunk_size_str); // 发送块大小
+    sendDataToSocket_Pimpl(socket, "\r\n");         // 发送 CRLF
+
+    sendDataToSocket_Pimpl(socket, data);   // 发送数据块
+    sendDataToSocket_Pimpl(socket, "\r\n"); // 发送 CRLF
+}
+
 void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port,
+                                                   const std::map<std::string, std::string> &request_header,
                                                    std::string &header, std::string &content)
 {
 #ifdef _WIN32
@@ -758,18 +791,9 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
         throw std::runtime_error("Failed to connect to server");
     }
 
-    std::string request_header_str = makeRequestHeader_Pimpl(
-        {{"method", "GET"}, {"host", host}, {"path", path}, {"port", std::to_string(port)}, {"connection", "close"}});
-    int bytes_sent = send(sock, request_header_str.data(), request_header_str.length(), 0);
-    if (bytes_sent == SOCKET_ERROR)
-    {
-        HANDLE_ERROR("Failed to send request");
-        closesocket(sock);
-#ifdef _WIN32
-        WSACleanup();
-#endif
-        throw std::runtime_error("Failed to send request");
-    }
+    // 发送请求头
+    std::string request_header_str = makeRequestHeader_Pimpl(request_header);
+    sendDataToHttpSocket_Pimpl(sock, request_header_str);
 
     // 接收响应头部
     std::string response_buffer;
@@ -989,6 +1013,7 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
 }
 
 void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port,
+                                                    const std::map<std::string, std::string> &request_header,
                                                     std::string &header, std::string &content, bool enable_CA)
 {
 #ifdef _WIN32
@@ -1085,12 +1110,9 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
         }
     }
 
-    // 发送HTTPS请求 (HTTP协议部分)
-    std::string request_header = makeRequestHeader_Pimpl(
-        {{"method", "GET"}, {"host", host}, {"path", path}, {"port", std::to_string(port)}, {"connection", "close"}});
-
-    int bytes_written = SSL_write(ssl_conn, request_header.data(), request_header.length());
-    // std::cout << "Sent " << bytes_written << " bytes request." << std::endl;
+    // 发送请求
+    std::string request_header_str = makeRequestHeader_Pimpl(request_header);
+    sendDataToHttpsSocket_Pimpl(ssl, request_header_str);
 
     // 接收响应
     std::string response_buffer = "";
@@ -1522,6 +1544,14 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
         throw("Invalid server socket");
     }
 
+    unsigned int cores = std::thread::hardware_concurrency();
+    if (cores <= 0)
+    {
+        log_e("Unable to get the number of CPU cores\n");
+        throw("Unable to get the number of CPU cores");
+    }
+    threadPool threadPool(cores); // 创建一个线程池
+
     while (1)
     {
         struct sockaddr_storage client_address;
@@ -1681,6 +1711,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
                 Location += std::to_string(https_port);
             }
             // log_d("Location=%s\n", Location.data());
+            // std::cout << "Location=" << Location << "\n";
             sendDataToHttpSocket_Pimpl(
                 client_socket, makeResponseHeader_Pimpl(301, {{"connection", "close"}, {"Location", Location}}));
             closesocket(client_socket);
@@ -1697,7 +1728,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
             // IPv4 连接
             struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&client_address;
             inet_ntop(AF_INET, &(ipv4_addr->sin_addr), client_connections[client_socket].ip.data(),
-                      client_connections[client_socket].ip.size());
+                      client_connections[client_socket].ip.length());
             client_connections[client_socket].port = ntohs(ipv4_addr->sin_port);
             client_connections[client_socket].family = "ipv4";
         }
@@ -1706,7 +1737,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
             // IPv6 连接
             struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&client_address;
             inet_ntop(AF_INET6, &(ipv6_addr->sin6_addr), client_connections[client_socket].ip.data(),
-                      client_connections[client_socket].ip.size());
+                      client_connections[client_socket].ip.length());
             client_connections[client_socket].port = ntohs(ipv6_addr->sin6_port);
             client_connections[client_socket].family = "ipv6";
         }
@@ -1731,6 +1762,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
         }
 
         requestContext req;
+        req.client_socket = client_socket;
         req.is_https_connection = client_connections[client_socket].is_https_connection;
         req.ip = client_connections[client_socket].ip;
         req.port = client_connections[client_socket].port;
@@ -1741,17 +1773,13 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
         req.parsed_request_headers = client_connections[client_socket].parsed_request_headers;
         req.query_params = client_connections[client_socket].query_params;
 
-        responseContext res = handleRequest_Pimpl(req);
-        // send data to client
-        if (enable_https)
+        std::optional<responseContext> res = handleRequest_Pimpl(req);
+        if (res.has_value())
         {
-            sendDataToHttpsSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(res.status_code, res.response_headers));
-            sendDataToHttpsSocket_Pimpl(client_socket, res.response_content);
-        }
-        else
-        {
-            sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(res.status_code, res.response_headers));
-            sendDataToHttpSocket_Pimpl(client_socket, res.response_content);
+            // send data to client
+            sendDataToSocket_Pimpl(client_socket,
+                                   makeResponseHeader_Pimpl(res.value().status_code, res.value().response_headers));
+            sendDataToSocket_Pimpl(client_socket, res.value().response_content);
         }
 
         if (enable_https)
@@ -1948,7 +1976,7 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
     }
 }
 
-responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &req)
+std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &req)
 {
     responseContext res;
     // 设置默认的头
@@ -1961,7 +1989,7 @@ responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &r
     const std::string &method = req.parsed_request_headers.at("method");
     const std::string &url = req.parsed_request_headers.at("url");
 
-    auto find_and_handle_path = [&](const std::vector<routeInfo> &routes_to_check) -> bool {
+    auto find_and_handle_path = [&](const std::vector<routeInfo> &routes_to_check) -> std::optional<int> {
         for (const auto &route_info : routes_to_check)
         {
             if (route_info.path_pattern_or_status.rfind('/', 0) == 0)
@@ -1979,31 +2007,43 @@ responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &r
                     }
 
                     // 调用 handler 并检查其返回值
-                    route_info.handler(matched_req, res);
-                    bool response_is_final = route_info.handler(matched_req, res);
-                    if (response_is_final)
+                    int response_is_final = route_info.handler(matched_req, res);
+                    if (response_is_final == END_HANDING)
                     {
-                        return true; // 立即返回 true，表示响应已完成
+                        return END_HANDING; // 立即返回 END_RESPONSE，表示响应已完成
                     }
+                    else if (response_is_final == PROCESSED_INTERNALLY)
+                    {
+                        return PROCESSED_INTERNALLY; // 立即返回 PROCESSED_INTERNALLY，表示已内部处理
+                    }
+                    // 如果是 CONTINUE_HANDLING，则继续处理
 
                     if (res.status_code >= 400 && res.status_code < 600)
                     {
                         invokeErrorHandler_Pimpl(res.status_code, matched_req, res);
                     }
-                    return true;
+                    return CONTINUE_HANDLING; // 继续处理
                 }
             }
         }
-        return false;
+        return std::nullopt; // 未找到匹配
     };
 
     // 1. 优先匹配固定方法
     auto fixed_it = fixed_method_handlers.find(method);
     if (fixed_it != fixed_method_handlers.end())
     {
-        if (find_and_handle_path(fixed_it->second))
+        auto r = find_and_handle_path(fixed_it->second);
+        if (r.has_value())
         {
-            return res;
+            if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
+            {
+                return res;
+            }
+            else if (r.value() == PROCESSED_INTERNALLY)
+            {
+                return std::nullopt;
+            }
         }
     }
 
@@ -2012,9 +2052,17 @@ responseContext cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &r
     {
         if (std::regex_match(method, regex_pair.first))
         {
-            if (find_and_handle_path(regex_pair.second))
+            auto r = find_and_handle_path(regex_pair.second);
+            if (r.has_value())
             {
-                return res;
+                if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
+                {
+                    return res;
+                }
+                else if (r.value() == PROCESSED_INTERNALLY)
+                {
+                    return std::nullopt;
+                }
             }
         }
     }

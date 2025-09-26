@@ -58,6 +58,7 @@
         "typeinfo": "cpp",
         "cinttypes": "cpp",
         "bitset": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "optional": "cpp"
     }
 }

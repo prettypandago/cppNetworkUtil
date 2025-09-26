@@ -272,18 +272,48 @@ class cppNetworkUtil
     void sendDataToHttpsSocket(SOCKET socket, const std::string data);
 
     /**
+     * @brief Send data to the socket (auto select HTTP or HTTPS)
+     *
+     * @param socket (SOCKET) The socket to send data to
+     * @param data (const std::string &) Data to be sent
+     */
+    void sendDataToSocket(SOCKET socket, const std::string &data);
+
+    /**
+     * @brief Send data to the socket in chunks
+     *
+     * @param socket (SOCKET) The socket to send data to
+     * @param data (const std::string &) Data to be sent
+     */
+    void sendDataChunkToSocket(SOCKET socket, const std::string &data);
+
+    /**
+     * @brief Begin data chunk stream transfer by setting the appropriate header
+     *
+     * @param res (responseContext &) The response context to modify
+     */
+    void beginDataChunkStreamTransfer(responseContext &res);
+
+    /**
+     * @brief End data chunk stream transfer by sending the terminating chunk
+     *
+     * @param socket (SOCKET) The socket to send the terminating chunk to
+     */
+    void endDataChunkStreamTransfer(SOCKET socket);
+
+    /**
      * @brief Send data to the host using HTTP protocol
      *
      * @param host (const std::string &) Host address
      * @param path (const std::string &) Path to the resource
      * @param port (int) Port number
+     * @param request_header (const std::map<std::string, std::string> &) Request header to be sent
      * @param header (std::string &) Header to be filled with the response header
      * @param content (std::string &) Content to be filled with the response content
      *
      * @throw WSAStartup failed
      * @throw getaddrinfo failed
      * @throw Unable to connect to server
-     * @throw Send failed
      * @throw Socket read failed during chunk size reception
      * @throw Failed to parse chunk size
      * @throw Failed to parse chunk size with unknown error
@@ -291,7 +321,8 @@ class cppNetworkUtil
      * @throw shutdown failed
      * @throw Invalid HTTP response format
      */
-    void sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header,
+    void sendDataToHttpHost(const std::string &host, const std::string &path, int port,
+                            const std::map<std::string, std::string> &request_header, std::string &header,
                             std::string &content);
 
     /**
@@ -300,6 +331,7 @@ class cppNetworkUtil
      * @param host (const std::string &) Host address
      * @param path (const std::string &) Path to the resource
      * @param port (int) Port number
+     * @param request_header (const std::string &) Request header to be sent
      * @param header (std::string &) Header to be filled with the response header
      * @param content (std::string &) Content to be filled with the response content
      * @param enable_CA (bool) Whether to enable CA verification
@@ -315,7 +347,8 @@ class cppNetworkUtil
      * @throw Incomplete chunk data: connection closed unexpectedly or SSL read error
      * @throw Invalid HTTP response format
      */
-    void sendDataToHttpsHost(const std::string &host, const std::string &path, int port, std::string &header,
+    void sendDataToHttpsHost(const std::string &host, const std::string &path, int port,
+                             const std::map<std::string, std::string> &request_header, std::string &header,
                              std::string &content, bool enable_CA = true);
 
     /**

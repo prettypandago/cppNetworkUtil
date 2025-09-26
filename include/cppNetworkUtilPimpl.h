@@ -33,6 +33,7 @@ typedef int SOCKET;
 
 #include <algorithm>
 #include <map>
+#include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -353,18 +354,42 @@ class cppNetworkUtilPimpl
     void sendDataToHttpsSocket_Pimpl(SOCKET socket, const std::string &data);
 
     /**
+     * @brief Send data to the socket using HTTPS protocol
+     *
+     * @param ssl (ssl_st *) SSL structure for sending data
+     * @param data (const std::string &) Data to be sent
+     */
+    void sendDataToHttpsSocket_Pimpl(ssl_st *ssl, const std::string &data);
+
+    /**
+     * @brief Send data to the socket (auto select HTTP or HTTPS)
+     *
+     * @param socket (SOCKET) The socket to send data to
+     * @param data (const std::string &) Data to be sent
+     */
+    void sendDataToSocket_Pimpl(SOCKET socket, const std::string &data);
+
+    /**
+     * @brief Send data to the socket in chunks
+     *
+     * @param socket (SOCKET) The socket to send data to
+     * @param data (const std::string &) Data to be sent
+     */
+    void sendDataChunkToSocket_Pimpl(SOCKET socket, const std::string &data);
+
+    /**
      * @brief Send data to the host using HTTP protocol
      *
      * @param host (const std::string &) Host address
      * @param path (const std::string &) Path to the resource
      * @param port (int) Port number
+     * @param request_header (const std::map<std::string, std::string> &) Request header to be sent
      * @param header (std::string &) Header to be filled with the response header
      * @param content (std::string &) Content to be filled with the response content
      *
      * @throw WSAStartup failed
      * @throw getaddrinfo failed
      * @throw Unable to connect to server
-     * @throw Send failed
      * @throw Socket read failed during chunk size reception
      * @throw Failed to parse chunk size
      * @throw Failed to parse chunk size with unknown error
@@ -372,7 +397,8 @@ class cppNetworkUtilPimpl
      * @throw shutdown failed
      * @throw Invalid HTTP response format
      */
-    void sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header,
+    void sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port,
+                                  const std::map<std::string, std::string> &request_header, std::string &header,
                                   std::string &content);
 
     /**
@@ -381,6 +407,7 @@ class cppNetworkUtilPimpl
      * @param host (const std::string &) Host address
      * @param path (const std::string &) Path to the resource
      * @param port (int) Port number
+     * @param request_header (const std::string &) Request header to be sent
      * @param header (std::string &) Header to be filled with the response header
      * @param content (std::string &) Content to be filled with the response content
      * @param enable_CA (bool) Whether to enable CA verification
@@ -396,7 +423,8 @@ class cppNetworkUtilPimpl
      * @throw Incomplete chunk data: connection closed unexpectedly or SSL read error
      * @throw Invalid HTTP response format
      */
-    void sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port, std::string &header,
+    void sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port,
+                                   const std::map<std::string, std::string> &request_header, std::string &header,
                                    std::string &content, bool enable_CA = true);
 
     /*
@@ -496,9 +524,9 @@ class cppNetworkUtilPimpl
      *
      * @param req The context of the incoming request to be handled.
      *
-     * @return responseContext The context containing the response to the request.
+     * @return std::optional<responseContext> The context containing the response to the request.
      */
-    responseContext handleRequest_Pimpl(const requestContext &req);
+    std::optional<responseContext> handleRequest_Pimpl(const requestContext &req);
 
   private:
     ssl_ctx_st *ssl_ctx_server; // 服务器端 SSL 上下文
@@ -519,6 +547,7 @@ class cppNetworkUtilPimpl
      * HTTPS requests)
      *
      * @throw Invalid server socket
+     * @throw Unable to get the number of CPU cores
      *
      * This function runs in a loop, accepting incoming client connections and processing their requests.
      * It uses the provided callback to notify the user of received data.

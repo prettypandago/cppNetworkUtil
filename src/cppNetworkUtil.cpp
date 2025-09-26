@@ -6,7 +6,8 @@
 
 requestContext cppNetworkUtil::getClientConnectionsInfo(SOCKET client_socket)
 {
-    return requestContext{pimpl_->client_connections[client_socket].is_https_connection,
+    return requestContext{pimpl_->client_connections[client_socket].client_socket,
+                          pimpl_->client_connections[client_socket].is_https_connection,
                           pimpl_->client_connections[client_socket].ip,
                           pimpl_->client_connections[client_socket].port,
                           pimpl_->client_connections[client_socket].family,
@@ -101,16 +102,38 @@ void cppNetworkUtil::sendDataToHttpsSocket(SOCKET socket, const std::string data
     pimpl_->sendDataToHttpsSocket_Pimpl(socket, data);
 }
 
-void cppNetworkUtil::sendDataToHttpHost(const std::string &host, const std::string &path, int port, std::string &header,
+void cppNetworkUtil::sendDataToSocket(SOCKET socket, const std::string &data)
+{
+    pimpl_->sendDataToSocket_Pimpl(socket, data);
+}
+
+void cppNetworkUtil::sendDataChunkToSocket(SOCKET socket, const std::string &data)
+{
+    pimpl_->sendDataChunkToSocket_Pimpl(socket, data);
+}
+
+void cppNetworkUtil::beginDataChunkStreamTransfer(responseContext &res)
+{
+    res.response_headers["Transfer-Encoding"] = "chunked";
+}
+
+void cppNetworkUtil::endDataChunkStreamTransfer(SOCKET socket)
+{
+    pimpl_->sendDataToSocket_Pimpl(socket, "0\r\n\r\n"); // End of chunked transfer
+}
+
+void cppNetworkUtil::sendDataToHttpHost(const std::string &host, const std::string &path, int port,
+                                        const std::map<std::string, std::string> &request_header, std::string &header,
                                         std::string &content)
 {
-    pimpl_->sendDataToHttpHost_Pimpl(host, path, port, header, content);
+    pimpl_->sendDataToHttpHost_Pimpl(host, path, port, request_header, header, content);
 }
 
 void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::string &path, int port,
-                                         std::string &header, std::string &content, bool enable_CA)
+                                         const std::map<std::string, std::string> &request_header, std::string &header,
+                                         std::string &content, bool enable_CA)
 {
-    pimpl_->sendDataToHttpsHost_Pimpl(host, path, port, header, content, enable_CA);
+    pimpl_->sendDataToHttpsHost_Pimpl(host, path, port, request_header, header, content, enable_CA);
 }
 
 cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>())

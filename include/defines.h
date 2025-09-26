@@ -27,13 +27,15 @@
 #define DEFAULT_PRINT_LISTEN_INFO true                  // Default print listen info
 #define DISABLE_HTTP_REQUEST -1                         // DISABLE HTTP REQUEST
 #define DISABLE_HTTPS_REQUEST -1                        // DISABLE HTTPS REQUEST
-#define END_RESPONSE true                               // End response immediately
-#define CONTINUE_HANDLING false                         // Continue handling (e.g., for error handling)
+#define CONTINUE_HANDLING 0                             // Continue handling (e.g., for error handling)
+#define END_HANDING 1                                   // End handling, send the response immediately
+#define PROCESSED_INTERNALLY 2                          // Processed internally, no further action needed
 
 #define INFINITY 2147483647
 
 struct requestContext
 {
+    SOCKET client_socket;
     bool is_https_connection;
     std::string ip;
     int port;
@@ -54,7 +56,7 @@ struct responseContext
 };
 
 using routeHandler =
-    std::function<bool(const requestContext &, responseContext &)>; // 路由处理函数类型：接收请求和响应的引用
+    std::function<int(const requestContext &, responseContext &)>; // 路由处理函数类型：接收请求和响应的引用
 
 // 路由信息结构体
 struct routeInfo
