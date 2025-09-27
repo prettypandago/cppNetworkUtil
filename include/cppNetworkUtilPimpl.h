@@ -533,26 +533,39 @@ class cppNetworkUtilPimpl
     ssl_ctx_st *ssl_ctx_client; // 客户端 SSL 上下文
     ssl_st *ssl;                // 使用 BIO 方式进行网络操作
 
-    // 指向父 cppNetworkUtil 实例的指针，用于在回调中传递给用户
-    cppNetworkUtil *parent_util_;
-
-    /*
-     * @brief Process incoming connections and handle requests
+    /**
+     * @brief Accepts incoming connections on the specified server socket and handles them according to the provided
+     * parameters.
      *
-     * @param server_socket (SOCKET) The server socket to accept connections from
-     * @param enable_https (bool) Whether to enable HTTPS support
-     * @param http_port (int) The HTTP port to listen on
-     * @param https_port (int) The HTTPS port to listen on
-     * @param behavior_mode (int) The server behavior mode (0: Redirect HTTP request to HTTPS, 1: Handling HTTP and
-     * HTTPS requests)
-     *
-     * @throw Invalid server socket
-     * @throw Unable to get the number of CPU cores
-     *
-     * This function runs in a loop, accepting incoming client connections and processing their requests.
-     * It uses the provided callback to notify the user of received data.
+     * @param server_socket The server socket to accept connections from.
+     * @param enable_https If true, enables HTTPS support for incoming connections.
+     * @param http_port The port number to use for HTTP connections. Defaults to DEFAULT_HTTP_SERVER_PORT.
+     * @param https_port The port number to use for HTTPS connections. Defaults to DEFAULT_HTTPS_SERVER_PORT.
+     * @param behavior_mode The behavior mode for handling requests (e.g., redirect HTTP to HTTPS). Defaults to
+     * BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS.
      */
-    void process(SOCKET server_socket, bool enable_https, int http_port = DEFAULT_HTTP_SERVER_PORT,
+    void acceptScocket_Pimpl(SOCKET server_socket, bool enable_https, int http_port = DEFAULT_HTTP_SERVER_PORT,
+                             int https_port = DEFAULT_HTTPS_SERVER_PORT,
+                             int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS);
+
+    /**
+     * @brief Processes a client connection on the server socket.
+     *
+     * Handles the incoming client connection, optionally using SSL/TLS if enabled, and processes
+     * the request according to the specified behavior mode. Supports both HTTP and HTTPS protocols.
+     *
+     * @param server_socket      The server socket descriptor.
+     * @param client_socket      The client socket descriptor.
+     * @param client_address     The address information of the connected client.
+     * @param ssl_conn           Pointer to the SSL connection structure (used if HTTPS is enabled).
+     * @param enable_https       Flag indicating whether HTTPS is enabled.
+     * @param http_port          The port number for HTTP connections (default: DEFAULT_HTTP_SERVER_PORT).
+     * @param https_port         The port number for HTTPS connections (default: DEFAULT_HTTPS_SERVER_PORT).
+     * @param behavior_mode      The behavior mode for processing requests (default:
+     * BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS).
+     */
+    void process(SOCKET server_socket, SOCKET client_socket, struct sockaddr_storage client_address, ssl_st *ssl_conn,
+                 bool enable_https, int http_port = DEFAULT_HTTP_SERVER_PORT,
                  int https_port = DEFAULT_HTTPS_SERVER_PORT,
                  int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS);
 };

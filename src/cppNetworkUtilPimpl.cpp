@@ -1499,7 +1499,11 @@ void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port, int behavior_
                   << std::endl;
     }
 
-    unsigned int cores = std::thread::hardware_concurrency();
+    unsigned int cores = 0;
+    if (http_server_socket != INVALID_SOCKET)
+        cores++;
+    if (https_server_socket != INVALID_SOCKET)
+        cores++;
     if (cores <= 0)
     {
         log_e("Unable to get the number of CPU cores\n");
@@ -1513,13 +1517,13 @@ void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port, int behavior_
         if (http_server_socket != INVALID_SOCKET)
         {
             threadPool.enqueue([this, http_server_socket, http_port, https_port, behavior_mode]() {
-                this->process(http_server_socket, false, http_port, https_port, behavior_mode);
+                this->acceptScocket_Pimpl(http_server_socket, false, http_port, https_port, behavior_mode);
             });
         }
         if (https_server_socket != INVALID_SOCKET)
         {
             threadPool.enqueue([this, https_server_socket, http_port, https_port, behavior_mode]() {
-                this->process(https_server_socket, true, http_port, https_port, behavior_mode);
+                this->acceptScocket_Pimpl(https_server_socket, true, http_port, https_port, behavior_mode);
             });
         }
     }
@@ -1536,8 +1540,8 @@ void cppNetworkUtilPimpl::run_Pimpl(int http_port, int https_port, int behavior_
     }
 }
 
-void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int http_port, int https_port,
-                                  int behavior_mode)
+void cppNetworkUtilPimpl::acceptScocket_Pimpl(SOCKET server_socket, bool enable_https, int http_port, int https_port,
+                                              int behavior_mode)
 {
     if (server_socket == INVALID_SOCKET)
     {
@@ -1550,7 +1554,7 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
         log_e("Unable to get the number of CPU cores\n");
         throw("Unable to get the number of CPU cores");
     }
-    threadPool threadPool(cores); // 创建一个线程池
+    threadPool threadPool(cores * 3); // 创建一个线程池
 
     while (1)
     {
@@ -1594,201 +1598,217 @@ void cppNetworkUtilPimpl::process(SOCKET server_socket, bool enable_https, int h
             }
         }
 
-        std::string request_data;
+        // 将处理函数添加到线程池中
+        threadPool.enqueue([this, server_socket, client_socket, client_address, ssl_conn, enable_https, http_port,
+                            https_port, behavior_mode]() {
+            this->process(server_socket, client_socket, client_address, ssl_conn, enable_https, http_port, https_port,
+                          behavior_mode);
+        });
+    }
+}
 
-        int recvd = 0;
-        int totla_recvd = 0;
-        int content_size = 0;
+void cppNetworkUtilPimpl::process(SOCKET server_socket, SOCKET client_socket, struct sockaddr_storage client_address,
+                                  ssl_st *ssl_conn, bool enable_https, int http_port, int https_port, int behavior_mode)
+{
+    if (server_socket == INVALID_SOCKET)
+    {
+        throw("Invalid server socket");
+    }
 
-        char temp_buffer[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果直接作为 C 字符串打印的话
-        memset(temp_buffer, 0, BUFFERSIZE);
-        // 接收数据
-        if (enable_https)
-        {
-            recvd = SSL_read(ssl_conn, temp_buffer, BUFFERSIZE);
-        }
-        else
-        {
-            recvd = recv(client_socket, temp_buffer, BUFFERSIZE, 0);
-        }
-        if (recvd > 0)
-        {
-            // 只附加实际接收到的字节数
-            request_data.append(temp_buffer, recvd);
-            totla_recvd += recvd;
-            // if (IS_DEBUG)
-            //     std::cout << "recv " << recvd << " bytes, total recv: " << totla_recvd << " bytes\n";
-        }
-        else if (recvd == 0)
-        {
-            // 客户端已优雅断开连接
-            continue; // 继续等待下一个连接
-        }
-        else
-        {
-            // 发生error
-            log_e("An error occurred receiving, errno: %d\n", errno);
-            if (enable_https)
-            {
-                SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
-                SSL_free(ssl_conn);     // 释放 SSL 结构
-            }
-            closesocket(client_socket); // 关闭客户端套接字
-            break;                      // 继续等待下一个连接
-        }
+    std::string request_data;
 
-        try
-        {
-            content_size = getPostContentSize_Pimpl(request_data);
-        }
-        catch (const std::exception &e)
-        {
-            log_e("Get content size error: %s\n", e.what());
-        }
-        catch (...)
-        {
-            log_e("Get content size unknown error\n");
-        }
+    int recvd = 0;
+    int totla_recvd = 0;
+    int content_size = 0;
 
-        // 循环接收数据
-        while (totla_recvd < content_size)
-        {
-            char temp_buffer_in_do_while[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果您直接作为 C 字符串打印的话
-            memset(temp_buffer_in_do_while, 0, BUFFERSIZE);
-            if (enable_https)
-            {
-                recvd = SSL_read(ssl_conn, temp_buffer_in_do_while, BUFFERSIZE);
-            }
-            else
-            {
-                recvd = recv(client_socket, temp_buffer_in_do_while, BUFFERSIZE, 0);
-            }
-            if (recvd > 0)
-            {
-                // 只附加实际接收到的字节数
-                request_data.append(temp_buffer_in_do_while, recvd);
-                totla_recvd += recvd;
-            }
-            else if (recvd == 0)
-            {
-                // 客户端已优雅断开连接
-                break; // 跳出循环
-            }
-            else
-            {
-                // 发生error
-                log_e("An error occurred receiving, errno: %d\n", errno);
-                break;
-            }
-        }
-
-        // 分离请求体
-        size_t header_end_pos = request_data.find("\r\n\r\n");
-        std::string request_header, request_content;
-        if (header_end_pos != std::string::npos)
-        {
-            request_header = request_data.substr(0, header_end_pos);
-            request_content = request_data.substr(header_end_pos + 4);
-        }
-        else
-        {
-            request_header = request_data;
-            request_content = "";
-        }
-
-        if (!enable_https && behavior_mode == BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS &&
-            https_port != DISABLE_HTTPS_REQUEST)
-        {
-            std::unordered_map<std::string, std::string> parsed_header = getParsedHeader_Pimpl(request_header);
-
-            std::string Location;
-            Location += "https://";
-            Location += parsed_header["Host"];
-            Location += parsed_header["url"];
-            if (https_port != 443)
-            {
-                Location += ":";
-                Location += std::to_string(https_port);
-            }
-            // log_d("Location=%s\n", Location.data());
-            // std::cout << "Location=" << Location << "\n";
-            sendDataToHttpSocket_Pimpl(
-                client_socket, makeResponseHeader_Pimpl(301, {{"connection", "close"}, {"Location", Location}}));
-            closesocket(client_socket);
-            continue;
-        }
-
-        if (enable_https)
-        {
-            client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
-        }
-        client_connections[client_socket].is_https_connection = enable_https;
-        if (client_address.ss_family == AF_INET)
-        {
-            // IPv4 连接
-            struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&client_address;
-            inet_ntop(AF_INET, &(ipv4_addr->sin_addr), client_connections[client_socket].ip.data(),
-                      client_connections[client_socket].ip.length());
-            client_connections[client_socket].port = ntohs(ipv4_addr->sin_port);
-            client_connections[client_socket].family = "ipv4";
-        }
-        else if (client_address.ss_family == AF_INET6)
-        {
-            // IPv6 连接
-            struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&client_address;
-            inet_ntop(AF_INET6, &(ipv6_addr->sin6_addr), client_connections[client_socket].ip.data(),
-                      client_connections[client_socket].ip.length());
-            client_connections[client_socket].port = ntohs(ipv6_addr->sin6_port);
-            client_connections[client_socket].family = "ipv6";
-        }
-        client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
-        client_connections[client_socket].request_header = request_header;
-        client_connections[client_socket].request_content = request_content;
-        client_connections[client_socket].parsed_request_headers = getParsedHeader_Pimpl(request_header); // 解析请求头
-        client_connections[client_socket].query_params =
-            parseUrlQueryParameters_Pimpl(client_connections[client_socket].parsed_request_headers["url"]);
-
-        std::string url = client_connections[client_socket].parsed_request_headers["url"];
-        size_t query_pos = url.find('?');
-        if (query_pos != std::string::npos)
-        {
-            // 找到了 '?'，分割 URL 路径和查询参数
-            client_connections[client_socket].parsed_request_headers["url"] = url.substr(0, query_pos);
-        }
-        else
-        {
-            // 没有查询参数，整个 URL 都是路径
-            client_connections[client_socket].parsed_request_headers["url"] = url;
-        }
-
-        requestContext req;
-        req.client_socket = client_socket;
-        req.is_https_connection = client_connections[client_socket].is_https_connection;
-        req.ip = client_connections[client_socket].ip;
-        req.port = client_connections[client_socket].port;
-        req.family = client_connections[client_socket].family;
-        req.request_data = client_connections[client_socket].request_data;
-        req.request_content = client_connections[client_socket].request_content;
-        req.request_headers = client_connections[client_socket].request_header;
-        req.parsed_request_headers = client_connections[client_socket].parsed_request_headers;
-        req.query_params = client_connections[client_socket].query_params;
-
-        std::optional<responseContext> res = handleRequest_Pimpl(req);
-        if (res.has_value())
-        {
-            // send data to client
-            sendDataToSocket_Pimpl(client_socket,
-                                   makeResponseHeader_Pimpl(res.value().status_code, res.value().response_headers));
-            sendDataToSocket_Pimpl(client_socket, res.value().response_content);
-        }
-
+    char temp_buffer[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果直接作为 C 字符串打印的话
+    memset(temp_buffer, 0, BUFFERSIZE);
+    // 接收数据
+    if (enable_https)
+    {
+        recvd = SSL_read(ssl_conn, temp_buffer, BUFFERSIZE);
+    }
+    else
+    {
+        recvd = recv(client_socket, temp_buffer, BUFFERSIZE, 0);
+    }
+    if (recvd > 0)
+    {
+        // 只附加实际接收到的字节数
+        request_data.append(temp_buffer, recvd);
+        totla_recvd += recvd;
+        // if (IS_DEBUG)
+        //     std::cout << "recv " << recvd << " bytes, total recv: " << totla_recvd << " bytes\n";
+    }
+    else if (recvd == 0)
+    {
+        // 客户端已优雅断开连接
+        return; // 继续等待下一个连接
+    }
+    else
+    {
+        // 发生error
+        log_e("An error occurred receiving, errno: %d\n", errno);
         if (enable_https)
         {
             SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
             SSL_free(ssl_conn);     // 释放 SSL 结构
         }
-        closesocket(client_socket); // 关闭套接字
+        closesocket(client_socket); // 关闭客户端套接字
+        return;                     // 继续等待下一个连接
     }
+
+    try
+    {
+        content_size = getPostContentSize_Pimpl(request_data);
+    }
+    catch (const std::exception &e)
+    {
+        log_e("Get content size error: %s\n", e.what());
+    }
+    catch (...)
+    {
+        log_e("Get content size unknown error\n");
+    }
+
+    // 循环接收数据
+    while (totla_recvd < content_size)
+    {
+        char temp_buffer_in_do_while[BUFFERSIZE + 1]; // +1 是为了 null 终止符，如果您直接作为 C 字符串打印的话
+        memset(temp_buffer_in_do_while, 0, BUFFERSIZE);
+        if (enable_https)
+        {
+            recvd = SSL_read(ssl_conn, temp_buffer_in_do_while, BUFFERSIZE);
+        }
+        else
+        {
+            recvd = recv(client_socket, temp_buffer_in_do_while, BUFFERSIZE, 0);
+        }
+        if (recvd > 0)
+        {
+            // 只附加实际接收到的字节数
+            request_data.append(temp_buffer_in_do_while, recvd);
+            totla_recvd += recvd;
+        }
+        else if (recvd == 0)
+        {
+            // 客户端已优雅断开连接
+            break; // 跳出循环
+        }
+        else
+        {
+            // 发生error
+            log_e("An error occurred receiving, errno: %d\n", errno);
+            break;
+        }
+    }
+
+    // 分离请求体
+    size_t header_end_pos = request_data.find("\r\n\r\n");
+    std::string request_header, request_content;
+    if (header_end_pos != std::string::npos)
+    {
+        request_header = request_data.substr(0, header_end_pos);
+        request_content = request_data.substr(header_end_pos + 4);
+    }
+    else
+    {
+        request_header = request_data;
+        request_content = "";
+    }
+
+    if (!enable_https && behavior_mode == BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS &&
+        https_port != DISABLE_HTTPS_REQUEST)
+    {
+        std::unordered_map<std::string, std::string> parsed_header = getParsedHeader_Pimpl(request_header);
+
+        std::string Location;
+        Location += "https://";
+        Location += parsed_header["Host"];
+        Location += parsed_header["url"];
+        if (https_port != 443)
+        {
+            Location += ":";
+            Location += std::to_string(https_port);
+        }
+        // log_d("Location=%s\n", Location.data());
+        // std::cout << "Location=" << Location << "\n";
+        sendDataToHttpSocket_Pimpl(client_socket,
+                                   makeResponseHeader_Pimpl(301, {{"connection", "close"}, {"Location", Location}}));
+        closesocket(client_socket);
+        return;
+    }
+
+    if (enable_https)
+    {
+        client_connections[client_socket].ssl = ssl_conn; // 将 SSL 结构存储到 client_connections 中
+    }
+    client_connections[client_socket].is_https_connection = enable_https;
+    if (client_address.ss_family == AF_INET)
+    {
+        // IPv4 连接
+        struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&client_address;
+        inet_ntop(AF_INET, &(ipv4_addr->sin_addr), client_connections[client_socket].ip.data(),
+                  client_connections[client_socket].ip.length());
+        client_connections[client_socket].port = ntohs(ipv4_addr->sin_port);
+        client_connections[client_socket].family = "ipv4";
+    }
+    else if (client_address.ss_family == AF_INET6)
+    {
+        // IPv6 连接
+        struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&client_address;
+        inet_ntop(AF_INET6, &(ipv6_addr->sin6_addr), client_connections[client_socket].ip.data(),
+                  client_connections[client_socket].ip.length());
+        client_connections[client_socket].port = ntohs(ipv6_addr->sin6_port);
+        client_connections[client_socket].family = "ipv6";
+    }
+    client_connections[client_socket].request_data = request_data; // 将接收到的数据存储到 client_connections 中
+    client_connections[client_socket].request_header = request_header;
+    client_connections[client_socket].request_content = request_content;
+    client_connections[client_socket].parsed_request_headers = getParsedHeader_Pimpl(request_header); // 解析请求头
+    client_connections[client_socket].query_params =
+        parseUrlQueryParameters_Pimpl(client_connections[client_socket].parsed_request_headers["url"]);
+
+    std::string url = client_connections[client_socket].parsed_request_headers["url"];
+    size_t query_pos = url.find('?');
+    if (query_pos != std::string::npos)
+    {
+        // 找到了 '?'，分割 URL 路径和查询参数
+        client_connections[client_socket].parsed_request_headers["url"] = url.substr(0, query_pos);
+    }
+    else
+    {
+        // 没有查询参数，整个 URL 都是路径
+        client_connections[client_socket].parsed_request_headers["url"] = url;
+    }
+
+    requestContext req;
+    req.client_socket = client_socket;
+    req.is_https_connection = client_connections[client_socket].is_https_connection;
+    req.ip = client_connections[client_socket].ip;
+    req.port = client_connections[client_socket].port;
+    req.family = client_connections[client_socket].family;
+    req.request_data = client_connections[client_socket].request_data;
+    req.request_content = client_connections[client_socket].request_content;
+    req.request_headers = client_connections[client_socket].request_header;
+    req.parsed_request_headers = client_connections[client_socket].parsed_request_headers;
+    req.query_params = client_connections[client_socket].query_params;
+
+    std::optional<responseContext> res = handleRequest_Pimpl(req);
+    if (res.has_value())
+    {
+        // send data to client
+        sendDataToSocket_Pimpl(client_socket,
+                               makeResponseHeader_Pimpl(res.value().status_code, res.value().response_headers));
+        sendDataToSocket_Pimpl(client_socket, res.value().response_content);
+    }
+
+    if (enable_https)
+    {
+        SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
+        SSL_free(ssl_conn);     // 释放 SSL 结构
+    }
+    closesocket(client_socket); // 关闭套接字
 }
 
 void cppNetworkUtilPimpl::print_cppNetworkUtilVersion_Pimpl()
