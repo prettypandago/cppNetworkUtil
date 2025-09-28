@@ -309,17 +309,31 @@ std::string cppNetworkUtilPimpl::getPostContentBody_Pimpl(const std::string buff
     return body;
 }
 
-std::string cppNetworkUtilPimpl::getHttpCodeText_Pimpl(int status_code)
+std::optional<std::string> cppNetworkUtilPimpl::getHttpCodeText_Pimpl(int status_code)
 {
-    std::string text;
-
     auto it = http_code.find(status_code);
     if (it != http_code.end())
-        text = it->second;
+    {
+        return it->second;
+    }
     else
-        text = "Unknown";
+    {
+        return std::nullopt; // 如果未找到，返回空
+    }
+}
 
-    return text;
+std::optional<std::string> cppNetworkUtilPimpl::getMimeType_Pimpl(const std::string &file_extension)
+{
+    auto it = mimeTypeMap.find(file_extension);
+
+    if (it != mimeTypeMap.end())
+    {
+        return it->second;
+    }
+    else
+    {
+        return std::nullopt; // 如果未找到，返回空
+    }
 }
 
 std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(int status_code,
@@ -329,13 +343,13 @@ std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(int status_code,
 
     if (parameters.count("connection"))
     {
-        std::string title = getHttpCodeText_Pimpl(status_code);
+        std::optional<std::string> title = getHttpCodeText_Pimpl(status_code);
 
         buffer += PROTOCOL;
         buffer += " ";
         buffer += std::to_string(status_code);
         buffer += " ";
-        buffer += title;
+        buffer += title.value_or("Unknown");
         buffer += "\r\n";
 
         buffer += "Connection: ";
@@ -1988,7 +2002,7 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
 
     // 回退到默认处理
     res.status_code = status_code;
-    res.response_content = std::to_string(status_code) + getHttpCodeText_Pimpl(status_code);
+    res.response_content = std::to_string(status_code) + " " + getHttpCodeText_Pimpl(status_code).value_or("Unknown");
     res.response_headers["status_code"] = std::to_string(res.status_code);
     if (res.response_headers.find("Content-Type") == res.response_headers.end())
     {

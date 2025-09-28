@@ -46,10 +46,12 @@ typedef int SOCKET;
 #include <map>
 #include <memory> //For std::unique_ptr
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "defines.h"
@@ -164,16 +166,31 @@ class cppNetworkUtil
     std::string getPostContentBody(const std::string buffer);
 
     /**
-     * @brief Returns the standard textual description for a given HTTP status code.
+     * @brief Retrieves the standard HTTP status text for a given status code.
      *
-     * This function takes an integer representing an HTTP status code (e.g., 200, 404)
-     * and returns the corresponding standard reason phrase as a string (e.g., "OK", "Not Found").
+     * This function looks up the provided HTTP status code in a predefined map
+     * and returns the corresponding status text. If the status code is not found,
+     * std::nullopt is returned.
      *
-     * @param status_code The HTTP status code to look up.
+     * @param status_code The HTTP status code (e.g., 200, 404).
      *
-     * @return std::string The standard textual description for the provided HTTP status code.
+     * @return std::optional<std::string> The standard textual description for the provided HTTP status code,
+     * or std::nullopt if the status code is not recognized.
      */
-    std::string getHttpCodeText(int status_code);
+    std::optional<std::string> getHttpCodeText(int status_code);
+
+    /**
+     * @brief Retrieves the MIME type associated with a given file extension.
+     *
+     * This function takes a file extension as input and returns the corresponding
+     * MIME type as a string, if it exists. If the MIME type cannot be determined,
+     * std::nullopt is returned.
+     *
+     * @param file_extension The file extension (e.g., "jpg", "html") for which to retrieve the MIME type.
+     *
+     * @return std::optional<std::string> The MIME type string if found, otherwise std::nullopt.
+     */
+    std::optional<std::string> getMimeType(const std::string &file_extension);
 
     /**
      * @brief Make a response header

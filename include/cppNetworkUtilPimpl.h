@@ -50,67 +50,120 @@ struct ssl_ctx_st;
 struct ssl_st;
 struct bio_st; // 用于 OpenSSL 的 BIO
 
-const std::map<int, std::string> http_code = {{100, "Continue"},
-                                              {101, "Switching Protocols"},
-                                              {102, "Processing"},
-                                              {200, "OK"},
-                                              {201, "Created"},
-                                              {202, "Accepted"},
-                                              {203, "Non-Authoritative Information"},
-                                              {204, "No Content"},
-                                              {205, "Reset Content"},
-                                              {206, "Partial Content"},
-                                              {207, "Multi-Status"},
-                                              {208, "Already Reported"},
-                                              {226, "IM Used"},
-                                              {300, "Multiple Choices"},
-                                              {301, "Moved Permanently"},
-                                              {302, "Found"},
-                                              {303, "See Other"},
-                                              {304, "Not Modified"},
-                                              {305, "Use Proxy"},
-                                              {307, "Temporary Redirect"},
-                                              {308, "Permanent Redirect"},
-                                              {400, "Bad Request"},
-                                              {401, "Unauthorized"},
-                                              {402, "Payment Required"},
-                                              {403, "Forbidden"},
-                                              {404, "Not Found"},
-                                              {405, "Method Not Allowed"},
-                                              {406, "Not Acceptable"},
-                                              {407, "Proxy Authentication Required"},
-                                              {408, "Request Timeout"},
-                                              {409, "Conflict"},
-                                              {410, "Gone"},
-                                              {411, "Length Required"},
-                                              {412, "Precondition Failed"},
-                                              {413, "Payload Too Large"},
-                                              {414, "URI Too Long"},
-                                              {415, "Unsupported Media Type"},
-                                              {416, "Range Not Satisfiable"},
-                                              {417, "Expectation Failed"},
-                                              {418, "I'm a teapot"},
-                                              {421, "Misdirected Request"},
-                                              {422, "Unprocessable Entity"},
-                                              {423, "Locked"},
-                                              {424, "Failed Dependency"},
-                                              {425, "Too Early"},
-                                              {426, "Upgrade Required"},
-                                              {428, "Precondition Required"},
-                                              {429, "Too Many Requests"},
-                                              {431, "Request Header Fields Too Large"},
-                                              {451, "Unavailable For Legal Reasons"},
-                                              {500, "Internal Server Error"},
-                                              {501, "Not Implemented"},
-                                              {502, "Bad Gateway"},
-                                              {503, "Service Unavailable"},
-                                              {504, "Gateway Timeout"},
-                                              {505, "HTTP Version Not Supported"},
-                                              {506, "Variant Also Negotiates"},
-                                              {507, "Insufficient Storage"},
-                                              {508, "Loop Detected"},
-                                              {510, "Not Extended"},
-                                              {511, "Network Authentication Required"}};
+const std::unordered_map<int, std::string> http_code = {{100, "Continue"},
+                                                        {101, "Switching Protocols"},
+                                                        {102, "Processing"},
+                                                        {200, "OK"},
+                                                        {201, "Created"},
+                                                        {202, "Accepted"},
+                                                        {203, "Non-Authoritative Information"},
+                                                        {204, "No Content"},
+                                                        {205, "Reset Content"},
+                                                        {206, "Partial Content"},
+                                                        {207, "Multi-Status"},
+                                                        {208, "Already Reported"},
+                                                        {226, "IM Used"},
+                                                        {300, "Multiple Choices"},
+                                                        {301, "Moved Permanently"},
+                                                        {302, "Found"},
+                                                        {303, "See Other"},
+                                                        {304, "Not Modified"},
+                                                        {305, "Use Proxy"},
+                                                        {307, "Temporary Redirect"},
+                                                        {308, "Permanent Redirect"},
+                                                        {400, "Bad Request"},
+                                                        {401, "Unauthorized"},
+                                                        {402, "Payment Required"},
+                                                        {403, "Forbidden"},
+                                                        {404, "Not Found"},
+                                                        {405, "Method Not Allowed"},
+                                                        {406, "Not Acceptable"},
+                                                        {407, "Proxy Authentication Required"},
+                                                        {408, "Request Timeout"},
+                                                        {409, "Conflict"},
+                                                        {410, "Gone"},
+                                                        {411, "Length Required"},
+                                                        {412, "Precondition Failed"},
+                                                        {413, "Payload Too Large"},
+                                                        {414, "URI Too Long"},
+                                                        {415, "Unsupported Media Type"},
+                                                        {416, "Range Not Satisfiable"},
+                                                        {417, "Expectation Failed"},
+                                                        {418, "I'm a teapot"},
+                                                        {421, "Misdirected Request"},
+                                                        {422, "Unprocessable Entity"},
+                                                        {423, "Locked"},
+                                                        {424, "Failed Dependency"},
+                                                        {425, "Too Early"},
+                                                        {426, "Upgrade Required"},
+                                                        {428, "Precondition Required"},
+                                                        {429, "Too Many Requests"},
+                                                        {431, "Request Header Fields Too Large"},
+                                                        {451, "Unavailable For Legal Reasons"},
+                                                        {500, "Internal Server Error"},
+                                                        {501, "Not Implemented"},
+                                                        {502, "Bad Gateway"},
+                                                        {503, "Service Unavailable"},
+                                                        {504, "Gateway Timeout"},
+                                                        {505, "HTTP Version Not Supported"},
+                                                        {506, "Variant Also Negotiates"},
+                                                        {507, "Insufficient Storage"},
+                                                        {508, "Loop Detected"},
+                                                        {510, "Not Extended"},
+                                                        {511, "Network Authentication Required"}};
+
+// 常见的 MIME 类型映射
+const std::unordered_map<std::string, std::string> mimeTypeMap = {
+    // 文本类型 (text)
+    {"html", "text/html"},
+    {"htm", "text/html"},
+    {"css", "text/css"},
+    // JavaScript 的标准推荐类型是 application/javascript
+    {"js", "application/javascript"},
+    {"mjs", "application/javascript"},
+    {"json", "application/json"},
+    {"xml", "application/xml"},
+    {"txt", "text/plain"},
+    {"csv", "text/csv"},
+
+    // 图像类型 (image)
+    {"png", "image/png"},
+    {"jpg", "image/jpeg"},
+    {"jpeg", "image/jpeg"},
+    {"gif", "image/gif"},
+    {"svg", "image/svg+xml"},
+    {"ico", "image/vnd.microsoft.icon"},
+    {"webp", "image/webp"},
+
+    // 应用/通用类型 (application)
+    {"pdf", "application/pdf"},
+    // 通用二进制流，用于未知或需要下载的文件
+    {"bin", "application/octet-stream"},
+    {"zip", "application/zip"},
+    {"gz", "application/gzip"},
+
+    // 音频类型 (audio)
+    {"mp3", "audio/mpeg"},
+    {"wav", "audio/wav"},
+    {"ogg", "audio/ogg"},
+    {"aac", "audio/aac"},
+
+    // 视频类型 (video)
+    {"mp4", "video/mp4"},
+    {"webm", "video/webm"},
+    {"ogv", "video/ogg"},
+
+    // 字体类型 (font)
+    {"ttf", "font/ttf"},
+    {"otf", "font/otf"},
+    {"woff", "font/woff"},
+    {"woff2", "font/woff2"},
+
+    // Microsoft Office (Office Open XML 格式)
+    {"docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    {"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+    {"pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+};
 
 class cppNetworkUtilPimpl
 {
@@ -246,16 +299,31 @@ class cppNetworkUtilPimpl
     std::string getPostContentBody_Pimpl(const std::string buffer);
 
     /**
-     * @brief Returns the standard textual description for a given HTTP status code.
+     * @brief Retrieves the standard HTTP status text for a given status code.
      *
-     * This function takes an integer representing an HTTP status code (e.g., 200, 404)
-     * and returns the corresponding standard reason phrase as a string (e.g., "OK", "Not Found").
+     * This function looks up the provided HTTP status code in a predefined map
+     * and returns the corresponding status text. If the status code is not found,
+     * std::nullopt is returned.
      *
-     * @param status_code The HTTP status code to look up.
+     * @param status_code The HTTP status code (e.g., 200, 404).
      *
-     * @return std::string The standard textual description for the provided HTTP status code.
+     * @return std::optional<std::string> The standard textual description for the provided HTTP status code,
+     * or std::nullopt if the status code is not recognized.
      */
-    std::string getHttpCodeText_Pimpl(int status_code);
+    std::optional<std::string> getHttpCodeText_Pimpl(int status_code);
+
+    /**
+     * @brief Retrieves the MIME type associated with a given file extension.
+     *
+     * This function takes a file extension as input and returns the corresponding
+     * MIME type as a string, if it exists. If the MIME type cannot be determined,
+     * std::nullopt is returned.
+     *
+     * @param file_extension The file extension (e.g., "jpg", "html") for which to retrieve the MIME type.
+     *
+     * @return std::optional<std::string> The MIME type string if found, otherwise std::nullopt.
+     */
+    std::optional<std::string> getMimeType_Pimpl(const std::string &file_extension);
 
     /**
      * @brief Make a response header

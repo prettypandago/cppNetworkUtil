@@ -51,9 +51,14 @@ std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
     return pimpl_->getPostContentBody_Pimpl(buffer);
 }
 
-std::string cppNetworkUtil::getHttpCodeText(int code)
+std::optional<std::string> cppNetworkUtil::getHttpCodeText(int status_code)
 {
-    return pimpl_->getHttpCodeText_Pimpl(code);
+    return pimpl_->getHttpCodeText_Pimpl(status_code);
+}
+
+std::optional<std::string> cppNetworkUtil::getMimeType(const std::string &file_extension)
+{
+    return pimpl_->getMimeType_Pimpl(file_extension);
 }
 
 std::string cppNetworkUtil::makeResponseHeader(int status_code, std::unordered_map<std::string, std::string> parameters)

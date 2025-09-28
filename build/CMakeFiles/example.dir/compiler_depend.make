@@ -193,6 +193,7 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/memory \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/mutex \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/new \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/optional \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/ostream \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/pstl/execution_defs.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/pstl/glue_algorithm_defs.h \
@@ -820,6 +821,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/parse_numbers.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/typeinfo:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/optional:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/postypes.h:
 
