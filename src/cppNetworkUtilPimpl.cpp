@@ -2004,10 +2004,7 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
     res.status_code = status_code;
     res.response_content = std::to_string(status_code) + " " + getHttpCodeText_Pimpl(status_code).value_or("Unknown");
     res.response_headers["status_code"] = std::to_string(res.status_code);
-    if (res.response_headers.find("Content-Type") == res.response_headers.end())
-    {
-        res.response_headers["Content-Type"] = "text/plain";
-    }
+    res.response_headers["Content-Type"] = "text/plain";
 }
 
 std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &req)

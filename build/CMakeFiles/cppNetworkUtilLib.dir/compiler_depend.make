@@ -391,7 +391,6 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj: D:/YYProject/vscode
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_ws1_undef.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_wsa_errnos.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_wsadata.h \
-  C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_xmitfile.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/intrin-impl.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack1.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack2.h \
@@ -494,12 +493,12 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj: D:/YYProject/vscode
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ws2tcpip.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypes.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypesbase.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/color.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtilPimpl.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/defines.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/log.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/threadPool.h
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/color.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/cppNetworkUtil.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/cppNetworkUtilPimpl.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/defines.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/log.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/threadPool.h
 
 CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj: D:/YYProject/vscode-project/cppNetworkUtil/src/cppNetworkUtilPimpl.cpp \
   C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include-fixed/limits.h \
@@ -994,12 +993,12 @@ CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj: D:/YYProject/v
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ws2tcpip.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypes.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypesbase.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/color.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtilPimpl.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/defines.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/log.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/threadPool.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/color.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/cppNetworkUtil.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/cppNetworkUtilPimpl.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/defines.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/log.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/threadPool.h \
   D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/asn1.h \
   D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/asn1err.h \
   D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/async.h \
@@ -1260,7 +1259,7 @@ CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj: D:/YYProject/vscode-pro
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/vadefs.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wchar.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wctype.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/threadPool.h
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/threadPool.h
 
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include-fixed/syslimits.h:
@@ -1313,6 +1312,8 @@ D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/dsaerr.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/securityappcontainer.h:
 
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/cppNetworkUtilPimpl.h:
+
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/avx512vbmi2intrin.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/avx2intrin.h:
@@ -1358,8 +1359,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/pconfigintrin.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/tmmintrin.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/include/defines.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/avx512bf16vlintrin.h:
 
@@ -1490,8 +1489,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/codecvt.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/cpp_type_traits.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtilPimpl.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/cxxabi_forced.h:
 
@@ -1662,8 +1659,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_executor.tcc:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/_mingw_mac.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/include/threadPool.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/regex_scanner.h:
 
@@ -1945,8 +1940,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/sstream:
 
-D:/YYProject/vscode-project/cppNetworkUtil/include/color.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/stack:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/stdlib.h:
@@ -1968,6 +1961,10 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/type_traits:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/oleidl.h:
+
+D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/prov_ssl.h:
+
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/defines.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/utility:
 
@@ -2037,9 +2034,11 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/winsvc.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/immintrin.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/virtdisk.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/keylockerintrin.h:
+
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/color.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/virtdisk.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/lwpintrin.h:
 
@@ -2165,6 +2164,8 @@ D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/dherr.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/inaddr.h:
 
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/cppNetworkUtil.h:
+
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ioapiset.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/knownfolders.h:
@@ -2178,6 +2179,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/mciapi.h:
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/memoryapi.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/mmeapi.h:
+
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/threadPool.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/mmsystem.h:
 
@@ -2225,8 +2228,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_ip_t
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_socket_types.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_xmitfile.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack2.h:
 
 D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/evp.h:
@@ -2250,6 +2251,8 @@ D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/asn1.h:
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/shlguid.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/shobjidl.h:
+
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/log.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/shtypes.h:
 
@@ -2311,9 +2314,7 @@ D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/tls1.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypesbase.h:
 
-D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/include/log.h:
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_xmitfile.h:
 
 D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/asyncerr.h:
 
@@ -2376,8 +2377,6 @@ D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/pemerr.h:
 D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/pkcs7.h:
 
 D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/pkcs7err.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/prov_ssl.h:
 
 D:/YYProject/vscode-project/cppNetworkUtil/openssl/include/openssl/quic.h:
 

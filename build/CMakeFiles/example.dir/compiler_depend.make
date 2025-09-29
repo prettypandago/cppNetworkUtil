@@ -391,7 +391,6 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_ws1_undef.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_wsa_errnos.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_wsadata.h \
-  C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_xmitfile.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/intrin-impl.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack1.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack2.h \
@@ -494,10 +493,10 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ws2tcpip.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypes.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypesbase.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/color.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/defines.h \
-  D:/YYProject/vscode-project/cppNetworkUtil/include/log.h
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/color.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/cppNetworkUtil.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/defines.h \
+  D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/log.h
 
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/winnetwk.h:
@@ -569,8 +568,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/bits/allocator.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/avx512bf16intrin.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/include/defines.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/tmmintrin.h:
 
@@ -1138,8 +1135,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/objbase.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/regex:
 
-D:/YYProject/vscode-project/cppNetworkUtil/include/color.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/sstream:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/stack:
@@ -1161,6 +1156,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/oleidl.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/type_traits:
+
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/defines.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/c++/utility:
 
@@ -1229,6 +1226,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/winsvc.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/lib/gcc/x86_64-w64-mingw32/11.4.0/include/immintrin.h:
+
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/color.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/virtdisk.h:
 
@@ -1354,6 +1353,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sdkddkver.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/inaddr.h:
 
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/cppNetworkUtil.h:
+
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ioapiset.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/knownfolders.h:
@@ -1410,8 +1411,6 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_ip_t
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_socket_types.h:
 
-C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_xmitfile.h:
-
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack2.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pthread.h:
@@ -1429,6 +1428,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/servprov.h:
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/sherrors.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/shlguid.h:
+
+D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil/log.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/shobjidl.h:
 
@@ -1489,7 +1490,3 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/ws2def.h:
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypes.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/wtypesbase.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/include/cppNetworkUtil.h:
-
-D:/YYProject/vscode-project/cppNetworkUtil/include/log.h:

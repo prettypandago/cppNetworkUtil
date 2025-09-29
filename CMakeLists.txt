@@ -13,6 +13,7 @@ set(OPENSSL_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/openssl") # 例如：D:/YYProj
 
 # 添加头文件搜索路径
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/cppNetworkUtil)
 # 确保编译器能找到 OpenSSL 的头文件
 include_directories(${OPENSSL_ROOT_DIR}/include)
 
