@@ -59,6 +59,14 @@
         "cinttypes": "cpp",
         "bitset": "cpp",
         "regex": "cpp",
-        "optional": "cpp"
+        "optional": "cpp",
+        "charconv": "cpp",
+        "format": "cpp",
+        "queue": "cpp",
+        "ranges": "cpp",
+        "span": "cpp",
+        "stack": "cpp",
+        "text_encoding": "cpp",
+        "variant": "cpp"
     }
 }

@@ -43,8 +43,7 @@ typedef int SOCKET;
 #include <fstream>    // For std::ifstream
 #include <functional> // For std::function
 #include <future>     // For std::future, std::packaged_task
-#include <map>
-#include <memory> //For std::unique_ptr
+#include <memory>     //For std::unique_ptr
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -79,7 +78,7 @@ class cppNetworkUtil
      * @throw Invalid request line: No space found after url
      * @throw Invalid request line: No \r\n found after http version
      *
-     * @return parsed map request header
+     * @return parsed unordered_map request header
      */
     std::unordered_map<std::string, std::string> getParsedHeader(const std::string &header);
 
@@ -168,7 +167,7 @@ class cppNetworkUtil
     /**
      * @brief Retrieves the standard HTTP status text for a given status code.
      *
-     * This function looks up the provided HTTP status code in a predefined map
+     * This function looks up the provided HTTP status code in a predefined unordered_map
      * and returns the corresponding status text. If the status code is not found,
      * std::nullopt is returned.
      *
@@ -207,13 +206,13 @@ class cppNetworkUtil
     /**
      * @brief Make a request header
      *
-     * @param parameters (std::map<std::string, std::string> parameters) parameters
+     * @param parameters (std::unordered_map<std::string, std::string> parameters) parameters
      *
      * @throw Missing required fields
      *
      * @return request header
      */
-    std::string makeRequestHeader(std::map<std::string, std::string> parameters);
+    std::string makeRequestHeader(std::unordered_map<std::string, std::string> parameters);
 
     /**
      * @brief Decode a URL-encoded string
@@ -225,17 +224,17 @@ class cppNetworkUtil
     std::string urlDecode(const std::string &encodedString);
 
     /**
-     * @brief Parses a URL-encoded form body string into a map of key-value pairs.
+     * @brief Parses a URL-encoded form body string into a unordered_map of key-value pairs.
      *
      * This function takes a URL-encoded string (typically from an HTTP POST body)
-     * and parses it into a std::map, where each key-value pair corresponds to a
+     * and parses it into a std::unordered_map, where each key-value pair corresponds to a
      * field in the form data.
      *
      * @param encoded_string The URL-encoded form body as a std::string.
      *
-     * @return std::map<std::string, std::string> A map containing the decoded key-value pairs.
+     * @return std::unordered_map<std::string, std::string> A unordered_map containing the decoded key-value pairs.
      */
-    std::map<std::string, std::string> parseUrlEncodedFormBody(const std::string &encoded_string);
+    std::unordered_map<std::string, std::string> parseUrlEncodedFormBody(const std::string &encoded_string);
 
     /**
      * @brief Cut url path
@@ -253,7 +252,7 @@ class cppNetworkUtil
      *
      * @throw Invalid URL format
      *
-     * @return A unordered map of key-value pairs representing the query parameters
+     * @return A unordered unordered_map of key-value pairs representing the query parameters
      */
     std::unordered_map<std::string, std::string> parseUrlQueryParameters(const std::string &url);
 
@@ -267,10 +266,10 @@ class cppNetworkUtil
      * @param boundary The boundary string used to separate parts in the multipart body.
      * @param body The raw HTTP request body containing multipart/form-data.
      *
-     * @return std::map<std::string, multipartData>
-     *         A map where the key is the field name and the value is the parsed multipartData.
+     * @return std::unordered_map<std::string, multipartData>
+     *         A unordered_map where the key is the field name and the value is the parsed multipartData.
      */
-    std::map<std::string, multipartData> parseMultipart(const std::string &boundary, const std::string &body);
+    std::unordered_map<std::string, multipartData> parseMultipart(const std::string &boundary, const std::string &body);
 
     /**
      * @brief Send data to the socket using HTTP protocol
@@ -324,7 +323,7 @@ class cppNetworkUtil
      * @param host (const std::string &) Host address
      * @param path (const std::string &) Path to the resource
      * @param port (int) Port number
-     * @param request_header (const std::map<std::string, std::string> &) Request header to be sent
+     * @param request_header (const std::unordered_map<std::string, std::string> &) Request header to be sent
      * @param header (std::string &) Header to be filled with the response header
      * @param content (std::string &) Content to be filled with the response content
      *
@@ -339,7 +338,7 @@ class cppNetworkUtil
      * @throw Invalid HTTP response format
      */
     void sendDataToHttpHost(const std::string &host, const std::string &path, int port,
-                            const std::map<std::string, std::string> &request_header, std::string &header,
+                            const std::unordered_map<std::string, std::string> &request_header, std::string &header,
                             std::string &content);
 
     /**
@@ -365,8 +364,23 @@ class cppNetworkUtil
      * @throw Invalid HTTP response format
      */
     void sendDataToHttpsHost(const std::string &host, const std::string &path, int port,
-                             const std::map<std::string, std::string> &request_header, std::string &header,
+                             const std::unordered_map<std::string, std::string> &request_header, std::string &header,
                              std::string &content, bool enable_CA = true);
+
+    /**
+     * @brief Decode chunked transfer encoding response
+     *
+     * @param current_chunk_buffer (std::string &) Buffer to store the current chunk data
+     * @param content (std::string &) Content to be filled with the decoded response content
+     * @param read_func (std::function<int(char *, int)>) Function to read data from the socket or SSL
+     *
+     * @throw Socket read failed during chunk size reception
+     * @throw Failed to parse chunk size
+     * @throw Failed to parse chunk size with unknown error
+     * @throw Incomplete chunk data: connection closed unexpectedly or socket/SSL read error
+     */
+    void decodeChunkedResponse(std::string &current_chunk_buffer, std::string &content,
+                               std::function<int(char *, int)> read_func);
 
     /**
      * @brief Automatically executed when leaving scope
@@ -440,6 +454,28 @@ class cppNetworkUtil
      * @param handler The function or callable object that will handle the request.
      */
     void on(const std::string &method, int status_code, routeHandler handler);
+
+    /**
+     * @brief Unregister route handlers based on method and path pattern.
+     *
+     * This function removes all route handlers that match the specified HTTP method
+     * and path pattern. If no matching handlers are found, the function does nothing.
+     *
+     * @param method_or_regex The HTTP method (e.g., "GET", "POST") or regex pattern to match.
+     * @param path_pattern The path pattern to match against registered routes.
+     */
+    void off(const std::string &method, const std::string &path_pattern);
+
+    /**
+     * @brief Unregister route handlers based on method and status code.
+     *
+     * This function removes all route handlers that match the specified HTTP method
+     * and status code. If no matching handlers are found, the function does nothing.
+     *
+     * @param method The HTTP method (e.g., "GET", "POST") to match.
+     * @param status_code The HTTP status code to match against registered routes.
+     */
+    void off(const std::string &method, int status_code);
 
   private:
     std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // pimpl implementation pointer

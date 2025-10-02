@@ -66,7 +66,7 @@ std::string cppNetworkUtil::makeResponseHeader(int status_code, std::unordered_m
     return pimpl_->makeResponseHeader_Pimpl(status_code, parameters);
 }
 
-std::string cppNetworkUtil::makeRequestHeader(std::map<std::string, std::string> parameters)
+std::string cppNetworkUtil::makeRequestHeader(std::unordered_map<std::string, std::string> parameters)
 {
     return pimpl_->makeRequestHeader_Pimpl(parameters);
 }
@@ -76,7 +76,7 @@ std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
     return pimpl_->urlDecode_Pimpl(encodedString);
 }
 
-std::map<std::string, std::string> cppNetworkUtil::parseUrlEncodedFormBody(const std::string &encoded_string)
+std::unordered_map<std::string, std::string> cppNetworkUtil::parseUrlEncodedFormBody(const std::string &encoded_string)
 {
     return pimpl_->parseUrlEncodedFormBody_Pimpl(encoded_string);
 }
@@ -91,8 +91,8 @@ std::unordered_map<std::string, std::string> cppNetworkUtil::parseUrlQueryParame
     return pimpl_->parseUrlQueryParameters_Pimpl(url);
 }
 
-std::map<std::string, multipartData> cppNetworkUtil::parseMultipart(const std::string &boundary,
-                                                                    const std::string &body)
+std::unordered_map<std::string, multipartData> cppNetworkUtil::parseMultipart(const std::string &boundary,
+                                                                              const std::string &body)
 {
     return pimpl_->parseMultipart_Pimpl(boundary, body);
 }
@@ -128,17 +128,23 @@ void cppNetworkUtil::endDataChunkStreamTransfer(SOCKET socket)
 }
 
 void cppNetworkUtil::sendDataToHttpHost(const std::string &host, const std::string &path, int port,
-                                        const std::map<std::string, std::string> &request_header, std::string &header,
-                                        std::string &content)
+                                        const std::unordered_map<std::string, std::string> &request_header,
+                                        std::string &header, std::string &content)
 {
     pimpl_->sendDataToHttpHost_Pimpl(host, path, port, request_header, header, content);
 }
 
 void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::string &path, int port,
-                                         const std::map<std::string, std::string> &request_header, std::string &header,
-                                         std::string &content, bool enable_CA)
+                                         const std::unordered_map<std::string, std::string> &request_header,
+                                         std::string &header, std::string &content, bool enable_CA)
 {
     pimpl_->sendDataToHttpsHost_Pimpl(host, path, port, request_header, header, content, enable_CA);
+}
+
+void cppNetworkUtil::decodeChunkedResponse(std::string &current_chunk_buffer, std::string &content,
+                                           std::function<int(char *, int)> read_func)
+{
+    pimpl_->decodeChunkedResponse_Pimpl(current_chunk_buffer, content, read_func);
 }
 
 cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>())
@@ -171,4 +177,14 @@ void cppNetworkUtil::on(const std::string &method, const std::string &path_patte
 void cppNetworkUtil::on(const std::string &method, int status_code, routeHandler handler)
 {
     pimpl_->on_Pimpl(method, status_code, std::move(handler));
+}
+
+void cppNetworkUtil::off(const std::string &method, const std::string &path_pattern)
+{
+    pimpl_->off_Pimpl(method, path_pattern);
+}
+
+void cppNetworkUtil::off(const std::string &method, int status_code)
+{
+    pimpl_->off_Pimpl(method, status_code);
 }

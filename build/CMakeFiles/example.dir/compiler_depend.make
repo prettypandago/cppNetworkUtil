@@ -391,6 +391,7 @@ CMakeFiles/example.dir/example.cpp.obj: D:/YYProject/vscode-project/cppNetworkUt
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_ws1_undef.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_wsa_errnos.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_wsadata.h \
+  C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_xmitfile.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/intrin-impl.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack1.h \
   C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack2.h \
@@ -1410,6 +1411,8 @@ C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_ip_m
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_ip_types.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_socket_types.h:
+
+C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/psdk_inc/_xmitfile.h:
 
 C:/Program\ Files/RedPanda-Cpp/mingw64/x86_64-w64-mingw32/include/pshpack2.h:
 

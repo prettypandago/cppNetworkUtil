@@ -381,7 +381,7 @@ std::string cppNetworkUtilPimpl::makeResponseHeader_Pimpl(int status_code,
     return buffer;
 }
 
-std::string cppNetworkUtilPimpl::makeRequestHeader_Pimpl(std::map<std::string, std::string> parameters)
+std::string cppNetworkUtilPimpl::makeRequestHeader_Pimpl(std::unordered_map<std::string, std::string> parameters)
 {
     std::string buffer;
 
@@ -456,9 +456,10 @@ std::string cppNetworkUtilPimpl::urlDecode_Pimpl(const std::string &encodedStrin
     return decodedString;
 }
 
-std::map<std::string, std::string> cppNetworkUtilPimpl::parseUrlEncodedFormBody_Pimpl(const std::string &postBody)
+std::unordered_map<std::string, std::string> cppNetworkUtilPimpl::parseUrlEncodedFormBody_Pimpl(
+    const std::string &postBody)
 {
-    std::map<std::string, std::string> formData;
+    std::unordered_map<std::string, std::string> formData;
 
     std::string data = urlDecode_Pimpl(postBody);
 
@@ -554,13 +555,13 @@ std::unordered_map<std::string, std::string> cppNetworkUtilPimpl::parseUrlQueryP
 }
 
 // 解析 multipart 数据
-std::map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::string &boundary,
-                                                                               const std::string &body)
+std::unordered_map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::string &boundary,
+                                                                                         const std::string &body)
 {
-    std::map<std::string, multipartData> parsedParts; // 存储所有解析出的部分
-    std::string delimiter = "--" + boundary;          // 每个部分的开始分隔符
-    std::string endDelimiter = delimiter + "--";      // 整个 multipart 结束的分隔符
-    size_t pos = 0;                                   // 当前在 body 字符串中的查找位置
+    std::unordered_map<std::string, multipartData> parsedParts; // 存储所有解析出的部分
+    std::string delimiter = "--" + boundary;                    // 每个部分的开始分隔符
+    std::string endDelimiter = delimiter + "--";                // 整个 multipart 结束的分隔符
+    size_t pos = 0;                                             // 当前在 body 字符串中的查找位置
 
     // 跳过开头的空行，找到第一个有内容的位置
     pos = body.find_first_not_of("\r\n");
@@ -757,7 +758,7 @@ void cppNetworkUtilPimpl::sendDataChunkToSocket_Pimpl(SOCKET socket, const std::
 }
 
 void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, const std::string &path, int port,
-                                                   const std::map<std::string, std::string> &request_header,
+                                                   const std::unordered_map<std::string, std::string> &request_header,
                                                    std::string &header, std::string &content)
 {
 #ifdef _WIN32
@@ -845,130 +846,23 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
 
     if (transfer_encoding == "chunked")
     {
-        // --- 直接在函数内部处理分块传输编码 ---
-        std::string current_chunk_buffer = remaining_buffer_after_header; // 从初始缓冲区中剩余的数据开始
-        content.clear();                                                  // 清空内容，准备接收解码后的数据
-
-        while (true)
+        try
         {
-            size_t line_end_pos = current_chunk_buffer.find("\r\n");
-            while (line_end_pos == std::string::npos)
-            {
-                // 缓冲区中没有完整的行，需要从套接字中读取更多数据
-                char temp_buffer[BUFFERSIZE + 1];
-                memset(temp_buffer, '\0', sizeof(temp_buffer));
-                int bytes_read_chunk = recv(sock, temp_buffer, BUFFERSIZE, 0);
-                if (bytes_read_chunk <= 0)
-                {
-                    HANDLE_ERROR("Failed to read from socket during chunk size reception");
-                    closesocket(sock);
+            // 定义 Lambda 捕获 sock，封装底层的 recv 读取操作
+            auto http_read_func = [sock](char *read_buffer, int len) -> int { return recv(sock, read_buffer, len, 0); };
+
+            // 调用通用的解码函数
+            decodeChunkedResponse_Pimpl(remaining_buffer_after_header, content, http_read_func);
+        }
+        catch (const std::runtime_error &e)
+        {
+            // 捕获解码函数中抛出的异常并处理资源清理
+            HANDLE_ERROR(e.what());
+            closesocket(sock);
 #ifdef _WIN32
-                    WSACleanup();
+            WSACleanup();
 #endif
-                    throw std::runtime_error("Socket read failed during chunk size reception");
-                }
-                current_chunk_buffer.append(temp_buffer, bytes_read_chunk);
-                line_end_pos = current_chunk_buffer.find("\r\n");
-            }
-
-            if (line_end_pos == std::string::npos)
-            {          // 仍然没有完整行，可能连接已关闭或数据异常
-                break; // 退出外层while循环
-            }
-
-            std::string chunk_size_str = current_chunk_buffer.substr(0, line_end_pos);
-            // 移除分块大小后的扩展信息（如 ";chunk-extension"），只保留十六进制大小
-            size_t semi_colon_pos = chunk_size_str.find(';');
-            if (semi_colon_pos != std::string::npos)
-            {
-                chunk_size_str = chunk_size_str.substr(0, semi_colon_pos);
-            }
-
-            long chunk_size;
-            try
-            {
-                chunk_size = std::stoul(chunk_size_str, nullptr, 16); // 将十六进制字符串转换为数字
-            }
-            catch (const std::exception &e)
-            {
-                log_e("Failed to parse chunk size '%s': {%s}\n", chunk_size_str.data(), e.what());
-                closesocket(sock);
-#ifdef _WIN32
-                WSACleanup();
-#endif
-                throw std::runtime_error("Failed to parse chunk size");
-            }
-            catch (...)
-            {
-                log_e("Failed to parse chunk size '%s' with unknown error\n", chunk_size_str.data());
-                closesocket(sock);
-#ifdef _WIN32
-                WSACleanup();
-#endif
-                throw std::runtime_error("Failed to parse chunk size with unknown error");
-            }
-
-            // 移除已解析的分块大小行（包括 CRLF）
-            current_chunk_buffer = current_chunk_buffer.substr(line_end_pos + 2);
-
-            if (chunk_size == 0)
-            {
-                // 遇到最后一个空块，表示分块数据结束
-                // 还需要读取最后的 CRLF
-                if (current_chunk_buffer.length() < 2)
-                {
-                    char temp_crlf[2];
-                    recv(sock, temp_crlf, 2, 0); // 读取最后的 CRLF
-                }
-                else
-                {
-                    current_chunk_buffer = current_chunk_buffer.substr(2); // 移除最后的 CRLF
-                }
-                break; // 退出外层while循环
-            }
-
-            // 读取块数据
-            long bytes_needed_for_chunk = chunk_size;
-            while (bytes_needed_for_chunk > 0)
-            {
-                if (!current_chunk_buffer.empty())
-                {
-                    long bytes_from_buffer = std::min((long)current_chunk_buffer.length(), bytes_needed_for_chunk);
-                    content.append(current_chunk_buffer.data(), bytes_from_buffer);
-                    current_chunk_buffer = current_chunk_buffer.substr(bytes_from_buffer);
-                    bytes_needed_for_chunk -= bytes_from_buffer;
-                }
-                else
-                {
-                    char data_buffer[BUFFERSIZE + 1];
-                    memset(data_buffer, '\0', sizeof(data_buffer));
-                    int bytes_read_data =
-                        recv(sock, data_buffer, std::min((long)BUFFERSIZE, bytes_needed_for_chunk), 0);
-                    if (bytes_read_data <= 0)
-                    {
-                        HANDLE_ERROR("Failed to read from socket during chunk data reception");
-                        closesocket(sock);
-#ifdef _WIN32
-                        WSACleanup();
-#endif
-                        throw std::runtime_error(
-                            "Incomplete chunk data: connection closed unexpectedly or socket read error");
-                    }
-                    content.append(data_buffer, bytes_read_data);
-                    bytes_needed_for_chunk -= bytes_read_data;
-                }
-            }
-
-            // 读取每个块数据后的 CRLF
-            if (current_chunk_buffer.length() < 2)
-            {
-                char temp_crlf[2];
-                recv(sock, temp_crlf, 2, 0); // 读取 CRLF
-            }
-            else
-            {
-                current_chunk_buffer = current_chunk_buffer.substr(2); // 移除 CRLF
-            }
+            throw; // 重新抛出异常
         }
     }
     else
@@ -1027,7 +921,7 @@ void cppNetworkUtilPimpl::sendDataToHttpHost_Pimpl(const std::string &host, cons
 }
 
 void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, const std::string &path, int port,
-                                                    const std::map<std::string, std::string> &request_header,
+                                                    const std::unordered_map<std::string, std::string> &request_header,
                                                     std::string &header, std::string &content, bool enable_CA)
 {
 #ifdef _WIN32
@@ -1167,128 +1061,36 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
 
     if (transfer_encoding == "chunked")
     {
-        // 需要分块接收
-        std::string current_chunk_buffer = remaining_buffer_after_header; // 从初始缓冲区中剩余的数据开始
-        content.clear();                                                  // 清空内容，准备接收解码后的数据
-
-        while (true)
+        try
         {
-            size_t line_end_pos = current_chunk_buffer.find("\r\n");
-            while (line_end_pos == std::string::npos)
-            {
-                // 缓冲区中没有完整的行，需要从SSL连接中读取更多数据
-                char temp_buffer[BUFFERSIZE + 1];
-                memset(temp_buffer, '\0', sizeof(temp_buffer));
-                int bytes_read = SSL_read(ssl_conn, temp_buffer, BUFFERSIZE);
+            // 定义 Lambda 捕获 ssl_conn，封装底层的 SSL_read 读取操作
+            auto https_read_func = [ssl_conn](char *read_buffer, int len) -> int {
+                int bytes_read = SSL_read(ssl_conn, read_buffer, len);
                 if (bytes_read <= 0)
                 {
                     int err = SSL_get_error(ssl_conn, bytes_read);
                     if (err != SSL_ERROR_ZERO_RETURN)
                     {
-                        HANDLE_ERROR("SSL read failed during chunk size reception");
-                        SSL_free(ssl_conn); // Ensure SSL object is freed on error
-                        throw std::runtime_error("SSL read failed during chunk size reception");
+                        HANDLE_ERROR("SSL read failed inside chunk handler");
                     }
-                    // 连接关闭或无更多数据，但可能还没有遇到最后一个0块
-                    break; // 退出内部while循环
                 }
-                current_chunk_buffer.append(temp_buffer, bytes_read);
-                line_end_pos = current_chunk_buffer.find("\r\n");
-            }
+                return bytes_read;
+            };
 
-            if (line_end_pos == std::string::npos)
-            {          // 仍然没有完整行，可能连接已关闭或数据异常
-                break; // 退出外层while循环
-            }
-
-            std::string chunk_size_str = current_chunk_buffer.substr(0, line_end_pos);
-            // 移除分块大小后的扩展信息（如 ";chunk-extension"），只保留十六进制大小
-            size_t semi_colon_pos = chunk_size_str.find(';');
-            if (semi_colon_pos != std::string::npos)
+            // 调用通用的解码函数
+            decodeChunkedResponse_Pimpl(remaining_buffer_after_header, content, https_read_func);
+        }
+        catch (const std::runtime_error &e)
+        {
+            HANDLE_ERROR(e.what());
+            if (ssl_conn)
             {
-                chunk_size_str = chunk_size_str.substr(0, semi_colon_pos);
+                SSL_free(ssl_conn);
             }
-
-            long chunk_size;
-            try
-            {
-                chunk_size = std::stoul(chunk_size_str, nullptr, 16); // 将十六进制字符串转换为数字
-            }
-            catch (const std::exception &e)
-            {
-                log_e("Failed to parse chunk size '%s': {%s}\n", chunk_size_str.data(), e.what());
-                SSL_free(ssl_conn); // Ensure SSL object is freed on error
-                throw std::runtime_error("Failed to parse chunk size");
-            }
-            catch (...)
-            {
-                log_e("Failed to parse chunk size '%s' with unknown error\n", chunk_size_str.data());
-                SSL_free(ssl_conn); // Ensure SSL object is freed on error
-                throw std::runtime_error("Failed to parse chunk size with unknown error");
-            }
-
-            // 移除已解析的分块大小行（包括 CRLF）
-            current_chunk_buffer = current_chunk_buffer.substr(line_end_pos + 2);
-
-            if (chunk_size == 0)
-            {
-                // 遇到最后一个空块，表示分块数据结束
-                // 还需要读取最后的 CRLF
-                if (current_chunk_buffer.length() < 2)
-                {
-                    char temp_crlf[2];
-                    SSL_read(ssl_conn, temp_crlf, 2); // 读取最后的 CRLF
-                }
-                else
-                {
-                    current_chunk_buffer = current_chunk_buffer.substr(2); // 移除最后的 CRLF
-                }
-                break; // 退出外层while循环
-            }
-
-            // 读取块数据
-            long bytes_needed_for_chunk = chunk_size;
-            while (bytes_needed_for_chunk > 0)
-            {
-                if (!current_chunk_buffer.empty())
-                {
-                    long bytes_from_buffer = std::min((long)current_chunk_buffer.length(), bytes_needed_for_chunk);
-                    content.append(current_chunk_buffer.data(), bytes_from_buffer);
-                    current_chunk_buffer = current_chunk_buffer.substr(bytes_from_buffer);
-                    bytes_needed_for_chunk -= bytes_from_buffer;
-                }
-                else
-                {
-                    char data_buffer[BUFFERSIZE + 1];
-                    memset(data_buffer, '\0', sizeof(data_buffer));
-                    int bytes_read_data =
-                        SSL_read(ssl_conn, data_buffer, std::min((long)BUFFERSIZE, bytes_needed_for_chunk));
-                    if (bytes_read_data <= 0)
-                    {
-                        int err = SSL_get_error(ssl_conn, bytes_read_data);
-                        if (err != SSL_ERROR_ZERO_RETURN)
-                        {
-                            HANDLE_ERROR("SSL read failed during chunk data reception");
-                        }
-                        SSL_free(ssl_conn); // Ensure SSL object is freed on error
-                        throw std::runtime_error(
-                            "Incomplete chunk data: connection closed unexpectedly or SSL read error");
-                    }
-                    content.append(data_buffer, bytes_read_data);
-                    bytes_needed_for_chunk -= bytes_read_data;
-                }
-            }
-
-            // 读取每个块数据后的 CRLF
-            if (current_chunk_buffer.length() < 2)
-            {
-                char temp_crlf[2];
-                SSL_read(ssl_conn, temp_crlf, 2); // 读取 CRLF
-            }
-            else
-            {
-                current_chunk_buffer = current_chunk_buffer.substr(2); // 移除 CRLF
-            }
+#ifdef _WIN32
+            WSACleanup();
+#endif
+            throw;
         }
     }
     else
@@ -1343,6 +1145,117 @@ void cppNetworkUtilPimpl::sendDataToHttpsHost_Pimpl(const std::string &host, con
     {
         SSL_shutdown(ssl_conn); // 执行SSL关闭握手
         SSL_free(ssl_conn);     // 释放SSL对象 (也会释放关联的BIO)
+    }
+}
+
+void cppNetworkUtilPimpl::decodeChunkedResponse_Pimpl(std::string &current_chunk_buffer, std::string &content,
+                                                      std::function<int(char *, int)> read_func)
+{
+    content.clear();
+
+    while (true)
+    {
+        size_t line_end_pos = current_chunk_buffer.find("\r\n");
+        while (line_end_pos == std::string::npos)
+        {
+            char temp_buffer[BUFFERSIZE + 1];
+            memset(temp_buffer, '\0', sizeof(temp_buffer));
+
+            // 使用抽象的读取函数
+            int bytes_read_chunk = read_func(temp_buffer, BUFFERSIZE);
+
+            if (bytes_read_chunk <= 0)
+            {
+                throw std::runtime_error("Socket read failed during chunk size reception");
+            }
+            current_chunk_buffer.append(temp_buffer, bytes_read_chunk);
+            line_end_pos = current_chunk_buffer.find("\r\n");
+        }
+
+        if (line_end_pos == std::string::npos)
+        {
+            break;
+        }
+
+        std::string chunk_size_str = current_chunk_buffer.substr(0, line_end_pos);
+        size_t semi_colon_pos = chunk_size_str.find(';');
+        if (semi_colon_pos != std::string::npos)
+        {
+            chunk_size_str = chunk_size_str.substr(0, semi_colon_pos);
+        }
+
+        long chunk_size;
+        try
+        {
+            chunk_size = std::stoul(chunk_size_str, nullptr, 16);
+        }
+        catch (const std::exception &e)
+        {
+            log_e("Failed to parse chunk size '%s': {%s}\n", chunk_size_str.data(), e.what());
+            throw std::runtime_error("Failed to parse chunk size");
+        }
+        catch (...)
+        {
+            log_e("Failed to parse chunk size '%s' with unknown error\n", chunk_size_str.data());
+            throw std::runtime_error("Failed to parse chunk size with unknown error");
+        }
+
+        current_chunk_buffer = current_chunk_buffer.substr(line_end_pos + 2);
+
+        if (chunk_size == 0)
+        {
+            // 读取最后的 CRLF
+            if (current_chunk_buffer.length() < 2)
+            {
+                char temp_crlf[2];
+                read_func(temp_crlf, 2);
+            }
+            else
+            {
+                current_chunk_buffer = current_chunk_buffer.substr(2);
+            }
+            break;
+        }
+
+        long bytes_needed_for_chunk = chunk_size;
+        while (bytes_needed_for_chunk > 0)
+        {
+            if (!current_chunk_buffer.empty())
+            {
+                long bytes_from_buffer = std::min((long)current_chunk_buffer.length(), bytes_needed_for_chunk);
+                content.append(current_chunk_buffer.data(), bytes_from_buffer);
+                current_chunk_buffer = current_chunk_buffer.substr(bytes_from_buffer);
+                bytes_needed_for_chunk -= bytes_from_buffer;
+            }
+            else
+            {
+                char data_buffer[BUFFERSIZE + 1];
+                memset(data_buffer, '\0', sizeof(data_buffer));
+                int bytes_to_read = std::min((long)BUFFERSIZE, bytes_needed_for_chunk);
+
+                // 使用抽象读取函数
+                int bytes_read_data = read_func(data_buffer, bytes_to_read);
+
+                if (bytes_read_data <= 0)
+                {
+                    throw std::runtime_error(
+                        "Incomplete chunk data: connection closed unexpectedly or socket read error");
+                }
+                content.append(data_buffer, bytes_read_data);
+                bytes_needed_for_chunk -= bytes_read_data;
+            }
+        }
+
+        // 读取每个块数据后的 CRLF
+        if (current_chunk_buffer.length() < 2)
+        {
+            char temp_crlf[2];
+            read_func(temp_crlf, 2);
+        }
+        else
+        {
+            current_chunk_buffer = current_chunk_buffer.substr(2);
+        }
     }
 }
 
@@ -1960,6 +1873,138 @@ void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, int status_code, r
     else
     {
         fixed_method_handlers[method].push_back(std::move(info));
+    }
+}
+
+void cppNetworkUtilPimpl::off_Pimpl(const std::string &method_or_regex, const std::string &path_pattern)
+{
+    // 1. 检查是否为固定方法路由
+    auto fixed_it = fixed_method_handlers.find(method_or_regex);
+    if (fixed_it != fixed_method_handlers.end())
+    {
+        std::vector<routeInfo> &routes = fixed_it->second;
+
+        // 移除路径模式完全匹配的路由
+        auto new_end = std::remove_if(routes.begin(), routes.end(), [&path_pattern](const routeInfo &info) {
+            // 仅匹配路径，忽略状态码路由
+            if (std::all_of(info.path_pattern_or_status.begin(), info.path_pattern_or_status.end(), ::isdigit))
+            {
+                return false; // 状态码路由不在此处处理
+            }
+            return info.path_pattern_or_status == path_pattern;
+        });
+
+        routes.erase(new_end, routes.end());
+
+        if (routes.empty())
+        {
+            fixed_method_handlers.erase(fixed_it);
+        }
+        return;
+    }
+
+    // 2. 检查是否为正则表达式方法路由
+    if (isRegexPattern_Pimpl(method_or_regex))
+    {
+        auto method_it = regex_method_handlers.begin();
+        while (method_it != regex_method_handlers.end())
+        {
+            // 找到匹配 method_or_regex 的 entry
+            if (!method_it->second.empty() && method_it->second[0].path_pattern_or_status == method_or_regex)
+            {
+
+                std::vector<routeInfo> &routes = method_it->second;
+
+                // 移除匹配的路径模式
+                auto new_end = std::remove_if(routes.begin(), routes.end(), [&path_pattern](const routeInfo &info) {
+                    // 仅匹配路径，忽略状态码路由
+                    if (std::all_of(info.path_pattern_or_status.begin(), info.path_pattern_or_status.end(), ::isdigit))
+                    {
+                        return false;
+                    }
+                    return info.path_pattern_or_status == path_pattern;
+                });
+
+                routes.erase(new_end, routes.end());
+
+                if (routes.empty())
+                {
+                    method_it = regex_method_handlers.erase(method_it);
+                }
+                else
+                {
+                    ++method_it;
+                }
+                return;
+            }
+            else
+            {
+                ++method_it;
+            }
+        }
+    }
+}
+
+void cppNetworkUtilPimpl::off_Pimpl(const std::string &method_or_regex, int status_code)
+{
+    std::string status_str = std::to_string(status_code);
+
+    // 1. 处理固定方法注册的错误路由
+    auto fixed_it = fixed_method_handlers.find(method_or_regex);
+    if (fixed_it != fixed_method_handlers.end())
+    {
+        std::vector<routeInfo> &routes = fixed_it->second;
+
+        // 移除匹配的路由：匹配状态码字符串
+        auto new_end = std::remove_if(routes.begin(), routes.end(), [&status_str](const routeInfo &info) {
+            // 确保移除的是错误路由
+            return info.path_pattern_or_status == status_str;
+        });
+
+        routes.erase(new_end, routes.end());
+
+        if (routes.empty())
+        {
+            fixed_method_handlers.erase(fixed_it);
+        }
+        // 成功移除后返回
+        return;
+    }
+
+    // 2. 处理正则表达式方法注册的错误路由 (例如：util.off("^/api/.*", 404))
+    if (isRegexPattern_Pimpl(method_or_regex))
+    {
+        auto method_it = regex_method_handlers.begin();
+        while (method_it != regex_method_handlers.end())
+        {
+            // 找到匹配 method_or_regex 的 entry
+            if (!method_it->second.empty() && method_it->second[0].path_pattern_or_status == method_or_regex)
+            {
+
+                std::vector<routeInfo> &routes = method_it->second;
+
+                // 移除匹配的状态码
+                auto new_end = std::remove_if(routes.begin(), routes.end(), [&status_str](const routeInfo &info) {
+                    return info.path_pattern_or_status == status_str;
+                });
+
+                routes.erase(new_end, routes.end());
+
+                if (routes.empty())
+                {
+                    method_it = regex_method_handlers.erase(method_it);
+                }
+                else
+                {
+                    ++method_it;
+                }
+                return;
+            }
+            else
+            {
+                ++method_it;
+            }
+        }
     }
 }
 
