@@ -70,6 +70,7 @@ add_executable(example ${EXECUTABLE_SOURCES})
 # 为可执行文件添加链接选项
 target_link_options(example PRIVATE
     "-static"
+    "-O3"
 )
 
 # 链接可执行文件到你刚刚构建的静态库
