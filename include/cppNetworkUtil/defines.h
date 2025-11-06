@@ -62,13 +62,17 @@ struct responseContext
 using routeHandler =
     std::function<int(const requestContext &, responseContext &)>; // 路由处理函数类型：接收请求和响应的引用
 
+// regex 标志，包含优化选项
+const std::regex::flag_type REGEX_FLAGS = std::regex::ECMAScript | std::regex::icase | std::regex::optimize;
+
 // 路由信息结构体
 struct routeInfo
 {
     std::regex path_regex;
     std::vector<std::string> param_names;
     routeHandler handler;
-    std::string path_pattern_or_status;
+    std::string path_pattern;
+    int status_code; // 用于存储状态码路由
 };
 
 // 用于存储解析过的post的multipart数据

@@ -16,6 +16,11 @@ requestContext cppNetworkUtil::getClientConnectionsInfo(SOCKET client_socket)
                           pimpl_->client_connections[client_socket].request_content};
 }
 
+bool cppNetworkUtil::isLocalIpAddress(const std::string &ip_str)
+{
+    return pimpl_->isLocalIpAddress_Pimpl(ip_str);
+}
+
 std::unordered_map<std::string, std::string> cppNetworkUtil::getParsedHeader(const std::string &header)
 {
     return pimpl_->getParsedHeader_Pimpl(header);
@@ -169,22 +174,33 @@ void cppNetworkUtil::print_cppNetworkUtilVersion()
     pimpl_->print_cppNetworkUtilVersion_Pimpl();
 }
 
-void cppNetworkUtil::on(const std::string &method, const std::string &path_pattern, routeHandler handler)
+void cppNetworkUtil::on(const std::string &method, const int &status_code, const std::string &path_pattern,
+                        const routeHandler &handler)
 {
-    pimpl_->on_Pimpl(method, path_pattern, std::move(handler));
+    pimpl_->on_Pimpl(method, status_code, path_pattern, std::move(handler));
 }
 
-void cppNetworkUtil::on(const std::string &method, int status_code, routeHandler handler)
+void cppNetworkUtil::on(const std::string &method, const std::string &path_pattern, const routeHandler &handler)
 {
-    pimpl_->on_Pimpl(method, status_code, std::move(handler));
+    pimpl_->on_Pimpl(method, 200, path_pattern, std::move(handler));
+}
+
+void cppNetworkUtil::on(const std::string &method, const int &status_code, const routeHandler &handler)
+{
+    pimpl_->on_Pimpl(method, status_code, "^/.*", std::move(handler));
+}
+
+void cppNetworkUtil::off(const std::string &method, const int &status_code, const std::string &path_pattern)
+{
+    pimpl_->off_Pimpl(method, status_code, path_pattern);
 }
 
 void cppNetworkUtil::off(const std::string &method, const std::string &path_pattern)
 {
-    pimpl_->off_Pimpl(method, path_pattern);
+    pimpl_->off_Pimpl(method, 200, path_pattern);
 }
 
-void cppNetworkUtil::off(const std::string &method, int status_code)
+void cppNetworkUtil::off(const std::string &method, const int &status_code)
 {
-    pimpl_->off_Pimpl(method, status_code);
+    pimpl_->off_Pimpl(method, status_code, "^/.*");
 }

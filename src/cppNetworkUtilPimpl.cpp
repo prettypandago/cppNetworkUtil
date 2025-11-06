@@ -36,6 +36,82 @@ bool cppNetworkUtilPimpl::isRegexPattern_Pimpl(const std::string &s)
     return s.find_first_of("[]()|.^$+?") != std::string::npos || s == "*";
 }
 
+bool cppNetworkUtilPimpl::isLocalIpAddress_Pimpl(const std::string &ip_str)
+{
+    struct in_addr ipv4_addr;
+    struct in6_addr ipv6_addr;
+
+    // --- 1. 尝试解析为 IPv4 地址 ---
+    int ipv4_result = inet_pton(AF_INET, ip_str.c_str(), &ipv4_addr);
+    if (ipv4_result == 1)
+    {
+        // 解析成功，进行 IPv4 私有地址判断
+
+        // 将网络字节序的地址转换为宿主字节序，便于按位比较
+        uint32_t ip_host = ntohl(ipv4_addr.s_addr);
+
+        // A. 10.0.0.0/8
+        if ((ip_host >> 24) == 10)
+        {
+            return true;
+        }
+
+        // B. 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
+        if ((ip_host & 0xFFF00000) == 0xAC100000)
+        {
+            return true;
+        }
+
+        // C. 192.168.0.0/16
+        if ((ip_host & 0xFFFF0000) == 0xC0A80000)
+        {
+            return true;
+        }
+
+        // D. Link-Local (APIPA) 169.254.0.0/16
+        if ((ip_host & 0xFFFF0000) == 0xA9FE0000)
+        {
+            return true;
+        }
+
+        // E. 排除环回地址 127.0.0.1/8
+        if ((ip_host >> 24) == 127)
+        {
+            return false;
+        }
+
+        return false; // 不是私有 IPv4 地址
+    }
+
+    // --- 2. 尝试解析为 IPv6 地址 ---
+    int ipv6_result = inet_pton(AF_INET6, ip_str.c_str(), &ipv6_addr);
+    if (ipv6_result == 1)
+    {
+        // 解析成功，进行 IPv6 私有地址判断
+        const uint8_t *ip_bytes = ipv6_addr.s6_addr;
+
+        // A. Unique Local Address (ULA) fc00::/7
+        // 检查第一个字节 AND 0xFE 是否等于 0xFC (即 fc 或 fd)
+        if ((ip_bytes[0] & 0xFE) == 0xFC)
+        {
+            return true;
+        }
+
+        // B. Link-Local Address fe80::/10
+        // 第一个字节是 0xFE，第二个字节的高两位是 10 (即 0x80 到 0xBF)
+        if (ip_bytes[0] == 0xFE && (ip_bytes[1] & 0xC0) == 0x80)
+        {
+            return true;
+        }
+
+        return false; // 不是私有 IPv6 地址
+    }
+
+    // --- 3. 解析失败 ---
+    // IP 地址格式错误或为空
+    return false;
+}
+
 std::unordered_map<std::string, std::string> cppNetworkUtilPimpl::getParsedHeader_Pimpl(const std::string &header)
 {
     std::unordered_map<std::string, std::string> parsed_header;
@@ -1748,151 +1824,196 @@ void cppNetworkUtilPimpl::print_opensslVersion_Pimpl()
     std::cout << "openSSL version: " << OpenSSL_version(OPENSSL_VERSION) << "\n";
 }
 
-void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const std::string &path_pattern, routeHandler handler)
+bool cppNetworkUtilPimpl::containsTemplate(const std::string &pattern)
 {
-    routeInfo info;
-    info.path_pattern_or_status = path_pattern;
-    info.handler = std::move(handler);
+    return pattern.find('{') != std::string::npos && pattern.find('}') != std::string::npos;
+}
 
-    std::string pattern = path_pattern;
-    size_t query_pos = pattern.find('?');
-    if (query_pos != std::string::npos)
+bool cppNetworkUtilPimpl::isPureRegex(const std::string &pattern)
+{
+    return (pattern.find_first_of("^$|?*+()[]") != std::string::npos) && !containsTemplate(pattern);
+}
+
+std::string cppNetworkUtilPimpl::parseAndCompileTemplate(const std::string &template_path,
+                                                         std::vector<std::string> &param_names)
+{
+    std::string regex_str = "^"; // 确保以开始锚点 ^ 开头
+    size_t current = 0;
+
+    // 用于转义固定路径部分中的正则表达式元字符
+    auto escape_fixed_part = [](const std::string &part) {
+        std::string escaped_part = part;
+        // 转义所有正则表达式元字符，特别是 . / ? * +
+        std::regex fixed_regex_chars("[.^$|?*+()\\/]");
+        return std::regex_replace(escaped_part, fixed_regex_chars, std::string("\\$&"));
+    };
+
+    while (current < template_path.length())
     {
-        pattern = pattern.substr(0, query_pos);
-    }
+        size_t start = template_path.find('{', current);
 
-    std::string regex_str = "^";
-    bool in_param_group = false;
-    std::string current_param_name;
-
-    for (size_t i = 0; i < pattern.length(); ++i)
-    {
-        char c = pattern[i];
-        if (c == '{')
+        // 1. 处理固定路径部分 (从 current 到 start)
+        if (start == std::string::npos)
         {
-            if (in_param_group)
-                throw std::runtime_error("Invalid route pattern: Nested braces.");
-            in_param_group = true;
-            current_param_name.clear();
-            continue;
-        }
-        if (c == '}')
-        {
-            if (!in_param_group)
-                throw std::runtime_error("Invalid route pattern: Unexpected '}'.");
-            in_param_group = false;
-            if (current_param_name.empty())
-                throw std::runtime_error("Invalid route pattern: Missing parameter name.");
-            info.param_names.push_back(current_param_name);
-            regex_str += "([^/]+)";
-            continue;
-        }
-        if (in_param_group)
-        {
-            if (c == ':')
-            {
-                if (current_param_name.empty())
-                    throw std::runtime_error("Invalid route pattern: Missing parameter name before colon.");
-                size_t brace_pos = pattern.find('}', i + 1);
-                if (brace_pos == std::string::npos)
-                    throw std::runtime_error("Invalid route pattern: Mismatched braces.");
-                std::string custom_regex = pattern.substr(i + 1, brace_pos - i - 1);
-                regex_str += "(" + custom_regex + ")";
-                info.param_names.push_back(current_param_name);
-                i = brace_pos;
-                in_param_group = false;
-                continue;
-            }
-            else
-            {
-                current_param_name += c;
-            }
+            // 如果找不到模板变量，则将剩余部分作为固定路径处理
+            regex_str += escape_fixed_part(template_path.substr(current));
+            break;
         }
         else
         {
-            if (std::string(".*+?^$|()[]{}").find(c) != std::string::npos)
-            {
-                regex_str += '\\';
-            }
-            regex_str += c;
+            // 将 { 之前的部分作为固定路径，并转义
+            regex_str += escape_fixed_part(template_path.substr(current, start - current));
+        }
+
+        // 2. 找到模板变量的结束 }
+        size_t end = template_path.find('}', start);
+        if (end == std::string::npos)
+        {
+            // 模板格式错误，缺少 '}'
+            throw std::runtime_error("Template error: Missing closing brace '}'");
+        }
+
+        // 3. 提取模板内容 (name:regex)
+        std::string var_content = template_path.substr(start + 1, end - start - 1);
+        size_t colon_pos = var_content.find(':');
+
+        std::string param_name;
+        std::string param_regex;
+
+        // 4. 解析 name 和 regex
+        if (colon_pos == std::string::npos)
+        {
+            // 如果没有指定正则表达式，使用默认的通配符 ([^/]+)
+            param_name = var_content;
+            param_regex = "([^/]+)"; // 默认匹配非斜杠的任意字符
+        }
+        else
+        {
+            // 提取变量名和自定义正则表达式
+            param_name = var_content.substr(0, colon_pos);
+            // 仅提取正则表达式部分
+            param_regex = var_content.substr(colon_pos + 1);
+
+            // 将用户提供的 regex 封装在捕获组中
+            param_regex = "(" + param_regex + ")";
+        }
+
+        // 5. 存储参数名并添加到最终正则表达式
+        if (param_name.empty())
+        {
+            throw std::runtime_error("Template error: Variable name cannot be empty");
+        }
+        param_names.push_back(param_name);
+        regex_str += param_regex;
+
+        // 6. 更新当前位置，继续处理模板字符串的剩余部分
+        current = end + 1;
+    }
+
+    regex_str += "$"; // 确保以结束锚点 $ 结尾
+    return regex_str;
+}
+
+std::string cppNetworkUtilPimpl::makeRagexString_Pimpl(const std::string &path_pattern,
+                                                       std::vector<std::string> &param_names)
+{
+    std::string regex_str;
+
+    if (containsTemplate(path_pattern))
+    {
+        regex_str = parseAndCompileTemplate(path_pattern, param_names);
+
+        // std::cout << "Register TEMPLATE RouteHandler: " << " " << path_pattern
+        //           << " -> to: " << final_regex_str << "\n";
+    }
+    else if (isPureRegex(path_pattern))
+    {
+        regex_str = path_pattern;
+
+        // 确保包含 ^ 和 $，以防止 std::regex_match 陷入困境
+        if (regex_str.front() != '^')
+        {
+            regex_str.insert(0, "^");
+        }
+        if (regex_str.back() != '$')
+        {
+            regex_str.append("$");
+        }
+
+        // std::cout << "Register PURE REGEX RouteHandler: " << " " << path_pattern
+        //           << " -> to: " << regex_str << "\n";
+    }
+    else
+    {
+        regex_str = path_pattern;
+        std::regex fixed_regex_chars("[.^$|?*+()\\/]");
+        regex_str = std::regex_replace(regex_str, fixed_regex_chars, std::string("\\$&"));
+        regex_str = "^" + regex_str + "$";
+
+        // std::cout << "Register FIXED RouteHandler: " << " " << path_pattern << " -> to: " <<
+        // regex_str << "\n";
+    }
+
+    return regex_str;
+}
+
+void cppNetworkUtilPimpl::saveHandler_Pimpl(const std::string &method, const routeInfo &info)
+{
+    if (isRegexPattern_Pimpl(method))
+    {
+        try
+        {
+            std::string method_regex_str = (method == "*") ? ".*" : method;
+            regex_method_handlers.push_back({std::regex(method_regex_str, REGEX_FLAGS), {std::move(info)}});
+        }
+        catch (const std::regex_error &e)
+        {
+            log_e("Regex Error for pattern '%s': %s\n", method.data(), e.what());
+            throw;
         }
     }
-    if (in_param_group)
-        throw std::runtime_error("Invalid route pattern: Unmatched opening brace.");
-    regex_str += "$";
+    else
+    {
+        fixed_method_handlers[method].push_back(std::move(info));
+    }
+}
+
+void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const int &status_code, const std::string &path_pattern,
+                                   const routeHandler &handler)
+{
+    routeInfo info;
+    info.path_pattern = path_pattern;
+    info.status_code = status_code;
+    info.handler = std::move(handler);
 
     try
     {
-        info.path_regex = std::regex(regex_str);
+        // 构造正则表达式字符串并写入路由信息结构体
+        info.path_regex = std::regex(makeRagexString_Pimpl(path_pattern, info.param_names), REGEX_FLAGS);
+
+        // 存入主路由地图 (保持不变)
+        saveHandler_Pimpl(method, std::move(info));
     }
     catch (const std::regex_error &e)
     {
         log_e("Regex Error for pattern '%s': %s\n", path_pattern.data(), e.what());
-        log_e("Generated regex string was: %s\n", regex_str.data());
-        throw;
-    }
-
-    if (isRegexPattern_Pimpl(method))
-    {
-        try
-        {
-            std::string method_regex_str = (method == "*") ? ".*" : method;
-            regex_method_handlers.push_back({std::regex(method_regex_str), {std::move(info)}});
-        }
-        catch (const std::regex_error &e)
-        {
-            log_e("Regex Error for pattern '%s': %s\n", method.data(), e.what());
-            throw;
-        }
-    }
-    else
-    {
-        fixed_method_handlers[method].push_back(std::move(info));
+        return;
     }
 }
 
-void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, int status_code, routeHandler handler)
-{
-    routeInfo info;
-    info.path_pattern_or_status = std::to_string(status_code);
-    info.handler = std::move(handler);
-
-    if (isRegexPattern_Pimpl(method))
-    {
-        try
-        {
-            std::string method_regex_str = (method == "*") ? ".*" : method;
-            regex_method_handlers.push_back({std::regex(method_regex_str), {std::move(info)}});
-        }
-        catch (const std::regex_error &e)
-        {
-            log_e("Regex Error for pattern '%s': %s\n", method.data(), e.what());
-            throw;
-        }
-    }
-    else
-    {
-        fixed_method_handlers[method].push_back(std::move(info));
-    }
-}
-
-void cppNetworkUtilPimpl::off_Pimpl(const std::string &method_or_regex, const std::string &path_pattern)
+void cppNetworkUtilPimpl::off_Pimpl(const std::string &method, const int &status_code, const std::string &path_pattern)
 {
     // 1. 检查是否为固定方法路由
-    auto fixed_it = fixed_method_handlers.find(method_or_regex);
+    auto fixed_it = fixed_method_handlers.find(method);
     if (fixed_it != fixed_method_handlers.end())
     {
         std::vector<routeInfo> &routes = fixed_it->second;
 
         // 移除路径模式完全匹配的路由
-        auto new_end = std::remove_if(routes.begin(), routes.end(), [&path_pattern](const routeInfo &info) {
-            // 仅匹配路径，忽略状态码路由
-            if (std::all_of(info.path_pattern_or_status.begin(), info.path_pattern_or_status.end(), ::isdigit))
-            {
-                return false; // 状态码路由不在此处处理
-            }
-            return info.path_pattern_or_status == path_pattern;
-        });
+        auto new_end =
+            std::remove_if(routes.begin(), routes.end(), [&path_pattern, &status_code](const routeInfo &info) {
+                return info.path_pattern == path_pattern && info.status_code == status_code;
+            });
 
         routes.erase(new_end, routes.end());
 
@@ -1904,89 +2025,21 @@ void cppNetworkUtilPimpl::off_Pimpl(const std::string &method_or_regex, const st
     }
 
     // 2. 检查是否为正则表达式方法路由
-    if (isRegexPattern_Pimpl(method_or_regex))
+    if (isRegexPattern_Pimpl(method))
     {
         auto method_it = regex_method_handlers.begin();
         while (method_it != regex_method_handlers.end())
         {
-            // 找到匹配 method_or_regex 的 entry
-            if (!method_it->second.empty() && method_it->second[0].path_pattern_or_status == method_or_regex)
+            // 找到匹配 method 的 entry
+            if (!method_it->second.empty() && method_it->second[0].path_pattern == method)
             {
-
                 std::vector<routeInfo> &routes = method_it->second;
 
                 // 移除匹配的路径模式
-                auto new_end = std::remove_if(routes.begin(), routes.end(), [&path_pattern](const routeInfo &info) {
-                    // 仅匹配路径，忽略状态码路由
-                    if (std::all_of(info.path_pattern_or_status.begin(), info.path_pattern_or_status.end(), ::isdigit))
-                    {
-                        return false;
-                    }
-                    return info.path_pattern_or_status == path_pattern;
-                });
-
-                routes.erase(new_end, routes.end());
-
-                if (routes.empty())
-                {
-                    method_it = regex_method_handlers.erase(method_it);
-                }
-                else
-                {
-                    ++method_it;
-                }
-                return;
-            }
-            else
-            {
-                ++method_it;
-            }
-        }
-    }
-}
-
-void cppNetworkUtilPimpl::off_Pimpl(const std::string &method_or_regex, int status_code)
-{
-    std::string status_str = std::to_string(status_code);
-
-    // 1. 处理固定方法注册的错误路由
-    auto fixed_it = fixed_method_handlers.find(method_or_regex);
-    if (fixed_it != fixed_method_handlers.end())
-    {
-        std::vector<routeInfo> &routes = fixed_it->second;
-
-        // 移除匹配的路由：匹配状态码字符串
-        auto new_end = std::remove_if(routes.begin(), routes.end(), [&status_str](const routeInfo &info) {
-            // 确保移除的是错误路由
-            return info.path_pattern_or_status == status_str;
-        });
-
-        routes.erase(new_end, routes.end());
-
-        if (routes.empty())
-        {
-            fixed_method_handlers.erase(fixed_it);
-        }
-        // 成功移除后返回
-        return;
-    }
-
-    // 2. 处理正则表达式方法注册的错误路由 (例如：util.off("^/api/.*", 404))
-    if (isRegexPattern_Pimpl(method_or_regex))
-    {
-        auto method_it = regex_method_handlers.begin();
-        while (method_it != regex_method_handlers.end())
-        {
-            // 找到匹配 method_or_regex 的 entry
-            if (!method_it->second.empty() && method_it->second[0].path_pattern_or_status == method_or_regex)
-            {
-
-                std::vector<routeInfo> &routes = method_it->second;
-
-                // 移除匹配的状态码
-                auto new_end = std::remove_if(routes.begin(), routes.end(), [&status_str](const routeInfo &info) {
-                    return info.path_pattern_or_status == status_str;
-                });
+                auto new_end =
+                    std::remove_if(routes.begin(), routes.end(), [&path_pattern, &status_code](const routeInfo &info) {
+                        return info.path_pattern == path_pattern && info.status_code == status_code;
+                    });
 
                 routes.erase(new_end, routes.end());
 
@@ -2010,8 +2063,49 @@ void cppNetworkUtilPimpl::off_Pimpl(const std::string &method_or_regex, int stat
 
 void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const requestContext &req, responseContext &res)
 {
-    std::string status_code_str = std::to_string(status_code);
     const std::string &method = req.parsed_request_headers.at("method");
+    const std::string &url = req.parsed_request_headers.at("url");
+
+    auto find_and_handle_path = [&](const std::vector<routeInfo> &routes_to_check) -> std::optional<int> {
+        for (const auto &route_info : routes_to_check)
+        {
+            // 允许以 '/' 开头 (固定/模板路径) 或以 '^' 开头 (纯正则表达式路径)
+            const std::string &pattern = route_info.path_pattern;
+
+            // 检查路径模式是否以 '/' 或 '^' 开头
+            if (!pattern.empty() && (pattern[0] == '/' || pattern[0] == '^') && route_info.status_code == status_code)
+            {
+                std::smatch match_results;
+                // std::cout << "Trying to match URL: " << url << " with pattern: " << pattern << "\n";
+                if (std::regex_match(url, match_results, route_info.path_regex))
+                {
+                    requestContext matched_req = req;
+                    for (size_t i = 0; i < route_info.param_names.size(); ++i)
+                    {
+                        if (i + 1 < match_results.size())
+                        {
+                            matched_req.path_params[route_info.param_names[i]] = match_results[i + 1].str();
+                        }
+                    }
+
+                    // 调用 handler 并检查其返回值
+                    int response_is_final = route_info.handler(matched_req, res);
+                    if (response_is_final == END_HANDING)
+                    {
+                        return END_HANDING; // 立即返回 END_RESPONSE，表示响应已完成
+                    }
+                    else if (response_is_final == PROCESSED_INTERNALLY)
+                    {
+                        return PROCESSED_INTERNALLY; // 立即返回 PROCESSED_INTERNALLY，表示已内部处理
+                    }
+
+                    // 如果是 CONTINUE_HANDLING，则继续处理
+                    return CONTINUE_HANDLING; // 继续处理
+                }
+            }
+        }
+        return std::nullopt; // 未找到匹配
+    };
 
     // 1. 尝试在固定方法中查找错误处理
     auto fixed_it = fixed_method_handlers.find(method);
@@ -2019,33 +2113,85 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
     {
         for (const auto &route_info : fixed_it->second)
         {
-            if (route_info.path_pattern_or_status == status_code_str)
+            auto r = find_and_handle_path(fixed_it->second);
+            if (r.has_value())
             {
-                route_info.handler(req, res);
-                res.status_code = status_code;
-                return;
+                if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
+                {
+                    return;
+                }
+                else if (r.value() == PROCESSED_INTERNALLY)
+                {
+                    return;
+                }
             }
+            // if (route_info.status_code == status_code)
+            // {
+            //     route_info.handler(req, res);
+            //     res.status_code = status_code;
+            //     return;
+            // }
         }
     }
 
     // 2. 尝试在正则表达式方法中查找错误处理
+    // todo有问题
     for (const auto &regex_pair : regex_method_handlers)
     {
         if (std::regex_match(method, regex_pair.first))
         {
-            for (const auto &route_info : regex_pair.second)
+            auto r = find_and_handle_path(regex_pair.second);
+            if (r.has_value())
             {
-                if (route_info.path_pattern_or_status == status_code_str)
+                if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
                 {
-                    route_info.handler(req, res);
-                    res.status_code = status_code;
+                    return;
+                }
+                else if (r.value() == PROCESSED_INTERNALLY)
+                {
                     return;
                 }
             }
         }
     }
+    // for (const auto &regex_pair : regex_method_handlers)
+    // {
+    //     if (std::regex_match(method, regex_pair.first))
+    //     {
+    //         for (const auto &route_info : regex_pair.second)
+    //         {
+    //             auto r = find_and_handle_path(regex_pair.second);
+    //             if (r.has_value())
+    //             {
+    //                 if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
+    //                 {
+    //                     return;
+    //                 }
+    //                 else if (r.value() == PROCESSED_INTERNALLY)
+    //                 {
+    //                     return;
+    //                 }
+    //             }
+    //             // if (route_info.status_code == status_code)
+    //             // {
+    //             //     route_info.handler(req, res);
+    //             //     res.status_code = status_code;
+    //             //     return;
+    //             // }
+    //         }
+    //     }
+    // }
 
     // 回退到默认处理
+    if (status_code < 100 || status_code > 599)
+    {
+        status_code = 500; // 非法状态码，回退到 500
+    }
+    else if (status_code / 100 == 3)
+    {
+        // 3xx 重定向类状态码，默认不处理
+        return;
+    }
     res.status_code = status_code;
     res.response_content = std::to_string(status_code) + " " + getHttpCodeText_Pimpl(status_code).value_or("Unknown");
     res.response_headers["status_code"] = std::to_string(res.status_code);
@@ -2068,9 +2214,16 @@ std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const re
     auto find_and_handle_path = [&](const std::vector<routeInfo> &routes_to_check) -> std::optional<int> {
         for (const auto &route_info : routes_to_check)
         {
-            if (route_info.path_pattern_or_status.rfind('/', 0) == 0)
+            // 允许以 '/' 开头 (固定/模板路径) 或以 '^' 开头 (纯正则表达式路径)
+            const std::string &pattern = route_info.path_pattern;
+            const int &status_code = route_info.status_code;
+
+            // 检查路径模式是否以 '/' 或 '^' 开头
+            if (!pattern.empty() && (pattern[0] == '/' || pattern[0] == '^') &&
+                (status_code < 400 || status_code > 600))
             {
                 std::smatch match_results;
+                // std::cout << "Trying to match URL: " << url << " with pattern: " << pattern << "\n";
                 if (std::regex_match(url, match_results, route_info.path_regex))
                 {
                     requestContext matched_req = req;
@@ -2092,9 +2245,9 @@ std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const re
                     {
                         return PROCESSED_INTERNALLY; // 立即返回 PROCESSED_INTERNALLY，表示已内部处理
                     }
-                    // 如果是 CONTINUE_HANDLING，则继续处理
 
-                    if (res.status_code >= 400 && res.status_code < 600)
+                    // 如果是 CONTINUE_HANDLING, 则继续处理
+                    if (res.status_code >= 300 && res.status_code < 600)
                     {
                         invokeErrorHandler_Pimpl(res.status_code, matched_req, res);
                     }

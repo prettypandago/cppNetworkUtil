@@ -70,6 +70,15 @@ class cppNetworkUtil
     requestContext getClientConnectionsInfo(SOCKET client_socket);
 
     /**
+     * @brief Determine whether a given IP address (IPv4 or IPv6) is a local area network (LAN) (private) address.
+     * * Private address ranges are based on RFC 1918 (IPv4), RFC 3927 (IPv4 Link-Local),
+     * RFC 4193 (IPv6 ULA), and RFC 4291 (IPv6 Link-Local).
+     * * @param ip_str (const std::string &) IP address string to check
+     * @return Is local ip address
+     */
+    bool isLocalIpAddress(const std::string &ip_str);
+
+    /**
      * @brief parse header (mapkey: method url http_version ...)
      *
      * @param header (const std::string &) request header
@@ -78,7 +87,7 @@ class cppNetworkUtil
      * @throw Invalid request line: No space found after url
      * @throw Invalid request line: No \r\n found after http version
      *
-     * @return parsed unordered_map request header
+     * @return Parsed unordered_map request header
      */
     std::unordered_map<std::string, std::string> getParsedHeader(const std::string &header);
 
@@ -432,50 +441,70 @@ class cppNetworkUtil
     void print_cppNetworkUtilVersion();
 
     /**
-     * @brief Register a route handler for a specific HTTP method and path pattern.
+     * @brief Register a route handler.
      *
      * This function allows you to define how the server should respond to requests
-     * that match a specific HTTP method (e.g., GET, POST) and a path pattern.
+     *
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param status_code The HTTP status code for which the handler is registered.
+     * @param path_pattern The path pattern to match against incoming requests.
+     * @param handler The function or callable object that will handle the request.
+     */
+    void on(const std::string &method, const int &status_code, const std::string &path_pattern,
+            const routeHandler &handler);
+
+    /**
+     * @brief Register a route handler.
+     *
+     * This function allows you to define how the server should respond to requests
      *
      * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
      * @param path_pattern The path pattern to match against incoming requests.
      * @param handler The function or callable object that will handle the request.
      */
-    void on(const std::string &method, const std::string &path_pattern, routeHandler handler);
+    void on(const std::string &method, const std::string &path_pattern, const routeHandler &handler);
 
     /**
-     * @brief Register a route handler for a specific HTTP method and status code.
+     * @brief Register a route handler.
      *
      * This function allows you to define how the server should respond to requests
-     * that match a specific HTTP method and status code.
      *
      * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
      * @param status_code The HTTP status code for which the handler is registered.
      * @param handler The function or callable object that will handle the request.
      */
-    void on(const std::string &method, int status_code, routeHandler handler);
+    void on(const std::string &method, const int &status_code, const routeHandler &handler);
 
     /**
-     * @brief Unregister route handlers based on method and path pattern.
+     * @brief Unregister route handlers.
      *
-     * This function removes all route handlers that match the specified HTTP method
-     * and path pattern. If no matching handlers are found, the function does nothing.
+     * This function removes all route handlers. If no matching handlers are found, the function does nothing.
      *
-     * @param method_or_regex The HTTP method (e.g., "GET", "POST") or regex pattern to match.
-     * @param path_pattern The path pattern to match against registered routes.
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param status_code The HTTP status code for which the handler is registered.
+     * @param path_pattern The path pattern to match against incoming requests.
+     */
+    void off(const std::string &method, const int &status_code, const std::string &path_pattern);
+
+    /**
+     * @brief Unregister route handlers.
+     *
+     * This function removes all route handlers. If no matching handlers are found, the function does nothing.
+     *
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param path_pattern The path pattern to match against incoming requests.
      */
     void off(const std::string &method, const std::string &path_pattern);
 
     /**
-     * @brief Unregister route handlers based on method and status code.
+     * @brief Unregister route handlers.
      *
-     * This function removes all route handlers that match the specified HTTP method
-     * and status code. If no matching handlers are found, the function does nothing.
+     * This function removes all route handlers. If no matching handlers are found, the function does nothing.
      *
-     * @param method The HTTP method (e.g., "GET", "POST") to match.
-     * @param status_code The HTTP status code to match against registered routes.
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param status_code The HTTP status code for which the handler is registered.
      */
-    void off(const std::string &method, int status_code);
+    void off(const std::string &method, const int &status_code);
 
   private:
     std::unique_ptr<cppNetworkUtilPimpl> pimpl_; // pimpl implementation pointer

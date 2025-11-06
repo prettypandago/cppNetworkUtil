@@ -38,13 +38,20 @@ int main(int argc, char **argv)
                        return END_HANDING;
                    });
 
+    // Test url: https://127.0.0.1/catch-all/a
+    networkutil.on("GET", "^/catch-all/.*", [&networkutil](const requestContext &req, responseContext &res) {
+        res.response_headers["Content-Type"] = "text/plain";
+        res.response_content = "This route catches all GET requests to /catch-all/ and its subpaths.";
+        return END_HANDING;
+    });
+
     // Test url: https://127.0.0.1/badrequest
     // Response: Bad Request
     // This route is intentionally set to return a 400 Bad Request status code.
     // This is useful for Testing error handling.
     networkutil.on("GET", "/badrequest", [&networkutil](const requestContext &req, responseContext &res) {
         res.status_code = 400; // Bad Request
-        return END_HANDING;
+        return CONTINUE_HANDLING;
     });
 
     // Test url: https://127.0.0.1/forallmethod
@@ -73,6 +80,15 @@ int main(int argc, char **argv)
         res.response_content = "This response is sent immediately without further processing.";
         return END_HANDING; // Return END_HANDING to send the response immediately
         res.response_content += "You will not see this part.";
+    });
+
+    // Test url: https://127.0.0.1/onlyfirst
+    // This response body can only be accessed once.
+    networkutil.on("GET", "/onlyfirst", [&networkutil](const requestContext &req, responseContext &res) {
+        res.response_headers["Content-Type"] = "text/plain";
+        res.response_content = "This response is delete.";
+        networkutil.off("GET", "/onlyfirst"); // Unregister this route after first use (the path must be register path)
+        return END_HANDING;                   // Return END_HANDING to send the response immediately
     });
 
     // Test url: https://127.0.0.1/name?name=yourname
@@ -143,6 +159,16 @@ int main(int argc, char **argv)
         return PROCESSED_INTERNALLY;
     });
 
+    // Test url: https://127.0.0.1/api/v1/notfound
+    // Response: Page Not Found
+    // The page you requested does not exist.
+    // This route is error page for handle.
+    networkutil.on("GET", 404, "^/api/v1/.*", [&networkutil](const requestContext &req, responseContext &res) {
+        res.response_headers["Content-Type"] = "application/json";
+        res.response_content = "{\"error\": \"Page Not Found\"}";
+        return END_HANDING;
+    });
+
     // Test url: https://127.0.0.1/notfound
     // Response: Page Not Found
     // The page you requested does not exist.
@@ -156,8 +182,8 @@ int main(int argc, char **argv)
 
     // Test url: https://127.0.0.1/badrequest
     // Response: Bad request
-    // The request could not be understood by the networkutil due to malformed syntax. Please check your request and try
-    // again.
+    // The request could not be understood by the networkutil due to malformed syntax. Please check your request and
+    // try again.
     // Set method to "*" (or ".*", it will automatically convert "*" to ".*") to handle all methods
     networkutil.on("*", 400, [&networkutil](const requestContext &req, responseContext &res) {
         res.response_headers["Content-Type"] = "text/html";

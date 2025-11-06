@@ -188,10 +188,10 @@ class cppNetworkUtilPimpl
     };
     std::unordered_map<SOCKET, clientConnectionInfo_Pimpl> client_connections; // 存储客户端连接信息
 
-    // 专门用于固定方法的哈希表
+    // // 专门用于固定方法的哈希表
     std::unordered_map<std::string, std::vector<routeInfo>> fixed_method_handlers;
 
-    // 专门用于正则表达式方法的向量（包括 *）
+    // // 专门用于正则表达式方法的向量（包括 *）
     std::vector<std::pair<std::regex, std::vector<routeInfo>>> regex_method_handlers;
 
     /**
@@ -204,6 +204,15 @@ class cppNetworkUtilPimpl
     bool isRegexPattern_Pimpl(const std::string &s);
 
     /**
+     * @brief Determine whether a given IP address (IPv4 or IPv6) is a local area network (LAN) (private) address.
+     * * Private address ranges are based on RFC 1918 (IPv4), RFC 3927 (IPv4 Link-Local),
+     * RFC 4193 (IPv6 ULA), and RFC 4291 (IPv6 Link-Local).
+     * * @param ip_str (const std::string &) IP address string to check
+     * @return Is local ip address
+     */
+    bool isLocalIpAddress_Pimpl(const std::string &ip_str);
+
+    /**
      * @brief parse header (mapkey: method url http_version ...)
      *
      * @param header (const std::string &) request header
@@ -212,7 +221,7 @@ class cppNetworkUtilPimpl
      * @throw Invalid request line: No space found after url
      * @throw Invalid request line: No \r\n found after http version
      *
-     * @return parsed unordered_map request header
+     * @return Parsed unordered_map request header
      */
     std::unordered_map<std::string, std::string> getParsedHeader_Pimpl(const std::string &header);
 
@@ -564,50 +573,80 @@ class cppNetworkUtilPimpl
     void print_opensslVersion_Pimpl();
 
     /**
+     * @brief Determine whether a pattern contains template
+     *
+     * @param pattern (const std::string &) pattern
+     *
+     * @return Contains template
+     */
+    bool containsTemplate(const std::string &pattern);
+
+    /**
+     * @brief Determine whether a pattern is a pure regex
+     *
+     * @param pattern (const std::string &) pattern
+     *
+     * @return Is pure regex
+     */
+    bool isPureRegex(const std::string &pattern);
+
+    /**
+     * @brief Parse template path and build standard regex
+     *
+     * @param pattern (const std::string &) template path
+     * @param param_names (std::vector<std::string> &) parameter names
+     *
+     * @throw Template error: Variable name cannot be empty
+     * @throw Template error: Missing closing brace '}'
+     *
+     * @return standard regex string
+     */
+    std::string parseAndCompileTemplate(const std::string &pattern, std::vector<std::string> &param_names);
+
+    /**
+     * @brief Make regex string from path pattern
+     *
+     * @param path_pattern (const std::string &) path pattern
+     * @param param_names (std::vector<std::string> &) parameter names
+     *
+     * @return regex string
+     */
+    std::string makeRagexString_Pimpl(const std::string &path_pattern, std::vector<std::string> &param_names);
+
+    /**
+     * @brief Save a route handler for a specific HTTP method and path pattern.
+     *
+     * This function stores the provided route handler information in the appropriate
+     * data structure based on whether the path pattern is a fixed string or a regex.
+     *
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param info The routeInfo object containing the path pattern and handler function.
+     */
+    void saveHandler_Pimpl(const std::string &method, const routeInfo &info);
+
+    /**
      * @brief Register a route handler for a specific HTTP method and path pattern.
      *
      * This function allows you to define how the server should respond to requests
-     * that match a specific HTTP method (e.g., GET, POST) and a path pattern.
-     *
-     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
-     * @param path_pattern The path pattern to match against incoming requests.
-     * @param handler The function or callable object that will handle the request.
-     */
-    void on_Pimpl(const std::string &method, const std::string &path_pattern, routeHandler handler);
-
-    /**
-     * @brief Register a route handler for a specific HTTP method and status code.
-     *
-     * This function allows you to define how the server should respond to requests
-     * that match a specific HTTP method and status code.
      *
      * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
      * @param status_code The HTTP status code for which the handler is registered.
+     * @param path_pattern The path pattern to match against incoming requests.
      * @param handler The function or callable object that will handle the request.
      */
-    void on_Pimpl(const std::string &method, int status_code, routeHandler handler);
+    void on_Pimpl(const std::string &method, const int &status_code, const std::string &path_pattern,
+                  const routeHandler &handler);
 
     /**
-     * @brief Unregister route handlers based on method and path pattern.
+     * @brief Unregister route handlers.
      *
-     * This function removes all route handlers that match the specified HTTP method
-     * and path pattern. If no matching handlers are found, the function does nothing.
+     * This function removes all route handlers. If no matching handlers are found, the function does nothing.
      *
-     * @param method_or_regex The HTTP method (e.g., "GET", "POST") or regex pattern to match.
-     * @param path_pattern The path pattern to match against registered routes.
+     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
+     * @param status_code The HTTP status code for which the handler is registered.
+     * @param path_pattern The path pattern to match against incoming requests.
      */
-    void off_Pimpl(const std::string &method, const std::string &path_pattern);
-
-    /**
-     * @brief Unregister route handlers based on method and status code.
-     *
-     * This function removes all route handlers that match the specified HTTP method
-     * and status code. If no matching handlers are found, the function does nothing.
-     *
-     * @param method The HTTP method (e.g., "GET", "POST") to match.
-     * @param status_code The HTTP status code to match against registered routes.
-     */
-    void off_Pimpl(const std::string &method, int status_code);
+    void off_Pimpl(const std::string &method, const int &status_code, const std::string &path_pattern);
 
     /**
      * @brief Invokes the error handler for a specific HTTP status code.

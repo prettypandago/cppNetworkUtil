@@ -54,6 +54,11 @@ target_link_libraries(cppNetworkUtilLib PUBLIC
                       $<$<BOOL:${WIN32}>:crypt32>          # Windows CryptoAPI 库 (OpenSSL 依赖)
                      )
 
+target_link_options(cppNetworkUtilLib PUBLIC
+    "-static"
+    "-O3"
+)
+
 # --- 移除所有关于 ar 合并的指令 ---
 # file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/merge_openssl_static.mri" ...)
 # add_custom_command(TARGET cppNetworkUtilLib POST_BUILD ...)
