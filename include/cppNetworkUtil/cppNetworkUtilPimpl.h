@@ -188,11 +188,13 @@ class cppNetworkUtilPimpl
     };
     std::unordered_map<SOCKET, clientConnectionInfo_Pimpl> client_connections; // 存储客户端连接信息
 
+    std::unordered_map<std::string, std::vector<routeInfo>> handlers; // 路由表
+
     // // 专门用于固定方法的哈希表
-    std::unordered_map<std::string, std::vector<routeInfo>> fixed_method_handlers;
+    // std::unordered_map<std::string, std::vector<routeInfo>> fixed_method_handlers;
 
     // // 专门用于正则表达式方法的向量（包括 *）
-    std::vector<std::pair<std::regex, std::vector<routeInfo>>> regex_method_handlers;
+    // std::vector<std::pair<std::regex, std::vector<routeInfo>>> regex_method_handlers;
 
     /**
      * @brief Determine whether a string is a regular expression
@@ -612,17 +614,6 @@ class cppNetworkUtilPimpl
      * @return regex string
      */
     std::string makeRagexString_Pimpl(const std::string &path_pattern, std::vector<std::string> &param_names);
-
-    /**
-     * @brief Save a route handler for a specific HTTP method and path pattern.
-     *
-     * This function stores the provided route handler information in the appropriate
-     * data structure based on whether the path pattern is a fixed string or a regex.
-     *
-     * @param method The HTTP method (e.g., "GET", "POST") for which the handler is registered.
-     * @param info The routeInfo object containing the path pattern and handler function.
-     */
-    void saveHandler_Pimpl(const std::string &method, const routeInfo &info);
 
     /**
      * @brief Register a route handler for a specific HTTP method and path pattern.

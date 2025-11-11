@@ -34,6 +34,7 @@
 #define CONTINUE_HANDLING 0                             // Continue handling (e.g., for error handling)
 #define END_HANDING 1                                   // End handling, send the response immediately
 #define PROCESSED_INTERNALLY 2                          // Processed internally, no further action needed
+#define CONTINUE_ROUTING 3                              // Continue routing to next matching route
 
 #define INFINITY 2147483647
 
@@ -68,6 +69,7 @@ const std::regex::flag_type REGEX_FLAGS = std::regex::ECMAScript | std::regex::i
 // 路由信息结构体
 struct routeInfo
 {
+    std::regex method_regex;
     std::regex path_regex;
     std::vector<std::string> param_names;
     routeHandler handler;

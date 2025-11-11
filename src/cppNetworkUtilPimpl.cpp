@@ -1957,27 +1957,6 @@ std::string cppNetworkUtilPimpl::makeRagexString_Pimpl(const std::string &path_p
     return regex_str;
 }
 
-void cppNetworkUtilPimpl::saveHandler_Pimpl(const std::string &method, const routeInfo &info)
-{
-    if (isRegexPattern_Pimpl(method))
-    {
-        try
-        {
-            std::string method_regex_str = (method == "*") ? ".*" : method;
-            regex_method_handlers.push_back({std::regex(method_regex_str, REGEX_FLAGS), {std::move(info)}});
-        }
-        catch (const std::regex_error &e)
-        {
-            log_e("Regex Error for pattern '%s': %s\n", method.data(), e.what());
-            throw;
-        }
-    }
-    else
-    {
-        fixed_method_handlers[method].push_back(std::move(info));
-    }
-}
-
 void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const int &status_code, const std::string &path_pattern,
                                    const routeHandler &handler)
 {
@@ -1989,10 +1968,13 @@ void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const int &status_
     try
     {
         // 构造正则表达式字符串并写入路由信息结构体
+        info.method_regex = std::regex((method == "*") ? ".*" : method, REGEX_FLAGS);
+
         info.path_regex = std::regex(makeRagexString_Pimpl(path_pattern, info.param_names), REGEX_FLAGS);
 
-        // 存入主路由地图 (保持不变)
-        saveHandler_Pimpl(method, std::move(info));
+        // 存入路由表
+        handlers[method].push_back(std::move(info));
+        // saveHandler_Pimpl(method, std::move(info));
     }
     catch (const std::regex_error &e)
     {
@@ -2003,32 +1985,10 @@ void cppNetworkUtilPimpl::on_Pimpl(const std::string &method, const int &status_
 
 void cppNetworkUtilPimpl::off_Pimpl(const std::string &method, const int &status_code, const std::string &path_pattern)
 {
-    // 1. 检查是否为固定方法路由
-    auto fixed_it = fixed_method_handlers.find(method);
-    if (fixed_it != fixed_method_handlers.end())
-    {
-        std::vector<routeInfo> &routes = fixed_it->second;
-
-        // 移除路径模式完全匹配的路由
-        auto new_end =
-            std::remove_if(routes.begin(), routes.end(), [&path_pattern, &status_code](const routeInfo &info) {
-                return info.path_pattern == path_pattern && info.status_code == status_code;
-            });
-
-        routes.erase(new_end, routes.end());
-
-        if (routes.empty())
-        {
-            fixed_method_handlers.erase(fixed_it);
-        }
-        return;
-    }
-
-    // 2. 检查是否为正则表达式方法路由
     if (isRegexPattern_Pimpl(method))
     {
-        auto method_it = regex_method_handlers.begin();
-        while (method_it != regex_method_handlers.end())
+        auto method_it = handlers.begin();
+        while (method_it != handlers.end())
         {
             // 找到匹配 method 的 entry
             if (!method_it->second.empty() && method_it->second[0].path_pattern == method)
@@ -2045,7 +2005,7 @@ void cppNetworkUtilPimpl::off_Pimpl(const std::string &method, const int &status
 
                 if (routes.empty())
                 {
-                    method_it = regex_method_handlers.erase(method_it);
+                    method_it = handlers.erase(method_it);
                 }
                 else
                 {
@@ -2057,6 +2017,28 @@ void cppNetworkUtilPimpl::off_Pimpl(const std::string &method, const int &status
             {
                 ++method_it;
             }
+        }
+    }
+    else
+    {
+        auto method_it = handlers.find(method);
+        if (method_it != handlers.end())
+        {
+            std::vector<routeInfo> &routes = method_it->second;
+
+            // 移除路径模式完全匹配的路由
+            auto new_end =
+                std::remove_if(routes.begin(), routes.end(), [&path_pattern, &status_code](const routeInfo &info) {
+                    return info.path_pattern == path_pattern && info.status_code == status_code;
+                });
+
+            routes.erase(new_end, routes.end());
+
+            if (routes.empty())
+            {
+                handlers.erase(method_it);
+            }
+            return;
         }
     }
 }
@@ -2088,99 +2070,68 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
                         }
                     }
 
-                    // 调用 handler 并检查其返回值
+                    // 调用 handler
                     int response_is_final = route_info.handler(matched_req, res);
-                    if (response_is_final == END_HANDING)
+                    if (response_is_final == END_HANDING || response_is_final == CONTINUE_HANDLING ||
+                        response_is_final == PROCESSED_INTERNALLY)
                     {
-                        return END_HANDING; // 立即返回 END_RESPONSE，表示响应已完成
+                        return response_is_final; // 立即返回
                     }
-                    else if (response_is_final == PROCESSED_INTERNALLY)
+                    else if (response_is_final == CONTINUE_ROUTING)
                     {
-                        return PROCESSED_INTERNALLY; // 立即返回 PROCESSED_INTERNALLY，表示已内部处理
+                        continue; // 尝试下一个匹配
                     }
-
-                    // 如果是 CONTINUE_HANDLING，则继续处理
-                    return CONTINUE_HANDLING; // 继续处理
                 }
             }
         }
         return std::nullopt; // 未找到匹配
     };
 
-    // 1. 尝试在固定方法中查找错误处理
-    auto fixed_it = fixed_method_handlers.find(method);
-    if (fixed_it != fixed_method_handlers.end())
+    if (isRegexPattern_Pimpl(method))
     {
-        for (const auto &route_info : fixed_it->second)
+        auto method_it = handlers.begin();
+        while (method_it != handlers.end())
         {
-            auto r = find_and_handle_path(fixed_it->second);
-            if (r.has_value())
+            // 找到匹配 method 的 entry
+            if (!method_it->second.empty() && std::regex_match(method, method_it->second[0].method_regex))
             {
-                if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
+                auto r = find_and_handle_path(method_it->second);
+                if (r.has_value())
                 {
-                    return;
-                }
-                else if (r.value() == PROCESSED_INTERNALLY)
-                {
-                    return;
+                    int r_value = r.value();
+                    if (r_value == END_HANDING || r_value == CONTINUE_HANDLING)
+                    {
+                        return;
+                    }
+                    else if (r_value == PROCESSED_INTERNALLY)
+                    {
+                        return;
+                    }
                 }
             }
-            // if (route_info.status_code == status_code)
-            // {
-            //     route_info.handler(req, res);
-            //     res.status_code = status_code;
-            //     return;
-            // }
+            ++method_it;
         }
     }
-
-    // 2. 尝试在正则表达式方法中查找错误处理
-    // todo有问题
-    for (const auto &regex_pair : regex_method_handlers)
+    else
     {
-        if (std::regex_match(method, regex_pair.first))
+        auto method_it = handlers.find(method);
+        if (method_it != handlers.end())
         {
-            auto r = find_and_handle_path(regex_pair.second);
+            auto r = find_and_handle_path(method_it->second);
             if (r.has_value())
             {
-                if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
+                int r_value = r.value();
+                if (r_value == END_HANDING || r_value == CONTINUE_HANDLING)
                 {
                     return;
                 }
-                else if (r.value() == PROCESSED_INTERNALLY)
+                else if (r_value == PROCESSED_INTERNALLY)
                 {
                     return;
                 }
             }
         }
     }
-    // for (const auto &regex_pair : regex_method_handlers)
-    // {
-    //     if (std::regex_match(method, regex_pair.first))
-    //     {
-    //         for (const auto &route_info : regex_pair.second)
-    //         {
-    //             auto r = find_and_handle_path(regex_pair.second);
-    //             if (r.has_value())
-    //             {
-    //                 if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
-    //                 {
-    //                     return;
-    //                 }
-    //                 else if (r.value() == PROCESSED_INTERNALLY)
-    //                 {
-    //                     return;
-    //                 }
-    //             }
-    //             // if (route_info.status_code == status_code)
-    //             // {
-    //             //     route_info.handler(req, res);
-    //             //     res.status_code = status_code;
-    //             //     return;
-    //             // }
-    //         }
-    //     }
-    // }
 
     // 回退到默认处理
     if (status_code < 100 || status_code > 599)
@@ -2237,13 +2188,13 @@ std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const re
 
                     // 调用 handler 并检查其返回值
                     int response_is_final = route_info.handler(matched_req, res);
-                    if (response_is_final == END_HANDING)
+                    if (response_is_final == END_HANDING || response_is_final == PROCESSED_INTERNALLY)
                     {
-                        return END_HANDING; // 立即返回 END_RESPONSE，表示响应已完成
+                        return response_is_final; // 立即返回
                     }
-                    else if (response_is_final == PROCESSED_INTERNALLY)
+                    else if (response_is_final == CONTINUE_ROUTING)
                     {
-                        return PROCESSED_INTERNALLY; // 立即返回 PROCESSED_INTERNALLY，表示已内部处理
+                        continue; // 继续查找下一个匹配
                     }
 
                     // 如果是 CONTINUE_HANDLING, 则继续处理
@@ -2251,44 +2202,56 @@ std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const re
                     {
                         invokeErrorHandler_Pimpl(res.status_code, matched_req, res);
                     }
-                    return CONTINUE_HANDLING; // 继续处理
+                    return END_HANDING; // 处理结束
                 }
             }
         }
         return std::nullopt; // 未找到匹配
     };
 
-    // 1. 优先匹配固定方法
-    auto fixed_it = fixed_method_handlers.find(method);
-    if (fixed_it != fixed_method_handlers.end())
+    if (isRegexPattern_Pimpl(method))
     {
-        auto r = find_and_handle_path(fixed_it->second);
-        if (r.has_value())
+        auto method_it = handlers.begin();
+        while (method_it != handlers.end())
         {
-            if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
+            // 找到匹配 method 的 entry
+            if (!method_it->second.empty() && std::regex_match(method, method_it->second[0].method_regex))
             {
-                return res;
+                auto r = find_and_handle_path(method_it->second);
+                if (r.has_value())
+                {
+                    int r_value = r.value();
+                    if (r_value == END_HANDING || r_value == CONTINUE_HANDLING)
+                    {
+                        return res;
+                    }
+                    else if (r_value == PROCESSED_INTERNALLY)
+                    {
+                        return std::nullopt;
+                    }
+                }
+                break; // 已处理，跳出循环
             }
-            else if (r.value() == PROCESSED_INTERNALLY)
+            else
             {
-                return std::nullopt;
+                ++method_it;
             }
         }
     }
-
-    // 2. 其次匹配正则表达式方法
-    for (const auto &regex_pair : regex_method_handlers)
+    else
     {
-        if (std::regex_match(method, regex_pair.first))
+        auto method_it = handlers.find(method);
+        if (method_it != handlers.end())
         {
-            auto r = find_and_handle_path(regex_pair.second);
+            auto r = find_and_handle_path(method_it->second);
             if (r.has_value())
             {
-                if (r.value() == END_HANDING || r.value() == CONTINUE_HANDLING)
+                int r_value = r.value();
+                if (r_value == END_HANDING || r_value == CONTINUE_HANDLING)
                 {
                     return res;
                 }
-                else if (r.value() == PROCESSED_INTERNALLY)
+                else if (r_value == PROCESSED_INTERNALLY)
                 {
                     return std::nullopt;
                 }
