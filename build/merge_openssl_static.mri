@@ -1,7 +1,6 @@
-
-CREATE $<TARGET_FILE:cppNetworkUtilLib>
-ADDLIB D:/YYProject/vscode-project/cppNetworkUtil/build/$<TARGET_FILE_BASE_NAME:cppNetworkUtilLib>$<TARGET_FILE_EXT:cppNetworkUtilLib>.temp
-# 将 OpenSSL 的所有依赖库（如 libssl.a, libcrypto.a）添加到合并列表中
-ADDLIB D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libssl.a;D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libcrypto.a
+CREATE D:/YYProject/vscode-project/cppNetworkUtil/build/libcppNetworkUtilLib_merged_temp.a
+ADDLIB D:/YYProject/vscode-project/cppNetworkUtil/build/libcppNetworkUtilLib.a
+ADDLIB D:/YYProject/vscode-project/cppNetworkUtil/lib/openssl/libssl.a
+ADDLIB D:/YYProject/vscode-project/cppNetworkUtil/lib/openssl/libcrypto.a
 SAVE
 END

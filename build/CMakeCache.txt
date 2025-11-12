@@ -222,7 +222,7 @@ OPENSSL_INCLUDE_DIR:PATH=D:/YYProject/vscode-project/cppNetworkUtil/openssl/incl
 SSL_EAY:FILEPATH=D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libssl.a
 
 //Dependencies for the target
-cppNetworkUtilLib_LIB_DEPENDS:STATIC=general;OpenSSL::SSL;general;OpenSSL::Crypto;
+cppNetworkUtilLib_LIB_DEPENDS:STATIC=general;D:/YYProject/vscode-project/cppNetworkUtil/lib/openssl/libssl.a;general;D:/YYProject/vscode-project/cppNetworkUtil/lib/openssl/libcrypto.a;
 
 //Value Computed by CMake
 cppNetworkUtil_BINARY_DIR:STATIC=D:/YYProject/vscode-project/cppNetworkUtil/build

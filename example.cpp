@@ -159,12 +159,13 @@ int main(int argc, char **argv)
         return PROCESSED_INTERNALLY;
     });
 
+    // Test url: https://127.0.0.1/continuerouting
+    // The example for continue routing
     networkutil.on("GET", "/continuerouting", [&networkutil](const requestContext &req, responseContext &res) {
         res.response_headers["Content-Type"] = "text/plain";
         res.response_content = "This is the first handler. Continuing routing to the next handler.\n";
         return CONTINUE_ROUTING; // Continue routing to the next matching route
     });
-
     networkutil.on("GET", "/continuerouting", [&networkutil](const requestContext &req, responseContext &res) {
         res.response_content += "This is the second handler.";
         return END_HANDING;

@@ -96,8 +96,6 @@ example_EXTERNAL_OBJECTS =
 D:/YYProject/vscode-project/cppNetworkUtil/example.exe: CMakeFiles/example.dir/example.cpp.obj
 D:/YYProject/vscode-project/cppNetworkUtil/example.exe: CMakeFiles/example.dir/build.make
 D:/YYProject/vscode-project/cppNetworkUtil/example.exe: libcppNetworkUtilLib.a
-D:/YYProject/vscode-project/cppNetworkUtil/example.exe: D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libssl.a
-D:/YYProject/vscode-project/cppNetworkUtil/example.exe: D:/YYProject/vscode-project/cppNetworkUtil/openssl/lib/libcrypto.a
 D:/YYProject/vscode-project/cppNetworkUtil/example.exe: CMakeFiles/example.dir/linkLibs.rsp
 D:/YYProject/vscode-project/cppNetworkUtil/example.exe: CMakeFiles/example.dir/objects1.rsp
 D:/YYProject/vscode-project/cppNetworkUtil/example.exe: CMakeFiles/example.dir/link.txt

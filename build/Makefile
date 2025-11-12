@@ -129,6 +129,19 @@ cppNetworkUtilLib/fast:
 .PHONY : cppNetworkUtilLib/fast
 
 #=============================================================================
+# Target rules for targets named merge_libraries
+
+# Build rule for target.
+merge_libraries: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 merge_libraries
+.PHONY : merge_libraries
+
+# fast build rule for target.
+merge_libraries/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\merge_libraries.dir\build.make CMakeFiles/merge_libraries.dir/build
+.PHONY : merge_libraries/fast
+
+#=============================================================================
 # Target rules for targets named example
 
 # Build rule for target.
@@ -245,6 +258,7 @@ help:
 	@echo ... depend
 	@echo ... edit_cache
 	@echo ... rebuild_cache
+	@echo ... merge_libraries
 	@echo ... cppNetworkUtilLib
 	@echo ... example
 	@echo ... example.obj

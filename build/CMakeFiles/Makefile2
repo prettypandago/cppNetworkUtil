@@ -63,11 +63,13 @@ CMAKE_BINARY_DIR = D:\YYProject\vscode-project\cppNetworkUtil\build
 
 # The main recursive "all" target.
 all: CMakeFiles/cppNetworkUtilLib.dir/all
+all: CMakeFiles/merge_libraries.dir/all
 all: CMakeFiles/example.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/cppNetworkUtilLib.dir/codegen
+codegen: CMakeFiles/merge_libraries.dir/codegen
 codegen: CMakeFiles/example.dir/codegen
 .PHONY : codegen
 
@@ -77,6 +79,7 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/cppNetworkUtilLib.dir/clean
+clean: CMakeFiles/merge_libraries.dir/clean
 clean: CMakeFiles/example.dir/clean
 .PHONY : clean
 
@@ -113,10 +116,42 @@ CMakeFiles/cppNetworkUtilLib.dir/clean:
 .PHONY : CMakeFiles/cppNetworkUtilLib.dir/clean
 
 #=============================================================================
+# Target rules for target CMakeFiles/merge_libraries.dir
+
+# All Build rule for target.
+CMakeFiles/merge_libraries.dir/all: CMakeFiles/cppNetworkUtilLib.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\merge_libraries.dir\build.make CMakeFiles/merge_libraries.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\merge_libraries.dir\build.make CMakeFiles/merge_libraries.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=7 "Built target merge_libraries"
+.PHONY : CMakeFiles/merge_libraries.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/merge_libraries.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles 5
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/merge_libraries.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles 0
+.PHONY : CMakeFiles/merge_libraries.dir/rule
+
+# Convenience name for target.
+merge_libraries: CMakeFiles/merge_libraries.dir/rule
+.PHONY : merge_libraries
+
+# codegen rule for target.
+CMakeFiles/merge_libraries.dir/codegen: CMakeFiles/cppNetworkUtilLib.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\merge_libraries.dir\build.make CMakeFiles/merge_libraries.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=7 "Finished codegen for target merge_libraries"
+.PHONY : CMakeFiles/merge_libraries.dir/codegen
+
+# clean rule for target.
+CMakeFiles/merge_libraries.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\merge_libraries.dir\build.make CMakeFiles/merge_libraries.dir/clean
+.PHONY : CMakeFiles/merge_libraries.dir/clean
+
+#=============================================================================
 # Target rules for target CMakeFiles/example.dir
 
 # All Build rule for target.
-CMakeFiles/example.dir/all: CMakeFiles/cppNetworkUtilLib.dir/all
+CMakeFiles/example.dir/all: CMakeFiles/merge_libraries.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=5,6 "Built target example"
@@ -124,7 +159,7 @@ CMakeFiles/example.dir/all: CMakeFiles/cppNetworkUtilLib.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/example.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles 6
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles 7
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/example.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles 0
 .PHONY : CMakeFiles/example.dir/rule
@@ -134,7 +169,7 @@ example: CMakeFiles/example.dir/rule
 .PHONY : example
 
 # codegen rule for target.
-CMakeFiles/example.dir/codegen:
+CMakeFiles/example.dir/codegen: CMakeFiles/merge_libraries.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/codegen
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=5,6 "Finished codegen for target example"
 .PHONY : CMakeFiles/example.dir/codegen
