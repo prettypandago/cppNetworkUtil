@@ -176,6 +176,7 @@ class cppNetworkUtilPimpl
         SOCKET client_socket;
         ssl_st *ssl;
         bool is_https_connection;
+        bool is_keep_alive_connection;
         std::string ip;
         int port;
         std::string family;
@@ -186,7 +187,8 @@ class cppNetworkUtilPimpl
         std::unordered_map<std::string, std::string> query_params;
         std::unordered_map<std::string, std::string> parsed_request_headers;
     };
-    std::unordered_map<SOCKET, clientConnectionInfo_Pimpl> client_connections; // 存储客户端连接信息
+    std::unordered_map<SOCKET, std::unordered_map<int, clientConnectionInfo_Pimpl>>
+        client_connections; // 存储客户端连接信息
 
     std::unordered_map<std::string, std::vector<routeInfo>> handlers; // 路由表
 
@@ -226,7 +228,6 @@ class cppNetworkUtilPimpl
      * @return Parsed unordered_map request header
      */
     std::unordered_map<std::string, std::string> getParsedHeader_Pimpl(const std::string &header);
-
     /**
      * @brief Get the value of a specific header field in the HTTP request header
      *
@@ -250,6 +251,15 @@ class cppNetworkUtilPimpl
      * @return content size
      */
     int getContentSize_Pimpl(const std::string buffer);
+
+    /**
+     * @brief get the Transfer-Encoding
+     *
+     * @param headers (const std::string &) The HTTP request header string
+     *
+     * @return transfer encoding value
+     */
+    std::string getTransferEncodingValue_Pimpl(const std::string &headers);
 
     /**
      * @brief Calculates the size of the POST content from the given buffer.
@@ -429,9 +439,10 @@ class cppNetworkUtilPimpl
      * @brief Send data to the socket using HTTPS protocol
      *
      * @param socket (SOCKET) The socket to send data to
+     * @param request_count (int) The request count for keep-alive connections
      * @param data (const std::string &) Data to be sent
      */
-    void sendDataToHttpsSocket_Pimpl(SOCKET socket, const std::string &data);
+    void sendDataToHttpsSocket_Pimpl(SOCKET socket, int request_count, const std::string &data);
 
     /**
      * @brief Send data to the socket using HTTPS protocol
@@ -445,17 +456,19 @@ class cppNetworkUtilPimpl
      * @brief Send data to the socket (auto select HTTP or HTTPS)
      *
      * @param socket (SOCKET) The socket to send data to
+     * @param request_count (int) The request count for the current connection
      * @param data (const std::string &) Data to be sent
      */
-    void sendDataToSocket_Pimpl(SOCKET socket, const std::string &data);
+    void sendDataToSocket_Pimpl(SOCKET socket, int request_count, const std::string &data);
 
     /**
      * @brief Send data to the socket in chunks
      *
      * @param socket (SOCKET) The socket to send data to
+     * @param reuqest_count (int) The request count for the current connection
      * @param data (const std::string &) Data to be sent
      */
-    void sendDataChunkToSocket_Pimpl(SOCKET socket, const std::string &data);
+    void sendDataChunkToSocket_Pimpl(SOCKET socket, int request_count, const std::string &data);
 
     /**
      * @brief Send data to the host using HTTP protocol
@@ -523,22 +536,6 @@ class cppNetworkUtilPimpl
                                      std::function<int(char *, int)> read_func);
 
     /*
-     * @brief Create and bind a socket to the specified port and IP protocol mode
-
-     * @param port (int) The port number to bind the socket to
-     * @param ip_protocol_family (int) The IP protocol family (AF_INET for IPv4, AF_INET6 for IPv6)
-     * @param is_ipv6_only (bool) set is ipv6 only
-     *
-     * @throw Create socket failed
-     * @throw Setsockopt failed
-     * @throw Bind failed
-     * @throw Listen failed
-     *
-     * @return The created and bound socket
-     */
-    SOCKET createAndBindSocket_Pimpl(int port, int ip_protocol_family, bool is_ipv6_only);
-
-    /*
      * @brief Run the server with the specified port and callback
      *
      * @param http_port (int) The http port number to run the server on
@@ -549,6 +546,8 @@ class cppNetworkUtilPimpl
      * @param cert_path (std::string) The path to the SSL certificate file
      * @param key_path (std::string) The path to the SSL private key file
      * @param print_listen_info (bool) Whether to print listen info
+     * @param timeout (std::uint32_t) Socket timeout in milliseconds
+     * @param max_request_count (int) Maximum request count for keep-alive connections
      *
      * @throw WSAStartup failed
      * @throw At least one port must be enabled
@@ -556,13 +555,13 @@ class cppNetworkUtilPimpl
      * @throw Unable to load certificate
      * @throw Unable to load private key
      * @throw Private key does not match the certificate
-     * @throw Unable to get the number of CPU cores
      */
     void run_Pimpl(int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT,
                    int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS,
                    int ip_protocol_mode = IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH,
                    std::string cert_path = DEFAULT_CERT_PATH, std::string key_path = DEFAULT_KEY_PATH,
-                   bool print_listen_info = DEFAULT_PRINT_LISTEN_INFO);
+                   bool print_listen_info = ENABLE_PRINT_LISTEN_INFO, std::uint32_t timeout = DEFAULT_TIMEOUT_MS,
+                   int max_request_count = DEFAULT_MAX_REQUEST_COUNT);
 
     /**
      * @brief Print the cppNetowrkUtil version
@@ -670,6 +669,70 @@ class cppNetworkUtilPimpl
     ssl_st *ssl;                // 使用 BIO 方式进行网络操作
 
     /**
+     * @brief Ensure that the buffer contains data up to the specified target size.
+     *
+     * This function reads data from the given socket and appends it to the provided buffer
+     * until the buffer reaches the target size. It returns true if the target size is reached,
+     * otherwise false.
+     *
+     * @param sock (SOCKET) The socket from which to read data.
+     * @param ssl_conn (ssl_st *) The SSL connection object for secure connections (can be nullptr for non-SSL).
+     * @param buffer (std::string &) The buffer to which data will be appended.
+     * @param target_size (size_t) The target size that the buffer should reach.
+     *
+     * @return true if the buffer reaches the target size, false otherwise.
+     */
+    bool ensureBuffer_Pimpl(SOCKET sock, ssl_st *ssl_conn, std::string &buffer, size_t target_size);
+
+    /**
+     * @brief Ensure that the buffer contains data up to the specified target string.
+     *
+     * This function reads data from the given socket and appends it to the provided buffer
+     * until the target string is found within the buffer. It returns true if the target
+     * string is found, otherwise false.
+     *
+     * @param sock (SOCKET) The socket from which to read data.
+     * @param ssl_conn (ssl_st *) The SSL connection object for secure connections (can be nullptr for non-SSL).
+     * @param buffer (std::string &) The buffer to which data will be appended.
+     * @param target (const std::string &) The target string to search for in the buffer.
+     *
+     * @return true if the target string is found in the buffer, false otherwise.
+     */
+    bool ensureBufferUntil_Pimpl(SOCKET sock, ssl_st *ssl_conn, std::string &buffer, const std::string &target);
+
+    /**
+     * @brief Parse chunked transfer encoding body from the buffer.
+     *
+     * This function processes the provided buffer containing chunked transfer encoding data
+     * and extracts the complete body into the outBody string. It returns true if the parsing
+     * is successful, otherwise false.
+     *
+     * @param sock (SOCKET) The socket from which to read data.
+     * @param ssl_conn (ssl_st *) The SSL connection object for secure connections (can be nullptr for non-SSL).
+     * @param buffer (std::string &) The buffer containing chunked transfer encoding data.
+     * @param outBody (std::string &) The output string where the parsed body will be stored.
+     *
+     * @return true if the chunked body is successfully parsed, false otherwise.
+     */
+    bool parseChunkedBody_Pimpl(SOCKET sock, ssl_st *ssl_conn, std::string &buffer, std::string &outBody);
+
+    /*
+     * @brief Create and bind a socket to the specified port and IP protocol mode
+
+     * @param port (int) The port number to bind the socket to
+     * @param ip_protocol_family (int) The IP protocol family (AF_INET for IPv4, AF_INET6 for IPv6)
+     * @param is_ipv6_only (bool) set is ipv6 only
+     *
+     * @throw Create socket failed
+     * @throw Setsockopt failed
+     * @throw Bind failed
+     * @throw Listen failed
+     *
+     * @return The created and bound socket
+     */
+    SOCKET createAndBindSocket_Pimpl(int port, int ip_protocol_family, bool is_ipv6_only);
+
+    /**
      * @brief Accepts incoming connections on the specified server socket and handles them according to the provided
      * parameters.
      *
@@ -679,10 +742,14 @@ class cppNetworkUtilPimpl
      * @param https_port The port number to use for HTTPS connections. Defaults to DEFAULT_HTTPS_SERVER_PORT.
      * @param behavior_mode The behavior mode for handling requests (e.g., redirect HTTP to HTTPS). Defaults to
      * BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS.
+     * @param timeout The timeout duration in milliseconds for socket operations.
+     * @param max_request_count The maximum number of requests to handle for keep-alive connections.
      */
     void acceptScocket_Pimpl(SOCKET server_socket, bool enable_https, int http_port = DEFAULT_HTTP_SERVER_PORT,
                              int https_port = DEFAULT_HTTPS_SERVER_PORT,
-                             int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS);
+                             int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS,
+                             std::uint32_t timeout = DEFAULT_TIMEOUT_MS,
+                             int max_request_count = DEFAULT_MAX_REQUEST_COUNT);
 
     /**
      * @brief Processes a client connection on the server socket.
@@ -690,7 +757,6 @@ class cppNetworkUtilPimpl
      * Handles the incoming client connection, optionally using SSL/TLS if enabled, and processes
      * the request according to the specified behavior mode. Supports both HTTP and HTTPS protocols.
      *
-     * @param server_socket      The server socket descriptor.
      * @param client_socket      The client socket descriptor.
      * @param client_address     The address information of the connected client.
      * @param ssl_conn           Pointer to the SSL connection structure (used if HTTPS is enabled).
@@ -699,9 +765,12 @@ class cppNetworkUtilPimpl
      * @param https_port         The port number for HTTPS connections (default: DEFAULT_HTTPS_SERVER_PORT).
      * @param behavior_mode      The behavior mode for processing requests (default:
      * BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS).
+     * @param timeout            The timeout duration in milliseconds for socket operations (default:
+     * DEFAULT_TIMEOUT_MS).
+     * @param max_request_count  The maximum number of requests to handle for keep-alive connections (default:
      */
-    void process(SOCKET server_socket, SOCKET client_socket, struct sockaddr_storage client_address, ssl_st *ssl_conn,
-                 bool enable_https, int http_port = DEFAULT_HTTP_SERVER_PORT,
-                 int https_port = DEFAULT_HTTPS_SERVER_PORT,
-                 int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS);
+    void process(SOCKET client_socket, struct sockaddr_storage client_address, ssl_st *ssl_conn, bool enable_https,
+                 int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT,
+                 int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS,
+                 std::uint32_t timeout = DEFAULT_TIMEOUT_MS, int max_request_count = DEFAULT_MAX_REQUEST_COUNT);
 };

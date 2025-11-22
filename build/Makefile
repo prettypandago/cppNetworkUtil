@@ -178,77 +178,77 @@ example.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\example.dir\build.make CMakeFiles/example.dir/example.cpp.s
 .PHONY : example.cpp.s
 
-src/cppNetworkUtil.obj: src/cppNetworkUtil.cpp.obj
-.PHONY : src/cppNetworkUtil.obj
+src/cppNetworkUtil/cppNetworkUtil.obj: src/cppNetworkUtil/cppNetworkUtil.cpp.obj
+.PHONY : src/cppNetworkUtil/cppNetworkUtil.obj
 
 # target to build an object file
-src/cppNetworkUtil.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj
-.PHONY : src/cppNetworkUtil.cpp.obj
+src/cppNetworkUtil/cppNetworkUtil.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj
+.PHONY : src/cppNetworkUtil/cppNetworkUtil.cpp.obj
 
-src/cppNetworkUtil.i: src/cppNetworkUtil.cpp.i
-.PHONY : src/cppNetworkUtil.i
+src/cppNetworkUtil/cppNetworkUtil.i: src/cppNetworkUtil/cppNetworkUtil.cpp.i
+.PHONY : src/cppNetworkUtil/cppNetworkUtil.i
 
 # target to preprocess a source file
-src/cppNetworkUtil.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.i
-.PHONY : src/cppNetworkUtil.cpp.i
+src/cppNetworkUtil/cppNetworkUtil.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.i
+.PHONY : src/cppNetworkUtil/cppNetworkUtil.cpp.i
 
-src/cppNetworkUtil.s: src/cppNetworkUtil.cpp.s
-.PHONY : src/cppNetworkUtil.s
+src/cppNetworkUtil/cppNetworkUtil.s: src/cppNetworkUtil/cppNetworkUtil.cpp.s
+.PHONY : src/cppNetworkUtil/cppNetworkUtil.s
 
 # target to generate assembly for a file
-src/cppNetworkUtil.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.s
-.PHONY : src/cppNetworkUtil.cpp.s
+src/cppNetworkUtil/cppNetworkUtil.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.s
+.PHONY : src/cppNetworkUtil/cppNetworkUtil.cpp.s
 
-src/cppNetworkUtilPimpl.obj: src/cppNetworkUtilPimpl.cpp.obj
-.PHONY : src/cppNetworkUtilPimpl.obj
+src/cppNetworkUtil/cppNetworkUtilPimpl.obj: src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj
+.PHONY : src/cppNetworkUtil/cppNetworkUtilPimpl.obj
 
 # target to build an object file
-src/cppNetworkUtilPimpl.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj
-.PHONY : src/cppNetworkUtilPimpl.cpp.obj
+src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj
+.PHONY : src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj
 
-src/cppNetworkUtilPimpl.i: src/cppNetworkUtilPimpl.cpp.i
-.PHONY : src/cppNetworkUtilPimpl.i
+src/cppNetworkUtil/cppNetworkUtilPimpl.i: src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.i
+.PHONY : src/cppNetworkUtil/cppNetworkUtilPimpl.i
 
 # target to preprocess a source file
-src/cppNetworkUtilPimpl.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.i
-.PHONY : src/cppNetworkUtilPimpl.cpp.i
+src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.i
+.PHONY : src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.i
 
-src/cppNetworkUtilPimpl.s: src/cppNetworkUtilPimpl.cpp.s
-.PHONY : src/cppNetworkUtilPimpl.s
+src/cppNetworkUtil/cppNetworkUtilPimpl.s: src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.s
+.PHONY : src/cppNetworkUtil/cppNetworkUtilPimpl.s
 
 # target to generate assembly for a file
-src/cppNetworkUtilPimpl.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.s
-.PHONY : src/cppNetworkUtilPimpl.cpp.s
+src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.s
+.PHONY : src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.s
 
-src/threadPool.obj: src/threadPool.cpp.obj
-.PHONY : src/threadPool.obj
+src/cppNetworkUtil/threadPool.obj: src/cppNetworkUtil/threadPool.cpp.obj
+.PHONY : src/cppNetworkUtil/threadPool.obj
 
 # target to build an object file
-src/threadPool.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj
-.PHONY : src/threadPool.cpp.obj
+src/cppNetworkUtil/threadPool.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj
+.PHONY : src/cppNetworkUtil/threadPool.cpp.obj
 
-src/threadPool.i: src/threadPool.cpp.i
-.PHONY : src/threadPool.i
+src/cppNetworkUtil/threadPool.i: src/cppNetworkUtil/threadPool.cpp.i
+.PHONY : src/cppNetworkUtil/threadPool.i
 
 # target to preprocess a source file
-src/threadPool.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.i
-.PHONY : src/threadPool.cpp.i
+src/cppNetworkUtil/threadPool.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.i
+.PHONY : src/cppNetworkUtil/threadPool.cpp.i
 
-src/threadPool.s: src/threadPool.cpp.s
-.PHONY : src/threadPool.s
+src/cppNetworkUtil/threadPool.s: src/cppNetworkUtil/threadPool.cpp.s
+.PHONY : src/cppNetworkUtil/threadPool.s
 
 # target to generate assembly for a file
-src/threadPool.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.s
-.PHONY : src/threadPool.cpp.s
+src/cppNetworkUtil/threadPool.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\cppNetworkUtilLib.dir\build.make CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.s
+.PHONY : src/cppNetworkUtil/threadPool.cpp.s
 
 # Help Target
 help:
@@ -264,15 +264,15 @@ help:
 	@echo ... example.obj
 	@echo ... example.i
 	@echo ... example.s
-	@echo ... src/cppNetworkUtil.obj
-	@echo ... src/cppNetworkUtil.i
-	@echo ... src/cppNetworkUtil.s
-	@echo ... src/cppNetworkUtilPimpl.obj
-	@echo ... src/cppNetworkUtilPimpl.i
-	@echo ... src/cppNetworkUtilPimpl.s
-	@echo ... src/threadPool.obj
-	@echo ... src/threadPool.i
-	@echo ... src/threadPool.s
+	@echo ... src/cppNetworkUtil/cppNetworkUtil.obj
+	@echo ... src/cppNetworkUtil/cppNetworkUtil.i
+	@echo ... src/cppNetworkUtil/cppNetworkUtil.s
+	@echo ... src/cppNetworkUtil/cppNetworkUtilPimpl.obj
+	@echo ... src/cppNetworkUtil/cppNetworkUtilPimpl.i
+	@echo ... src/cppNetworkUtil/cppNetworkUtilPimpl.s
+	@echo ... src/cppNetworkUtil/threadPool.obj
+	@echo ... src/cppNetworkUtil/threadPool.i
+	@echo ... src/cppNetworkUtil/threadPool.s
 .PHONY : help
 
 

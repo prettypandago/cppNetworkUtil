@@ -1,82 +1,51 @@
-# cppNetworkUtil
+# cppNetworkUtil - 现代高性能 C++ 网络服务工具库
 
-## 其他语言版本
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Standard](https://img.shields.io/badge/c%2B%2B-17-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B17)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+
+## 🌐 其他语言版本
 [English](README.md "English version"), [简体中文](README_zh-cn.md "简体中文版")
 
-## 警告
+## ⚠️ 警告
 
 项目处于**开发阶段**，使用方式可能会有**较大变动**，**暂不推荐生产环境使用**！
 
-## 介绍
+## 🚀 介绍
 
-cppNetworkUtil 是一个支持 HTTP 和 HTTPS 协议的简单易用的 C++ 网络通信库。
+**cppNetworkUtil** 是一个轻量级、高性能的 C++ 网络通信库，专为构建高效的 **HTTP/HTTPS** 服务器和 **RESTful API** 设计。本项目致力于提供简洁且稳定的接口，通过采用 **PIMPL (Pointer to Implementation)** 模式，成功地将复杂的底层实现细节和外部库依赖进行封装，极大地提高了接口的稳定性和编译效率。本项目致力于提供简洁且稳定的接口，通过采用 **C++17** 标准特性和成熟的设计模式，为 C++ 后端开发提供了一个强有力的基础框架。
 
-## 如何使用
+## ✨ 核心特性
 
-1. 环境配置
+* 🎮 **高性能异步处理**：使用自定义的线程池 (threadPool) 来异步处理客户端连接，确保监听线程不会阻塞。
 
-    1. 推荐安装 VSCode
-    2. 配置 VSCode 的 C++ 开发环境
-    3. 安装 CMake 插件
+* 👍 **Pimpl 模式**：核心逻辑 (cppNetworkUtilPimpl) 采用 Pimpl（Pointer to Implementation）设计模式，实现接口和实现的分离，提高编译速度和库的稳定性，如果不编译 cppNetworkUtil 库就不需要 Openssl 文件。
 
-2. 下载
+* ✅ **跨平台设计**： 基于标准 C++ 和 CMake 构建，并为 Windows (Winsock) ， POSIX 和 Linux (未验证) 平台做了网络层兼容性考虑。
 
-    有两种方式：
-    - 仅下载 `./build/libcppNetworkUtilLib.a`、`./include` 和 `./openssl/lib`（使用已编译好的静态库）
-    - 下载全部文件（自行编译静态库）
+* 🔐 **HTTPS 支持**：集成 OpenSSL 库，支持安全连接 (HTTPS)。
 
-    将下载的文件复制到你的项目目录下。
+* 🎯 **可扩展路由**：提供清晰强大的接口用于定义 HTTP 路由和请求处理。
 
-    如果选择自行编译静态库，可在 `include/defines.h` 中调整宏定义
+## 🧰 依赖环境
 
-    然后运行 CMake 进行编译
+1. **C++ 编译器**：支持 C++17 标准
 
-    编写代码，[点击查看示例](example.cpp "示例")
+2. **构建系统**：CMake (版本 3.10 或更高)
 
-    最后编写 CMake 文件（Windows），并编译：
+3. **SSL 库**： OpenSSL，用于 HTTPS 支持 **(仅在构建库时需要)**
 
-    ```cmake
-    cmake_minimum_required(VERSION 3.10)
-    project(yourProjectName C CXX)
-    
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+4. **操作系统特定链接库**：
 
-    add_executable(yourProjectName src/main.cpp src/fileUtil.cpp)
-    set_source_files_properties(src/sqlite3.c PROPERTIES LANGUAGE C)
-    target_sources(yourProjectName PRIVATE src/sqlite3.c)
+    * Windows (MinGW): 依赖 *ws2_32.lib* (Winsock), *crypt32.lib*, *gdi32.lib*。
 
-    target_include_directories(yourProjectName PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-    )
+## 🤝 贡献
 
-    target_link_libraries(yourProjectName PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/libcppNetworkUtilLib.a
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libssl.a
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrypto.a 
-        ws2_32
-        iphlpapi
-        gdi32
-        crypt32
-    )
+欢迎提交 Pull Request 或 Issue！
 
-    set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
-    ```
+## 📄 许可证
 
-    编译完成后即可运行
+本项目采用 [MIT License](LICENSE "许可证") 开源授权。
 
-3. 注意事项
 
-    - 如果程序闪退，可在 `cmd` 中运行，若提示 `No such file or directory`，且未禁用 HTTPS 支持，说明缺少证书文件。可用以下命令生成：
-
-        1. `openssl genrsa -out server.key 2048`
-        2. `openssl req -x509 -new -nodes -key server.key -sha256 -days 365 -out server.crt`
-
-    正常情况下，程序即可运行
-
-4. 成功运行 ✅✅✅
-
-    - 恭喜！在你设置的输出目录（默认 `./`）找到生成的程序并运行即可
-
-感谢你的使用！ 
+### 感谢你的使用！

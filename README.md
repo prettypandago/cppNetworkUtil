@@ -1,82 +1,51 @@
-# cppNetworkUtil
+# cppNetworkUtil - Modern High-Performance C++ Networking Utility Library
 
-## Other Language Versions
-[English](README.md "English version"), [简体中文](README_zh-cn.md "Simplified Chinese version")
+[![许可证](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![C++标准](https://img.shields.io/badge/c%2B%2B-17-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B17)
+[![构建状态](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 
-## Warning
+## 🌐 Other language versions
+[English](README.md "English version"), [Simplified Chinese](README_zh-cn.md "Simplified Chinese version")
 
-The project is in the **development stage**. Usage may **change significantly**, and it is **not recommended for production environments** at this time!
+## ⚠️ Warning
 
-## Introduction
+The project is in **development**, usage may undergo **significant changes**, and it is **not recommended for production use** yet!
 
-cppNetworkUtil is a simple and easy-to-use C++ network communication library supporting HTTP and HTTPS protocols.
+## 🚀 Introduction
 
-## How to Use
+**cppNetworkUtil** is a lightweight, high-performance C++ networking library designed for building efficient **HTTP/HTTPS** servers and **RESTful APIs**. This project aims to provide a clean and stable interface by using the **PIMPL (Pointer to Implementation)** pattern to encapsulate complex internal implementation details and external library dependencies, greatly improving interface stability and compilation efficiency. This project also leverages **C++17** language features and proven design patterns to provide a solid foundation for C++ backend development.
 
-1. Environment Setup
+## ✨ Key Features
 
-    1. It is recommended to install VSCode
-    2. Configure the C++ development environment in VSCode
-    3. Install the CMake plugin
+* 🎮 **High-performance asynchronous handling**: Uses a custom thread pool (threadPool) to process client connections asynchronously, ensuring the listening thread is never blocked.
 
-2. Download
+* 👍 **Pimpl pattern**: Core logic (cppNetworkUtilPimpl) uses the Pimpl (Pointer to Implementation) design pattern to separate interface and implementation, improving compile times and library stability. OpenSSL files are not required if you don't build the cppNetworkUtil library.
 
-    There are two ways:
-    - Download only `./build/libcppNetworkUtilLib.a`, `./include`, and `./openssl/lib` (use the precompiled static library)
-    - Download all files (compile the static library yourself)
+* ✅ **Cross-platform design**: Built with standard C++ and CMake, with networking compatibility considerations for Windows (Winsock), POSIX, and Linux (untested).
 
-    Copy the downloaded files to your project directory.
+* 🔐 **HTTPS support**: Integrates the OpenSSL library for secure connections (HTTPS).
 
-    If you choose to compile the static library yourself, you can adjust macro definitions in `include/defines.h`.
+* 🎯 **Extensible routing**: Provides clear and powerful interfaces for defining HTTP routes and request handling.
 
-    Then run CMake to compile.
+## 🧰 Dependencies
 
-    Write your code, [click to view example](example.cpp "Example").
+1. **C++ compiler**: Supports the C++17 standard
 
-    Finally, write the CMake file (Windows) and compile:
+2. **Build system**: CMake (version 3.10 or newer)
 
-    ```cmake
-    cmake_minimum_required(VERSION 3.10)
-    project(yourProjectName C CXX)
-    
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+3. **SSL library**: OpenSSL, for HTTPS support **(only required when building the library)**
 
-    add_executable(yourProjectName src/main.cpp src/fileUtil.cpp)
-    set_source_files_properties(src/sqlite3.c PROPERTIES LANGUAGE C)
-    target_sources(yourProjectName PRIVATE src/sqlite3.c)
+4. **OS-specific link libraries**:
 
-    target_include_directories(yourProjectName PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-    )
+    * Windows (MinGW): depends on *ws2_32.lib* (Winsock), *crypt32.lib*, *gdi32.lib*.
 
-    target_link_libraries(yourProjectName PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/libcppNetworkUtilLib.a
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libssl.a
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrypto.a 
-        ws2_32
-        iphlpapi
-        gdi32
-        crypt32
-    )
+## 🤝 Contributing
 
-    set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
-    ```
+Pull Requests and Issues are welcome!
 
-    After compilation, you can run the program.
+## 📄 License
 
-3. Notes
+This project is open-source under the [MIT License](LICENSE "License").
 
-    - If the program crashes, try running it in `cmd`. If you see `No such file or directory` and HTTPS support is not disabled, it means the certificate file is missing. You can generate it with the following commands:
 
-        1. `openssl genrsa -out server.key 2048`
-        2. `openssl req -x509 -new -nodes -key server.key -sha256 -days 365 -out server.crt`
-
-    Normally, the program should run.
-
-4. Successfully Running ✅✅✅
-
-    - Congratulations! Find the generated program in your output directory (default `./`) and run it.
-
-Thank you for using!
+### Thank you for using!

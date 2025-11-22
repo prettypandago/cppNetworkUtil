@@ -71,63 +71,63 @@ include CMakeFiles/cppNetworkUtilLib.dir/flags.make
 CMakeFiles/cppNetworkUtilLib.dir/codegen:
 .PHONY : CMakeFiles/cppNetworkUtilLib.dir/codegen
 
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/flags.make
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj: D:/YYProject/vscode-project/cppNetworkUtil/src/cppNetworkUtil.cpp
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj -MF CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil.cpp.obj.d -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil.cpp.obj -c D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil.cpp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/flags.make
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj: D:/YYProject/vscode-project/cppNetworkUtil/src/cppNetworkUtil/cppNetworkUtil.cpp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj -MF CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\cppNetworkUtil.cpp.obj.d -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\cppNetworkUtil.cpp.obj -c D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\cppNetworkUtil.cpp
 
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.i"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil.cpp > CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil.cpp.i
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.i"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\cppNetworkUtil.cpp > CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\cppNetworkUtil.cpp.i
 
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.s"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil.cpp -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil.cpp.s
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.s"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\cppNetworkUtil.cpp -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\cppNetworkUtil.cpp.s
 
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/flags.make
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj: D:/YYProject/vscode-project/cppNetworkUtil/src/cppNetworkUtilPimpl.cpp
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj -MF CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtilPimpl.cpp.obj.d -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtilPimpl.cpp.obj -c D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtilPimpl.cpp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/flags.make
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj: D:/YYProject/vscode-project/cppNetworkUtil/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj -MF CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\cppNetworkUtilPimpl.cpp.obj.d -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\cppNetworkUtilPimpl.cpp.obj -c D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\cppNetworkUtilPimpl.cpp
 
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.i"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtilPimpl.cpp > CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtilPimpl.cpp.i
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.i"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\cppNetworkUtilPimpl.cpp > CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\cppNetworkUtilPimpl.cpp.i
 
-CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.s"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtilPimpl.cpp -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtilPimpl.cpp.s
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.s"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\cppNetworkUtilPimpl.cpp -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\cppNetworkUtilPimpl.cpp.s
 
-CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/flags.make
-CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp
-CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj: D:/YYProject/vscode-project/cppNetworkUtil/src/threadPool.cpp
-CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj -MF CMakeFiles\cppNetworkUtilLib.dir\src\threadPool.cpp.obj.d -o CMakeFiles\cppNetworkUtilLib.dir\src\threadPool.cpp.obj -c D:\YYProject\vscode-project\cppNetworkUtil\src\threadPool.cpp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/flags.make
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/includes_CXX.rsp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj: D:/YYProject/vscode-project/cppNetworkUtil/src/cppNetworkUtil/threadPool.cpp
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj: CMakeFiles/cppNetworkUtilLib.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj -MF CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\threadPool.cpp.obj.d -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\threadPool.cpp.obj -c D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\threadPool.cpp
 
-CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.i"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\YYProject\vscode-project\cppNetworkUtil\src\threadPool.cpp > CMakeFiles\cppNetworkUtilLib.dir\src\threadPool.cpp.i
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.i"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\threadPool.cpp > CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\threadPool.cpp.i
 
-CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.s"
-	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\YYProject\vscode-project\cppNetworkUtil\src\threadPool.cpp -o CMakeFiles\cppNetworkUtilLib.dir\src\threadPool.cpp.s
+CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.s"
+	C:\PROGRA~1\REDPAN~1\mingw64\bin\C__~1.EXE $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\YYProject\vscode-project\cppNetworkUtil\src\cppNetworkUtil\threadPool.cpp -o CMakeFiles\cppNetworkUtilLib.dir\src\cppNetworkUtil\threadPool.cpp.s
 
 # Object files for target cppNetworkUtilLib
 cppNetworkUtilLib_OBJECTS = \
-"CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj" \
-"CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj" \
-"CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj"
+"CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj" \
+"CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj" \
+"CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj"
 
 # External object files for target cppNetworkUtilLib
 cppNetworkUtilLib_EXTERNAL_OBJECTS =
 
-libcppNetworkUtilLib.a: CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil.cpp.obj
-libcppNetworkUtilLib.a: CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtilPimpl.cpp.obj
-libcppNetworkUtilLib.a: CMakeFiles/cppNetworkUtilLib.dir/src/threadPool.cpp.obj
+libcppNetworkUtilLib.a: CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtil.cpp.obj
+libcppNetworkUtilLib.a: CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/cppNetworkUtilPimpl.cpp.obj
+libcppNetworkUtilLib.a: CMakeFiles/cppNetworkUtilLib.dir/src/cppNetworkUtil/threadPool.cpp.obj
 libcppNetworkUtilLib.a: CMakeFiles/cppNetworkUtilLib.dir/build.make
 libcppNetworkUtilLib.a: CMakeFiles/cppNetworkUtilLib.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=D:\YYProject\vscode-project\cppNetworkUtil\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX static library libcppNetworkUtilLib.a"

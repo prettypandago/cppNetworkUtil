@@ -121,6 +121,23 @@ int main(int argc, char **argv)
         res.response_headers["Content-Type"] =
             "text/html"; // Must set to text/html for chunked transfer encoding, otherwise
                          // browser will not display the content until the entire response is received.
+        // Set Connection header
+        if (req.is_keep_alive_connection && req.request_count < DEFAULT_MAX_REQUEST_COUNT)
+        {
+            // 情况 A: 客户端想保持，且没到限制 -> 保持
+            res.response_headers["connection"] = "keep-alive";
+
+            // (可选) 告诉客户端还能发多少次。
+            // 格式: Keep-Alive: timeout=5, max=99
+            res.response_headers["Keep-Alive"] =
+                "Keep-Alive: timeout=" + std::to_string(DEFAULT_TIMEOUT_MS / 1000) +
+                ", max=" + std::to_string(DEFAULT_MAX_REQUEST_COUNT - req.request_count);
+        }
+        else
+        {
+            // 情况 B: 客户端想关，或者已经到了限制 -> 关闭
+            res.response_headers["connection"] = "close";
+        }
 
         networkutil.beginDataChunkStreamTransfer(res);
 
@@ -140,22 +157,23 @@ int main(int argc, char **argv)
 
         int time = std::stoi(time_str);
 
-        networkutil.sendDataToSocket(req.client_socket,
+        networkutil.sendDataToSocket(req.client_socket, req.request_count,
                                      networkutil.makeResponseHeader(res.status_code, res.response_headers));
 
-        networkutil.sendDataChunkToSocket(req.client_socket, "<p>Start processing...</p>");
+        networkutil.sendDataChunkToSocket(req.client_socket, req.request_count, "<p>Start processing...</p>");
 
         for (int i = 0; i < time; i++)
         {
-            networkutil.sendDataChunkToSocket(req.client_socket,
+            networkutil.sendDataChunkToSocket(req.client_socket, req.request_count,
                                               "<p>Processing... " + std::to_string(i) + " seconds elapsed.</p>");
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
 
-        networkutil.sendDataChunkToSocket(req.client_socket, "<p>This response is sent after a " +
-                                                                 std::to_string(time) + " seconds delay.</p>");
+        networkutil.sendDataChunkToSocket(req.client_socket, req.request_count,
+                                          "<p>This response is sent after a " + std::to_string(time) +
+                                              " seconds delay.</p>");
 
-        networkutil.endDataChunkStreamTransfer(req.client_socket);
+        networkutil.endDataChunkStreamTransfer(req.client_socket, req.request_count);
         return PROCESSED_INTERNALLY;
     });
 
@@ -210,7 +228,8 @@ int main(int argc, char **argv)
     {
         networkutil.run(DEFAULT_HTTP_SERVER_PORT, DEFAULT_HTTPS_SERVER_PORT,
                         BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS, IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH,
-                        DEFAULT_CERT_PATH, DEFAULT_KEY_PATH, DEFAULT_PRINT_LISTEN_INFO);
+                        DEFAULT_CERT_PATH, DEFAULT_KEY_PATH, ENABLE_PRINT_LISTEN_INFO, DEFAULT_TIMEOUT_MS,
+                        DEFAULT_MAX_REQUEST_COUNT);
     }
     catch (const std::exception &e)
     {

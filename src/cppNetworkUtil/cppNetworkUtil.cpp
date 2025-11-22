@@ -1,0 +1,209 @@
+#include "cppNetworkUtil.h"
+#include "cppNetworkUtilPimpl.h" // 这里包含实现类的定义
+
+#include "defines.h"
+#include "log.h"
+
+requestContext cppNetworkUtil::getClientConnectionsInfo(SOCKET client_socket, int request_count)
+{
+    return requestContext{pimpl_->client_connections[client_socket][request_count].client_socket,
+                          request_count,
+                          pimpl_->client_connections[client_socket][request_count].is_https_connection,
+                          pimpl_->client_connections[client_socket][request_count].is_keep_alive_connection,
+                          pimpl_->client_connections[client_socket][request_count].ip,
+                          pimpl_->client_connections[client_socket][request_count].port,
+                          pimpl_->client_connections[client_socket][request_count].family,
+                          pimpl_->client_connections[client_socket][request_count].request_data,
+                          pimpl_->client_connections[client_socket][request_count].request_header,
+                          pimpl_->client_connections[client_socket][request_count].request_content};
+}
+
+bool cppNetworkUtil::isLocalIpAddress(const std::string &ip_str)
+{
+    return pimpl_->isLocalIpAddress_Pimpl(ip_str);
+}
+
+std::unordered_map<std::string, std::string> cppNetworkUtil::getParsedHeader(const std::string &header)
+{
+    return pimpl_->getParsedHeader_Pimpl(header);
+}
+
+std::string cppNetworkUtil::getHeaderValue(const std::string &headers, const std::string &key)
+{
+    return pimpl_->getHeaderValue_Pimpl(headers, key);
+}
+
+int cppNetworkUtil::getContentSize(const std::string buffer)
+{
+    return pimpl_->getContentSize_Pimpl(buffer);
+}
+
+int cppNetworkUtil::getPostContentSize(const std::string &buffer)
+{
+    return pimpl_->getPostContentSize_Pimpl(buffer);
+}
+
+std::string cppNetworkUtil::getPostContentType(const std::string &buffer)
+{
+    return pimpl_->getPostContentType_Pimpl(buffer);
+}
+
+std::string cppNetworkUtil::getPostContentBoundary(const std::string &buffer)
+{
+    return pimpl_->getPostContentBoundary_Pimpl(buffer);
+}
+
+std::string cppNetworkUtil::getPostContentBody(const std::string buffer)
+{
+    return pimpl_->getPostContentBody_Pimpl(buffer);
+}
+
+std::optional<std::string> cppNetworkUtil::getHttpCodeText(int status_code)
+{
+    return pimpl_->getHttpCodeText_Pimpl(status_code);
+}
+
+std::optional<std::string> cppNetworkUtil::getMimeType(const std::string &file_extension)
+{
+    return pimpl_->getMimeType_Pimpl(file_extension);
+}
+
+std::string cppNetworkUtil::makeResponseHeader(int status_code, std::unordered_map<std::string, std::string> parameters)
+{
+    return pimpl_->makeResponseHeader_Pimpl(status_code, parameters);
+}
+
+std::string cppNetworkUtil::makeRequestHeader(std::unordered_map<std::string, std::string> parameters)
+{
+    return pimpl_->makeRequestHeader_Pimpl(parameters);
+}
+
+std::string cppNetworkUtil::urlDecode(const std::string &encodedString)
+{
+    return pimpl_->urlDecode_Pimpl(encodedString);
+}
+
+std::unordered_map<std::string, std::string> cppNetworkUtil::parseUrlEncodedFormBody(const std::string &encoded_string)
+{
+    return pimpl_->parseUrlEncodedFormBody_Pimpl(encoded_string);
+}
+
+std::vector<std::string> cppNetworkUtil::cutUrlPath(std::string path)
+{
+    return pimpl_->cutUrlPath_Pimpl(path);
+}
+
+std::unordered_map<std::string, std::string> cppNetworkUtil::parseUrlQueryParameters(const std::string &url)
+{
+    return pimpl_->parseUrlQueryParameters_Pimpl(url);
+}
+
+std::unordered_map<std::string, multipartData> cppNetworkUtil::parseMultipart(const std::string &boundary,
+                                                                              const std::string &body)
+{
+    return pimpl_->parseMultipart_Pimpl(boundary, body);
+}
+
+void cppNetworkUtil::sendDataToHttpSocket(SOCKET socket, const std::string data)
+{
+    pimpl_->sendDataToHttpSocket_Pimpl(socket, data);
+}
+
+void cppNetworkUtil::sendDataToHttpsSocket(SOCKET socket, int request_count, const std::string data)
+{
+    pimpl_->sendDataToHttpsSocket_Pimpl(socket, request_count, data);
+}
+
+void cppNetworkUtil::sendDataToSocket(SOCKET socket, int request_count, const std::string &data)
+{
+    pimpl_->sendDataToSocket_Pimpl(socket, request_count, data);
+}
+
+void cppNetworkUtil::sendDataChunkToSocket(SOCKET socket, int request_count, const std::string &data)
+{
+    pimpl_->sendDataChunkToSocket_Pimpl(socket, request_count, data);
+}
+
+void cppNetworkUtil::beginDataChunkStreamTransfer(responseContext &res)
+{
+    res.response_headers["Transfer-Encoding"] = "chunked";
+}
+
+void cppNetworkUtil::endDataChunkStreamTransfer(SOCKET socket, int request_count)
+{
+    pimpl_->sendDataToSocket_Pimpl(socket, request_count, "0\r\n\r\n"); // End of chunked transfer
+}
+
+void cppNetworkUtil::sendDataToHttpHost(const std::string &host, const std::string &path, int port,
+                                        const std::unordered_map<std::string, std::string> &request_header,
+                                        std::string &header, std::string &content)
+{
+    pimpl_->sendDataToHttpHost_Pimpl(host, path, port, request_header, header, content);
+}
+
+void cppNetworkUtil::sendDataToHttpsHost(const std::string &host, const std::string &path, int port,
+                                         const std::unordered_map<std::string, std::string> &request_header,
+                                         std::string &header, std::string &content, bool enable_CA)
+{
+    pimpl_->sendDataToHttpsHost_Pimpl(host, path, port, request_header, header, content, enable_CA);
+}
+
+void cppNetworkUtil::decodeChunkedResponse(std::string &current_chunk_buffer, std::string &content,
+                                           std::function<int(char *, int)> read_func)
+{
+    pimpl_->decodeChunkedResponse_Pimpl(current_chunk_buffer, content, read_func);
+}
+
+cppNetworkUtil::cppNetworkUtil() : pimpl_(std::make_unique<cppNetworkUtilPimpl>())
+{
+}
+
+cppNetworkUtil::~cppNetworkUtil() = default; // unique_ptr 会自动管理内存
+
+void cppNetworkUtil::run(int http_port, int https_port, int behavior_mode, int ip_protocol_mode, std::string cert_path,
+                         std::string key_path, bool print_listen_info, std::uint32_t timeout, int max_request_count)
+{
+    pimpl_->run_Pimpl(http_port, https_port, behavior_mode, ip_protocol_mode, cert_path, key_path, print_listen_info,
+                      timeout, max_request_count);
+}
+
+void cppNetworkUtil::print_opensslVersion()
+{
+    pimpl_->print_opensslVersion_Pimpl();
+}
+
+void cppNetworkUtil::print_cppNetworkUtilVersion()
+{
+    pimpl_->print_cppNetworkUtilVersion_Pimpl();
+}
+
+void cppNetworkUtil::on(const std::string &method, const int &status_code, const std::string &path_pattern,
+                        const routeHandler &handler)
+{
+    pimpl_->on_Pimpl(method, status_code, path_pattern, std::move(handler));
+}
+
+void cppNetworkUtil::on(const std::string &method, const std::string &path_pattern, const routeHandler &handler)
+{
+    pimpl_->on_Pimpl(method, 200, path_pattern, std::move(handler));
+}
+
+void cppNetworkUtil::on(const std::string &method, const int &status_code, const routeHandler &handler)
+{
+    pimpl_->on_Pimpl(method, status_code, "^/.*", std::move(handler));
+}
+
+void cppNetworkUtil::off(const std::string &method, const int &status_code, const std::string &path_pattern)
+{
+    pimpl_->off_Pimpl(method, status_code, path_pattern);
+}
+
+void cppNetworkUtil::off(const std::string &method, const std::string &path_pattern)
+{
+    pimpl_->off_Pimpl(method, 200, path_pattern);
+}
+
+void cppNetworkUtil::off(const std::string &method, const int &status_code)
+{
+    pimpl_->off_Pimpl(method, status_code, "^/.*");
+}

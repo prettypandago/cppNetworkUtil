@@ -33,9 +33,9 @@ endif()
 
 # --- 定义并构建静态链接库 cppNetworkUtilLib ---
 set(network_lib_sources
-      src/cppNetworkUtil.cpp
-      src/cppNetworkUtilPimpl.cpp
-      src/threadPool.cpp
+      src/cppNetworkUtil/cppNetworkUtil.cpp
+      src/cppNetworkUtil/cppNetworkUtilPimpl.cpp
+      src/cppNetworkUtil/threadPool.cpp
 )
 
 # 创建名为 cppNetworkUtilLib 的静态库

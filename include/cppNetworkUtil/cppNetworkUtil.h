@@ -64,10 +64,11 @@ class cppNetworkUtil
      * @brief Get the client connection info
      *
      * @param client_socket (SOCKET) Client socket
+     * @param request_count (int) Request count
      *
      * @return Client connection info
      */
-    requestContext getClientConnectionsInfo(SOCKET client_socket);
+    requestContext getClientConnectionsInfo(SOCKET client_socket, int request_count);
 
     /**
      * @brief Determine whether a given IP address (IPv4 or IPv6) is a local area network (LAN) (private) address.
@@ -292,25 +293,28 @@ class cppNetworkUtil
      * @brief Send data to the socket using HTTPS protocol
      *
      * @param data (const std::string) Data to be sent
+     * @param reuqest_count (int) The request count for the current connection
      * @param ssl (SSL *) SSL structure for sending data
      */
-    void sendDataToHttpsSocket(SOCKET socket, const std::string data);
+    void sendDataToHttpsSocket(SOCKET socket, int request_count, const std::string data);
 
     /**
      * @brief Send data to the socket (auto select HTTP or HTTPS)
      *
      * @param socket (SOCKET) The socket to send data to
+     * @param reuqest_count (int) The request count for the current connection
      * @param data (const std::string &) Data to be sent
      */
-    void sendDataToSocket(SOCKET socket, const std::string &data);
+    void sendDataToSocket(SOCKET socket, int request_count, const std::string &data);
 
     /**
      * @brief Send data to the socket in chunks
      *
      * @param socket (SOCKET) The socket to send data to
+     * @param reuqest_count (int) The request count for the current connection
      * @param data (const std::string &) Data to be sent
      */
-    void sendDataChunkToSocket(SOCKET socket, const std::string &data);
+    void sendDataChunkToSocket(SOCKET socket, int request_count, const std::string &data);
 
     /**
      * @brief Begin data chunk stream transfer by setting the appropriate header
@@ -323,8 +327,9 @@ class cppNetworkUtil
      * @brief End data chunk stream transfer by sending the terminating chunk
      *
      * @param socket (SOCKET) The socket to send the terminating chunk to
+     * @param reuqest_count (int) The request count for the current connection
      */
-    void endDataChunkStreamTransfer(SOCKET socket);
+    void endDataChunkStreamTransfer(SOCKET socket, int request_count);
 
     /**
      * @brief Send data to the host using HTTP protocol
@@ -416,6 +421,8 @@ class cppNetworkUtil
      * @param cert_path (std::string) The path to the SSL certificate file
      * @param key_path (std::string) The path to the SSL private key file
      * @param print_listen_info (bool) Whether to print listen info
+     * @param timeout (std::uint32_t) The timeout duration in milliseconds for socket operations
+     * @param max_request_count (int) The maximum number of requests to handle for keep-alive connections
      *
      * @throw WSAStartup failed
      * @throw At least one port must be enabled
@@ -428,7 +435,8 @@ class cppNetworkUtil
     void run(int http_port = DEFAULT_HTTP_SERVER_PORT, int https_port = DEFAULT_HTTPS_SERVER_PORT,
              int behavior_mode = BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS,
              int ip_protocol_mode = IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH, std::string cert_path = DEFAULT_CERT_PATH,
-             std::string key_path = DEFAULT_KEY_PATH, bool print_listen_info = DEFAULT_PRINT_LISTEN_INFO);
+             std::string key_path = DEFAULT_KEY_PATH, bool print_listen_info = ENABLE_PRINT_LISTEN_INFO,
+             std::uint32_t timeout = DEFAULT_TIMEOUT_MS, int max_request_count = DEFAULT_MAX_REQUEST_COUNT);
 
     /**
      * @brief Print the openSSL version

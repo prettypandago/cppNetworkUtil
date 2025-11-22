@@ -1,32 +1,32 @@
 #pragma once
 
-#include <iostream>
-#include <thread>
-#include <vector>
-#include <queue>
-#include <mutex>
 #include <condition_variable>
-#include <future>
 #include <functional>
-#include <stdexcept> // 添加此头文件，因为你在构造函数中使用了 std::invalid_argument
+#include <future>
+#include <iostream>
+#include <mutex>
+#include <queue>
+#include <stdexcept>
+#include <thread>
+#include <type_traits> // 用于 std::result_of 替代
+#include <vector>
 
 class threadPool
 {
-public:
+  public:
     // 构造函数：初始化线程池，创建指定数量的工作线程
     explicit threadPool(size_t numThreads);
 
     // 提交任务到线程池
-    // 任务可以是任何可调用对象（函数、lambda、函数指针等）
-    // 返回一个 std::future，用于获取任务的返回值
+    // 使用 std::invoke_result_t 替代 C++11/14 的 std::result_of
     template <class F, class... Args>
-    auto enqueue(F &&f, Args &&...args) -> std::future<typename std::result_of<F(Args...)>::type>;
+    auto enqueue(F &&f, Args &&...args) -> std::future<std::invoke_result_t<F, Args...>>;
 
     // 析构函数：在线程池对象销毁时，停止所有工作线程并等待它们完成
     ~threadPool();
 
-private:
-    // 禁止拷贝构造和拷贝赋值，因为线程池管理资源（线程）不适合拷贝
+  private:
+    // 禁止拷贝构造和拷贝赋值
     threadPool(const threadPool &) = delete;
     threadPool &operator=(const threadPool &) = delete;
 
@@ -39,12 +39,13 @@ private:
 };
 
 template <class F, class... Args>
-inline auto threadPool::enqueue(F &&f, Args &&...args) -> std::future<typename std::result_of<F(Args...)>::type>
+inline auto threadPool::enqueue(F &&f, Args &&...args) -> std::future<std::invoke_result_t<F, Args...>>
 {
-    using return_type = typename std::result_of<F(Args...)>::type;
+    using return_type = std::invoke_result_t<F, Args...>;
 
-    auto task = std::make_shared<std::packaged_task<return_type()>>(
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+    // C++17 替代方案：将函数包装在 std::packaged_task 中
+    auto task =
+        std::make_shared<std::packaged_task<return_type()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
     std::future<return_type> res = task->get_future();
 
@@ -54,8 +55,7 @@ inline auto threadPool::enqueue(F &&f, Args &&...args) -> std::future<typename s
         {
             throw std::runtime_error("enqueue on stopped threadPool");
         }
-        tasks.emplace([task]()
-                      { (*task)(); });
+        tasks.emplace([task]() { (*task)(); });
     }
     condition.notify_one();
     return res;

@@ -28,7 +28,10 @@
 #define IP_PROTOCOL_MODE_IPV4_AND_IPV6_BOTH 2           // ENABLE IP PROTOCOL IPV4 AND IPV6 BOTH
 #define DEFAULT_CERT_PATH "server.crt"                  // Default public key path
 #define DEFAULT_KEY_PATH "server.key"                   // Default private key path
-#define DEFAULT_PRINT_LISTEN_INFO true                  // Default print listen info
+#define ENABLE_PRINT_LISTEN_INFO true                   // Enable print listen info
+#define DISABLE_PRINT_LISTEN_INFO false                 // Disable print listen info
+#define DEFAULT_TIMEOUT_MS 100000                       // Default timeout in milliseconds
+#define DEFAULT_MAX_REQUEST_COUNT 2500                  // Default max request count for keep-alive connections
 #define DISABLE_HTTP_REQUEST -1                         // DISABLE HTTP REQUEST
 #define DISABLE_HTTPS_REQUEST -1                        // DISABLE HTTPS REQUEST
 #define CONTINUE_HANDLING 0                             // Continue handling (e.g., for error handling)
@@ -41,7 +44,9 @@
 struct requestContext
 {
     SOCKET client_socket;
+    int request_count;
     bool is_https_connection;
+    bool is_keep_alive_connection;
     std::string ip;
     int port;
     std::string family;
