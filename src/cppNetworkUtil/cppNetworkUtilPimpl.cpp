@@ -1761,6 +1761,9 @@ void cppNetworkUtilPimpl::acceptScocket_Pimpl(SOCKET server_socket, bool enable_
             }
         }
 
+        // 设置超时
+        setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
+
         // 将处理函数添加到线程池中
         process_threadpool.enqueue([this, client_socket, client_address, ssl_conn, enable_https, http_port, https_port,
                                     behavior_mode, timeout, max_request_count]() {
@@ -1774,13 +1777,20 @@ void cppNetworkUtilPimpl::process(SOCKET client_socket, struct sockaddr_storage 
                                   bool enable_https, int http_port, int https_port, int behavior_mode,
                                   std::uint32_t timeout, int max_request_count)
 {
-
-    // 设置超时
-    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
-
     std::string client_buffer = ""; // 持久化缓冲区
     bool keep_running = true;
     int current_request_count = 0;
+
+    // 用于跟踪并发处理的请求数量与同步（最小改动，不引入类级别同步）
+    std::mutex local_mutex;
+    std::condition_variable local_cv;
+    int inflight = 0;
+
+    // 使用提供的 threadPool 替代直接 std::thread 创建
+    unsigned int pool_threads = std::thread::hardware_concurrency();
+    if (pool_threads == 0)
+        pool_threads = 1;
+    threadPool request_threadpool(pool_threads);
 
     while (keep_running)
     {
@@ -1867,12 +1877,53 @@ void cppNetworkUtilPimpl::process(SOCKET client_socket, struct sockaddr_storage 
         if (!body_read_success)
         {
             log_e("Failed to read Body from client socket %d\n", client_socket);
+            keep_running = false;
             break;
         }
 
         if (is_keep_alive_connection)
         {
             current_request_count++;
+        }
+
+        if (!enable_https && behavior_mode == BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS &&
+            https_port != DISABLE_HTTPS_REQUEST)
+        {
+            std::string Location;
+            Location += "https://";
+            Location += parsed_header["Host"];
+            Location += parsed_header["url"];
+            if (https_port != 443)
+            {
+                Location += ":";
+                Location += std::to_string(https_port);
+            }
+            // 设置 Connection 头部
+            if (is_keep_alive_connection && current_request_count < max_request_count)
+            {
+                // 情况 A: 客户端想保持，且没到限制 -> 保持
+
+                sendDataToHttpSocket_Pimpl(
+                    client_socket,
+                    makeResponseHeader_Pimpl(
+                        301, {{"Content-Length", "0"},
+                              {"connection", "keep-alive"},
+                              {"Keep-Alive", "timeout=" + std::to_string(timeout / 1000) +
+                                                 ", max=" + std::to_string(max_request_count - current_request_count)},
+                              {"Location", Location}}));
+            }
+            else
+            {
+                // 情况 B: 客户端想关，或者已经到了限制 -> 关闭
+                sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(301, {{"Content-Length", "0"},
+                                                                                         {"connection", "close"},
+                                                                                         {"Location", Location}}));
+
+                // 标记循环结束 (发完这个响应后就退出去)
+                keep_running = false;
+            }
+            closesocket(client_socket);
+            return;
         }
 
         if (enable_https)
@@ -1925,28 +1976,7 @@ void cppNetworkUtilPimpl::process(SOCKET client_socket, struct sockaddr_storage 
             client_connections[client_socket][current_request_count].parsed_request_headers["url"] = url;
         }
 
-        if (!enable_https && behavior_mode == BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS &&
-            https_port != DISABLE_HTTPS_REQUEST)
-        {
-            std::string Location;
-            Location += "https://";
-            Location += parsed_header["Host"];
-            Location += parsed_header["url"];
-            if (https_port != 443)
-            {
-                Location += ":";
-                Location += std::to_string(https_port);
-            }
-            // log_d("Location=%s\n", Location.data());
-            // std::cout << "Location=" << Location << "\n";
-            sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(301, {{"Content-Length", "0"},
-                                                                                     {"connection", "keep-alive"},
-                                                                                     {"Location", Location}}));
-            closesocket(client_socket);
-            return;
-        }
-
-        // --- 步骤 3: 业务处理 ---
+        // --- 步骤 3: 业务处理
         requestContext req;
         req.client_socket = client_socket;
         req.request_count = current_request_count;
@@ -1961,54 +1991,126 @@ void cppNetworkUtilPimpl::process(SOCKET client_socket, struct sockaddr_storage 
         req.parsed_request_headers = client_connections[client_socket][current_request_count].parsed_request_headers;
         req.query_params = client_connections[client_socket][current_request_count].query_params;
 
-        std::optional<responseContext> res = handleRequest_Pimpl(req);
-        if (res.has_value())
+        // 增加并发计数
         {
-            // 自动设置 Connection 头部和 Content-Length 头部
-            if (is_keep_alive_connection && current_request_count < max_request_count)
-            {
-                // 情况 A: 客户端想保持，且没到限制 -> 保持
-                res.value().response_headers["connection"] = "keep-alive";
-
-                // (可选) 告诉客户端还能发多少次。
-                // 格式: Keep-Alive: timeout=5, max=99
-                res.value().response_headers["Keep-Alive"] =
-                    "Keep-Alive: timeout=" + std::to_string(timeout / 1000) +
-                    ", max=" + std::to_string(max_request_count - current_request_count);
-            }
-            else
-            {
-                // 情况 B: 客户端想关，或者已经到了限制 -> 关闭
-                res.value().response_headers["connection"] = "close";
-
-                // 标记循环结束 (发完这个响应后就退出去)
-                keep_running = false;
-            }
-            res.value().response_headers["Content-Length"] = std::to_string(res.value().response_content.size());
-
-            // send data to client
-            sendDataToSocket_Pimpl(client_socket, current_request_count,
-                                   makeResponseHeader_Pimpl(res.value().status_code, res.value().response_headers));
-            sendDataToSocket_Pimpl(client_socket, current_request_count, res.value().response_content);
+            std::lock_guard<std::mutex> lk(local_mutex);
+            inflight++;
         }
 
-        // 释放内存
-        auto it_outer = client_connections.find(client_socket);
-        if (it_outer != client_connections.end())
+        // 使用 threadPool 提交任务，处理完成后负责发送响应与清理该 request 的 client_connections 项
+        try
         {
-            // 1. 获取内层 map 的引用
-            std::unordered_map<int, clientConnectionInfo_Pimpl> &inner_map = it_outer->second;
+            request_threadpool.enqueue([this, req, is_keep_alive_connection, current_request_count, timeout,
+                                        max_request_count, client_socket, &local_mutex, &local_cv,
+                                        &inflight]() mutable {
+                try
+                {
+                    std::optional<responseContext> res = handleRequest_Pimpl(req);
+                    if (res.has_value())
+                    {
+                        // 自动设置 Connection 头部和 Content-Length 头部
+                        if (is_keep_alive_connection && current_request_count < max_request_count)
+                        {
+                            // 情况 A: 客户端想保持，且没到限制 -> 保持
+                            res.value().response_headers["connection"] = "keep-alive";
 
-            // 2. 删除目标元素
-            inner_map.erase(current_request_count);
+                            // (可选) 告诉客户端还能发多少次。
+                            // 格式: Keep-Alive: timeout=5, max=99
+                            res.value().response_headers["Keep-Alive"] =
+                                "timeout=" + std::to_string(timeout / 1000) +
+                                ", max=" + std::to_string(max_request_count - current_request_count);
+                        }
+                        else
+                        {
+                            // 情况 B: 客户端想关，或者已经到了限制 -> 关闭
+                            res.value().response_headers["connection"] = "close";
+                        }
+                        res.value().response_headers["Content-Length"] =
+                            std::to_string(res.value().response_content.size());
 
-            // 3. 检查内层 map 是否为空
-            // 如果删完之后，内层 map 里没东西了，就把外层也释放掉
-            if (inner_map.empty())
-            {
-                client_connections.erase(it_outer);
-            }
+                        // send data to client
+                        sendDataToSocket_Pimpl(
+                            client_socket, current_request_count,
+                            makeResponseHeader_Pimpl(res.value().status_code, res.value().response_headers));
+                        sendDataToSocket_Pimpl(client_socket, current_request_count, res.value().response_content);
+                    }
+                }
+                catch (const std::exception &e)
+                {
+                    log_e("Worker thread exception: %s\n", e.what());
+                }
+                catch (...)
+                {
+                    log_e("Worker thread unknown exception\n");
+                }
+
+                // 清理当前 request 的 client_connections 项
+                {
+                    std::lock_guard<std::mutex> lk(local_mutex);
+                    auto it_outer = client_connections.find(client_socket);
+                    if (it_outer != client_connections.end())
+                    {
+                        it_outer->second.erase(current_request_count);
+                        if (it_outer->second.empty())
+                        {
+                            client_connections.erase(it_outer);
+                        }
+                    }
+                    inflight--;
+                }
+                local_cv.notify_one();
+            });
         }
+        catch (const std::exception &e)
+        {
+            log_e("Failed to enqueue task to threadPool: %s\n", e.what());
+            // 如果无法入队，回退为直接在当前线程处理（为了保证不会丢请求）
+            try
+            {
+                std::optional<responseContext> res = handleRequest_Pimpl(req);
+                if (res.has_value())
+                {
+                    if (is_keep_alive_connection && current_request_count < max_request_count)
+                    {
+                        res.value().response_headers["connection"] = "keep-alive";
+                        res.value().response_headers["Keep-Alive"] =
+                            "timeout=" + std::to_string(timeout / 1000) +
+                            ", max=" + std::to_string(max_request_count - current_request_count);
+                    }
+                    else
+                    {
+                        res.value().response_headers["connection"] = "close";
+                    }
+                    res.value().response_headers["Content-Length"] =
+                        std::to_string(res.value().response_content.size());
+
+                    sendDataToSocket_Pimpl(
+                        client_socket, current_request_count,
+                        makeResponseHeader_Pimpl(res.value().status_code, res.value().response_headers));
+                    sendDataToSocket_Pimpl(client_socket, current_request_count, res.value().response_content);
+                }
+            }
+            catch (...)
+            {
+            }
+            // 清理项
+            {
+                std::lock_guard<std::mutex> lk(local_mutex);
+                auto it_outer = client_connections.find(client_socket);
+                if (it_outer != client_connections.end())
+                {
+                    it_outer->second.erase(current_request_count);
+                    if (it_outer->second.empty())
+                    {
+                        client_connections.erase(it_outer);
+                    }
+                }
+                inflight--;
+            }
+            local_cv.notify_one();
+        }
+
+        // 不在这里删除当前 request 的 client_connections 项（交由处理线程清理）
 
         if (!(is_keep_alive_connection && current_request_count < max_request_count))
         {
@@ -2017,14 +2119,23 @@ void cppNetworkUtilPimpl::process(SOCKET client_socket, struct sockaddr_storage 
         }
     }
 
+    // 等待所有并发处理的请求完成，再关闭连接/释放 SSL
+    {
+        std::unique_lock<std::mutex> lk(local_mutex);
+        local_cv.wait(lk, [&inflight]() { return inflight == 0; });
+    }
+
     if (enable_https)
     {
-        SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
-        SSL_free(ssl_conn);     // 释放 SSL 结构
+        if (ssl_conn)
+        {
+            SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
+            SSL_free(ssl_conn);     // 释放 SSL 结构
+        }
     }
     closesocket(client_socket); // 关闭套接字
 
-    // 释放内存
+    // 释放内存（确保所有 request 项已被 worker 清理）
     client_connections.erase(client_socket);
 }
 
