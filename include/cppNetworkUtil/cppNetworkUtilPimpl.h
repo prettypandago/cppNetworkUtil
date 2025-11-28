@@ -668,6 +668,8 @@ class cppNetworkUtilPimpl
     ssl_ctx_st *ssl_ctx_client; // 客户端 SSL 上下文
     ssl_st *ssl;                // 使用 BIO 方式进行网络操作
 
+    std::mutex client_connections_mutex;
+
     /**
      * @brief Ensure that the buffer contains data up to the specified target size.
      *

@@ -118,73 +118,92 @@ bool cppNetworkUtilPimpl::isLocalIpAddress_Pimpl(const std::string &ip_str)
 std::unordered_map<std::string, std::string> cppNetworkUtilPimpl::getParsedHeader_Pimpl(const std::string &header)
 {
     std::unordered_map<std::string, std::string> parsed_header;
+    parsed_header.reserve(16);
 
-    // 查找第一个空格，它将 Method 与 URL 分开。
-    size_t frist_space_pos = header.find(' ');
-    if (frist_space_pos == std::string::npos)
-    {
-        // 如果没有找到空格，说明请求行格式不正确
+    // 1) 请求行解析：Method URL HTTP-Version
+    size_t pos = 0;
+    size_t first_space = header.find(' ', pos);
+    if (first_space == std::string::npos)
         throw std::runtime_error("Invalid request line: No space found after method");
-    }
 
-    // 提取 Method
-    // 从字符串开头到第一个空格的位置就是 Method
-    parsed_header["method"] = header.substr(0, frist_space_pos);
+    parsed_header["method"] = header.substr(0, first_space);
 
-    // 查找第二个空格，它将 URL 与 PROTOCOL 分开。
-    size_t second_space_pos = header.find(' ', frist_space_pos + 1);
-    if (second_space_pos == std::string::npos)
-    {
-        // 如果没有找到空格，说明请求行格式不正确
+    size_t second_space = header.find(' ', first_space + 1);
+    if (second_space == std::string::npos)
         throw std::runtime_error("Invalid request line: No space found after url");
-    }
 
-    // 取 URL
-    // 从字符串第一个空格到第二个空格的位置就是 URL
-    // 注意: substr的第二个参数是长度, 在这里踩坑了
-    parsed_header["url"] = header.substr(frist_space_pos + 1, second_space_pos - frist_space_pos - 1);
+    parsed_header["url"] = header.substr(first_space + 1, second_space - first_space - 1);
 
-    // 提取 HTTP 版本
-    // 从第二个空格到行尾（或\r\n）为 HTTP 版本
-    size_t line_end_pos = header.find("\r\n", second_space_pos + 1);
-    if (line_end_pos == std::string::npos)
+    size_t line_end = header.find("\r\n", second_space + 1);
+    if (line_end == std::string::npos)
+        throw std::runtime_error("Invalid request line: No \\r\\n found after http version");
+
+    parsed_header["http_version"] = header.substr(second_space + 1, line_end - second_space - 1);
+
+    // 2) 头部字段解析（从请求行后的 CRLF 开始）
+    size_t headers_start = line_end + 2; // 跳过请求行的 "\r\n"
+    size_t headers_end = header.find("\r\n\r\n", headers_start);
+    if (headers_end == std::string::npos)
+        headers_end = header.length();
+
+    size_t cur = headers_start;
+    while (cur < headers_end)
     {
-        throw std::runtime_error("Invalid request line: No \r\n found after http version");
-    }
-    parsed_header["http_version"] = header.substr(second_space_pos + 1, line_end_pos - second_space_pos - 1);
+        // 找到下一行的结束（以 '\n' 为界），兼容 "\r\n" 与 "\n"
+        size_t next_n = header.find('\n', cur);
+        size_t line_end_pos = (next_n == std::string::npos || next_n > headers_end) ? headers_end : next_n;
 
-    // 解析剩余的请求头字段
-    size_t headers_start = header.find("\r\n");
-    if (headers_start != std::string::npos)
-    {
-        headers_start += 2; // 跳过请求行后的 "\r\n"
-        size_t headers_end = header.find("\r\n\r\n", headers_start);
-        if (headers_end == std::string::npos)
-            headers_end = header.length();
+        // 计算行的起止索引
+        size_t line_start = cur;
+        size_t line_len = (line_end_pos > line_start) ? (line_end_pos - line_start) : 0;
 
-        std::string headers_section = header.substr(headers_start, headers_end - headers_start);
-        std::istringstream stream(headers_section);
-        std::string line;
-        while (std::getline(stream, line))
+        // 跳过空行
+        if (line_len == 0)
         {
-            // 移除行尾的 '\r'
-            if (!line.empty() && line.back() == '\r')
-                line.pop_back();
-            size_t colon_pos = line.find(':');
-            if (colon_pos != std::string::npos)
+            cur = (line_end_pos == headers_end) ? headers_end : (line_end_pos + 1);
+            continue;
+        }
+
+        // 去掉行尾可能的 '\r'
+        size_t real_end = line_start + line_len;
+        if (real_end > line_start && header[real_end - 1] == '\r')
+            --real_end;
+
+        // 查找冒号分隔 key:value
+        size_t colon = header.find(':', line_start);
+        if (colon != std::string::npos && colon < real_end)
+        {
+            // key = [line_start, colon)
+            size_t key_first = line_start;
+            size_t key_last = colon; // exclusive
+
+            // trim key (前后空白)
+            while (key_first < key_last && (header[key_first] == ' ' || header[key_first] == '\t'))
+                ++key_first;
+            while (key_last > key_first && (header[key_last - 1] == ' ' || header[key_last - 1] == '\t'))
+                --key_last;
+
+            // value = (colon+1) .. real_end
+            size_t value_first = colon + 1;
+            size_t value_last = real_end; // exclusive
+
+            // trim value (前后空白)
+            while (value_first < value_last && (header[value_first] == ' ' || header[value_first] == '\t'))
+                ++value_first;
+            while (value_last > value_first && (header[value_last - 1] == ' ' || header[value_last - 1] == '\t'))
+                --value_last;
+
+            if (key_first < key_last)
             {
-                std::string key = line.substr(0, colon_pos);
-                std::string value = line.substr(colon_pos + 1);
-                // 去除 value 前后的空白
-                size_t first = value.find_first_not_of(" \t");
-                size_t last = value.find_last_not_of(" \t");
-                if (first != std::string::npos && last != std::string::npos)
-                    value = value.substr(first, last - first + 1);
-                else
-                    value = "";
-                parsed_header[key] = value;
+                std::string key = header.substr(key_first, key_last - key_first);
+                std::string value =
+                    (value_first < value_last) ? header.substr(value_first, value_last - value_first) : std::string();
+                parsed_header.emplace(std::move(key), std::move(value));
             }
         }
+
+        // 移动到下一行（跳过 '\n'）
+        cur = (line_end_pos == headers_end) ? headers_end : (line_end_pos + 1);
     }
 
     return parsed_header;
@@ -709,23 +728,91 @@ std::unordered_map<std::string, std::string> cppNetworkUtilPimpl::parseUrlQueryP
     if (question_pos == std::string::npos || question_pos + 1 >= url.length())
         return params;
 
-    std::string query = url.substr(question_pos + 1);
-    std::stringstream ss(query);
-    std::string pair;
-    while (std::getline(ss, pair, '&'))
+    // Use string_view to avoid intermediate substring allocations
+    std::string_view query(url.data() + question_pos + 1, url.size() - question_pos - 1);
+
+    // Quick estimate for reserving map buckets
+    size_t pair_count = 1;
+    for (char c : query)
+        if (c == '&')
+            ++pair_count;
+    params.reserve(pair_count * 2);
+
+    // fast hex digit -> value
+    auto hex_val = [](char c) -> int {
+        if (c >= '0' && c <= '9')
+            return c - '0';
+        if (c >= 'A' && c <= 'F')
+            return 10 + (c - 'A');
+        if (c >= 'a' && c <= 'f')
+            return 10 + (c - 'a');
+        return -1;
+    };
+
+    // decode percent-encoding from a string_view into a std::string
+    auto decode_sv = [&](std::string_view sv) -> std::string {
+        std::string out;
+        out.reserve(sv.size());
+        for (size_t i = 0; i < sv.size(); ++i)
+        {
+            char ch = sv[i];
+            if (ch == '+')
+            {
+                out.push_back(' ');
+            }
+            else if (ch == '%' && i + 2 < sv.size())
+            {
+                int hi = hex_val(sv[i + 1]);
+                int lo = hex_val(sv[i + 2]);
+                if (hi >= 0 && lo >= 0)
+                {
+                    out.push_back(static_cast<char>((hi << 4) | lo));
+                    i += 2;
+                }
+                else
+                {
+                    // invalid percent-encoding, keep '%' literally
+                    out.push_back('%');
+                }
+            }
+            else
+            {
+                out.push_back(ch);
+            }
+        }
+        return out;
+    };
+
+    size_t pos = 0;
+    while (pos < query.size())
     {
-        size_t eq_pos = pair.find('=');
-        if (eq_pos != std::string::npos)
+        size_t amp = query.find('&', pos);
+        size_t end = (amp == std::string_view::npos) ? query.size() : amp;
+
+        if (end == pos)
         {
-            std::string key = pair.substr(0, eq_pos);
-            std::string value = pair.substr(eq_pos + 1);
-            params[key] = urlDecode_Pimpl(value);
+            // empty pair, skip
+            pos = (amp == std::string_view::npos) ? query.size() : amp + 1;
+            continue;
         }
-        else if (!pair.empty())
+
+        size_t eq = query.find('=', pos);
+        if (eq == std::string_view::npos || eq > end)
         {
-            params[pair] = "";
+            // key only
+            std::string key = decode_sv(query.substr(pos, end - pos));
+            params.emplace(std::move(key), std::string());
         }
+        else
+        {
+            std::string key = decode_sv(query.substr(pos, eq - pos));
+            std::string value = decode_sv(query.substr(eq + 1, end - (eq + 1)));
+            params.emplace(std::move(key), std::move(value));
+        }
+
+        pos = (amp == std::string_view::npos) ? query.size() : amp + 1;
     }
+
     return params;
 }
 
@@ -733,161 +820,188 @@ std::unordered_map<std::string, std::string> cppNetworkUtilPimpl::parseUrlQueryP
 std::unordered_map<std::string, multipartData> cppNetworkUtilPimpl::parseMultipart_Pimpl(const std::string &boundary,
                                                                                          const std::string &body)
 {
-    std::unordered_map<std::string, multipartData> parsedParts; // 存储所有解析出的部分
-    std::string delimiter = "--" + boundary;                    // 每个部分的开始分隔符
-    std::string endDelimiter = delimiter + "--";                // 整个 multipart 结束的分隔符
-    size_t pos = 0;                                             // 当前在 body 字符串中的查找位置
+    std::unordered_map<std::string, multipartData> parsedParts;
+    if (boundary.empty() || body.empty())
+        return parsedParts;
 
-    // 跳过开头的空行，找到第一个有内容的位置
-    pos = body.find_first_not_of("\r\n");
-    if (pos == std::string::npos)
+    std::string_view sv(body);
+    // build an owning string for the delimiter and create a string_view that refers to it
+    std::string delim_str = std::string("--") + boundary;
+    std::string_view delim(delim_str);
+    size_t delim_len = delim.size();
+
+    size_t pos = sv.find(delim);
+    if (pos == std::string_view::npos)
+        return parsedParts;
+
+    // helper trims leading/trailing spaces/tabs
+    auto trim_sv = [](std::string_view v) -> std::string_view {
+        size_t a = 0;
+        while (a < v.size() && (v[a] == ' ' || v[a] == '\t'))
+            ++a;
+        size_t b = v.size();
+        while (b > a && (v[b - 1] == ' ' || v[b - 1] == '\t'))
+            --b;
+        return v.substr(a, b - a);
+    };
+
+    pos += delim_len;
+    while (true)
     {
-        return parsedParts; // 如果 body 全是空行或为空，则返回空向量
-    }
+        // Skip optional CRLF (start of part)
+        while (pos < sv.size() && (sv[pos] == '\r' || sv[pos] == '\n'))
+            ++pos;
 
-    // 循环查找每个数据部分
-    while ((pos = body.find(delimiter, pos)) != std::string::npos)
-    {
-        pos += delimiter.length(); // 跳过当前分隔符
+        // Check for final boundary marker "--" immediately after delimiter
+        if (pos + 2 <= sv.size() && sv.substr(pos, 2) == std::string_view("--"))
+            break;
 
-        // 检查是否是整个 multipart 数据的结束标记
-        if (pos + 2 <= body.length() && body.substr(pos, 2) == "--")
+        size_t next_delim = sv.find(delim, pos);
+        if (next_delim == std::string_view::npos)
+            break; // malformed or end
+
+        // Find headers end (CRLFCRLF or LFLF) but ensure it is before next_delim
+        size_t headers_end = sv.find("\r\n\r\n", pos);
+        size_t sep_len = 4;
+        if (headers_end == std::string_view::npos || headers_end > next_delim)
         {
-            break; // 找到结束标记，退出循环
+            headers_end = sv.find("\n\n", pos);
+            sep_len = 2;
+        }
+        if (headers_end == std::string_view::npos || headers_end > next_delim)
+        {
+            pos = next_delim;
+            continue; // skip malformed part
         }
 
-        // 找到下一个分隔符或结束标记的位置
-        size_t nextPos = body.find(delimiter, pos);
-        if (nextPos == std::string::npos)
-        {
-            nextPos = body.find(endDelimiter, pos);
-            if (nextPos == std::string::npos)
-            {
-                break; // 既没有找到下一个分隔符，也没有找到结束分隔符，数据格式异常
-            }
-        }
+        std::string_view headers_sv = sv.substr(pos, headers_end - pos);
+        size_t data_start = headers_end + sep_len;
+        size_t data_end = next_delim;
 
-        // 提取当前数据部分的原始字符串（包含头部和数据）
-        std::string part = body.substr(pos, nextPos - pos);
-
-        // 查找头部和数据之间的空行分隔符 (CRLFCRLF 或 LFLF)
-        size_t headersEnd = part.find("\r\n\r\n");
-        if (headersEnd == std::string::npos)
-        {
-            headersEnd = part.find("\n\n"); // 尝试 Unix 风格换行符
-        }
-        if (headersEnd == std::string::npos)
-        {
-            continue; // 如果没有找到头部和数据的分隔符，则跳过此部分
-        }
-
-        std::string headers = part.substr(0, headersEnd);
-        std::string headers_lower = headers;
-        transform(headers_lower.begin(), headers_lower.end(), headers_lower.begin(), ::toupper); // 提取头部字符串
-        std::string data = part.substr(
-            headersEnd + (part.find("\r\n\r\n") != std::string::npos ? 4 : 2)); // 提取数据字符串，跳过分隔符长度
+        // Trim trailing CRLF immediately before the delimiter
+        while (data_end > data_start && (sv[data_end - 1] == '\r' || sv[data_end - 1] == '\n'))
+            --data_end;
 
         std::string name;
+        multipartData partData;
 
-        // --- 提取 name 属性 ---
-        size_t namePos = headers.find("name=\"");
-        if (namePos != std::string::npos)
+        // Parse headers line by line to extract Content-Disposition (name, filename) and Content-Type
+        size_t line_pos = 0;
+        while (line_pos < headers_sv.size())
         {
-            namePos += 6; // 跳过 "name=\"" 的长度
-            size_t nameEnd = headers.find("\"", namePos);
-            if (nameEnd != std::string::npos)
+            // find end of line (CRLF or LF)
+            size_t line_end = headers_sv.find("\r\n", line_pos);
+            size_t line_sep_len = 2;
+            if (line_end == std::string_view::npos)
             {
-                name = headers.substr(namePos, nameEnd - namePos);
+                line_end = headers_sv.find('\n', line_pos);
+                line_sep_len = 1;
             }
-        }
-
-        // --- 提取 filename 属性 ---
-        size_t filenamePos = headers.find("filename=\"");
-        if (filenamePos != std::string::npos)
-        {
-            filenamePos += 10; // 跳过 "filename=\"" 的长度
-            size_t filenameEnd = headers.find("\"", filenamePos);
-            if (filenameEnd != std::string::npos)
+            if (line_end == std::string_view::npos)
             {
-                parsedParts[name].filename = headers.substr(filenamePos, filenameEnd - filenamePos);
-            }
-        }
-
-        // --- 提取 Content-Type 属性 ---
-        // 不区分大小写查找
-        size_t contentTypePos = headers_lower.find("content-type:");
-        if (contentTypePos != std::string::npos)
-        {
-            contentTypePos += 13; // 跳过 "content-type:" 的长度
-            size_t contentTypeEnd = headers_lower.find("\r\n", contentTypePos);
-            if (contentTypeEnd == std::string::npos)
-            {
-                contentTypeEnd = headers_lower.find("\n", contentTypePos); // 尝试 Unix 风格换行符
+                line_end = headers_sv.size();
+                line_sep_len = 0;
             }
 
-            if (contentTypeEnd != std::string::npos)
+            std::string_view line = headers_sv.substr(line_pos, line_end - line_pos);
+            // find colon
+            size_t colon = line.find(':');
+            if (colon != std::string_view::npos)
             {
-                // 提取 Content-Type 值，并去除前后的空白字符
-                std::string typeStr = headers_lower.substr(contentTypePos, contentTypeEnd - contentTypePos);
-                size_t firstChar = typeStr.find_first_not_of(" \t");
-                if (firstChar != std::string::npos)
+                std::string key;
+                key.resize(colon);
+                for (size_t i = 0; i < colon; ++i)
+                    key[i] = static_cast<char>(::tolower(line[i]));
+                std::string_view value = trim_sv(line.substr(colon + 1));
+
+                if (key == "content-disposition")
                 {
-                    size_t lastChar = typeStr.find_last_not_of(" \t");
-                    parsedParts[name].content_type = typeStr.substr(firstChar, lastChar - firstChar + 1);
+                    // parse parameters like name="..." ; filename="..."
+                    // scan value for tokens
+                    size_t i = 0;
+                    while (i < value.size())
+                    {
+                        // skip spaces and semicolons
+                        while (i < value.size() && (value[i] == ' ' || value[i] == ';'))
+                            ++i;
+                        // read token
+                        size_t kstart = i;
+                        while (i < value.size() && value[i] != '=' && value[i] != ';')
+                            ++i;
+                        std::string_view token = value.substr(kstart, (i > kstart ? i - kstart : 0));
+                        // skip '='
+                        if (i < value.size() && value[i] == '=')
+                        {
+                            ++i;
+                            // value may be quoted
+                            std::string_view val;
+                            if (i < value.size() && value[i] == '"')
+                            {
+                                ++i;
+                                size_t vstart = i;
+                                while (i < value.size() && value[i] != '"')
+                                    ++i;
+                                val = value.substr(vstart, i - vstart);
+                                if (i < value.size() && value[i] == '"')
+                                    ++i;
+                            }
+                            else
+                            {
+                                size_t vstart = i;
+                                while (i < value.size() && value[i] != ';')
+                                    ++i;
+                                val = value.substr(vstart, i - vstart);
+                            }
+
+                            // lowercase token for comparison
+                            std::string token_l;
+                            token_l.resize(token.size());
+                            for (size_t j = 0; j < token.size(); ++j)
+                                token_l[j] = static_cast<char>(::tolower(token[j]));
+
+                            if (token_l == "name")
+                            {
+                                name = std::string(trim_sv(val));
+                            }
+                            else if (token_l == "filename")
+                            {
+                                partData.filename = std::string(trim_sv(val));
+                            }
+                        }
+                        else
+                        {
+                            // no '=' skip to next semicolon
+                            while (i < value.size() && value[i] != ';')
+                                ++i;
+                        }
+                    }
+                }
+                else if (key == "content-type")
+                {
+                    partData.content_type = std::string(trim_sv(value));
                 }
             }
+
+            line_pos = line_end + line_sep_len;
         }
 
-        // --- 检查是否有 Content-Length 头并根据其截取数据 ---
-        // Content-Length 并不常用在 multipart 的单个部分中，但如果存在，则遵守它
-        size_t contentLengthPos = headers.find("Content-Length:");
-        int contentLength = -1; // 默认值为 -1 表示未知或无效
-        if (contentLengthPos != std::string::npos)
-        {
-            contentLengthPos += 15; // 跳过 "Content-Length: " 的长度
-            size_t lengthEnd = headers.find("\r\n", contentLengthPos);
-            if (lengthEnd == std::string::npos)
-            {
-                lengthEnd = headers.find("\n", contentLengthPos);
-            }
+        // default name if none (use index or empty)
+        if (name.empty())
+            name = std::to_string(parsedParts.size());
 
-            if (lengthEnd != std::string::npos)
-            {
-                std::string lengthStr = headers.substr(contentLengthPos, lengthEnd - contentLengthPos);
-                try
-                {
-                    contentLength = std::stoi(lengthStr); // 尝试将字符串转换为整数
-                }
-                catch (...)
-                {
-                    contentLength = -1; // 转换失败，视为无效长度
-                }
-            }
-        }
-
-        // 根据解析到的 Content-Length 来截取数据
-        if (contentLength >= 0 && contentLength < data.length())
-        {
-            parsedParts[name].data = data.substr(0, contentLength);
-        }
+        // copy data once
+        size_t len = (data_end > data_start) ? (data_end - data_start) : 0;
+        if (len)
+            partData.data.assign(sv.data() + data_start, len);
         else
-        {
-            // 如果没有 Content-Length 或其值无效，尝试修剪数据尾部的空白字符
-            size_t lastNonSpace = data.find_last_not_of(" \t\r\n");
-            if (lastNonSpace != std::string::npos)
-            {
-                parsedParts[name].data = data.substr(0, lastNonSpace + 1);
-            }
-            else
-            {
-                parsedParts[name].data = ""; // 如果数据全是空白，则数据为空
-            }
-        }
+            partData.data.clear();
 
-        pos = nextPos; // 更新查找位置，继续查找下一个分隔符
+        parsedParts.emplace(std::move(name), std::move(partData));
+
+        pos = next_delim;
     }
 
-    return parsedParts; // 返回所有解析出的部分
+    return parsedParts;
 }
 
 void cppNetworkUtilPimpl::sendDataToHttpSocket_Pimpl(SOCKET socket, const std::string &data)
@@ -1437,56 +1551,118 @@ void cppNetworkUtilPimpl::decodeChunkedResponse_Pimpl(std::string &current_chunk
 bool cppNetworkUtilPimpl::parseChunkedBody_Pimpl(SOCKET sock, ssl_st *ssl_conn, std::string &buffer,
                                                  std::string &outBody)
 {
-    while (true)
-    {
-        // 1. 读取 Chunk Header (包含大小的一行, e.g., "1F\r\n")
-        if (!ensureBufferUntil_Pimpl(sock, ssl_conn, buffer, "\r\n"))
-            return false;
+    size_t pos = 0;
+    char temp[BUFFERSIZE];
 
-        size_t crlfPos = buffer.find("\r\n");
-        std::string sizeLine = buffer.substr(0, crlfPos);
-
-        // 处理可选的分号注释 (e.g., "1F;ignore-me")
-        size_t semi = sizeLine.find(';');
-        if (semi != std::string::npos)
-            sizeLine = sizeLine.substr(0, semi);
-
-        // 移出 buffer
-        buffer.erase(0, crlfPos + 2);
-
-        // 2. 解析十六进制大小
-        int chunkSize = 0;
-        try
+    auto read_more = [&](int need = BUFFERSIZE) -> bool {
+        int bytes;
+        if (ssl_conn)
         {
-            chunkSize = std::stoi(sizeLine, nullptr, 16);
-        }
-        catch (...)
-        {
-            log_e("Chunk size parse error: %s", sizeLine.data());
-            return false;
-        }
-
-        // 3. 结束判定 (0 块)
-        if (chunkSize == 0)
-        {
-            // 0 后面还有一个空行 \r\n (Trailers 结束符)
-            if (!ensureBuffer_Pimpl(sock, ssl_conn, buffer, 2))
+            bytes = SSL_read(ssl_conn, temp, need);
+            if (bytes <= 0)
+            {
+                int ssl_error = SSL_get_error(ssl_conn, bytes);
+                if (ssl_error == SSL_ERROR_WANT_READ || ssl_error == SSL_ERROR_WANT_WRITE)
+                    return true; // treat as try again
                 return false;
-            buffer.erase(0, 2);
-            return true; // 解析成功结束
+            }
         }
+        else
+        {
+            bytes = recv(sock, temp, need, 0);
+            if (bytes <= 0)
+                return false;
+        }
+        buffer.append(temp, bytes);
+        return true;
+    };
 
-        // 4. 读取数据本体 + 末尾的 \r\n
-        // 标准规定：数据后面紧跟 \r\n
-        size_t needed = chunkSize + 2;
-        if (!ensureBuffer_Pimpl(sock, ssl_conn, buffer, needed))
-            return false;
+    try
+    {
+        while (true)
+        {
+            // 1) 找到当前 chunk size 行的 CRLF（从 pos 开始查找）
+            size_t crlfPos = buffer.find("\r\n", pos);
+            while (crlfPos == std::string::npos)
+            {
+                if (!read_more())
+                    return false;
+                crlfPos = buffer.find("\r\n", pos);
+            }
 
-        // 提取数据
-        outBody.append(buffer.substr(0, chunkSize));
+            // 解析 size 行（支持 ;comment）
+            std::string sizeLine = buffer.substr(pos, crlfPos - pos);
+            size_t semi = sizeLine.find(';');
+            if (semi != std::string::npos)
+                sizeLine.resize(semi);
 
-        // 移除 数据 + CRLF
-        buffer.erase(0, needed);
+            // 前进到数据起点（跳过 size line + CRLF）
+            pos = crlfPos + 2;
+
+            // 2) 解析十六进制大小
+            unsigned long chunkSize = 0;
+            try
+            {
+                // trim possible leading/trailing spaces
+                size_t first = sizeLine.find_first_not_of(" \t");
+                size_t last = sizeLine.find_last_not_of(" \t");
+                if (first == std::string::npos)
+                    return false;
+                std::string trimmed = sizeLine.substr(first, last - first + 1);
+                chunkSize = std::stoul(trimmed, nullptr, 16);
+            }
+            catch (...)
+            {
+                log_e("Chunk size parse error: %s", sizeLine.data());
+                return false;
+            }
+
+            // 3) 结束标志
+            if (chunkSize == 0)
+            {
+                // 末尾会有一个 CRLF（以及可选的 trailers，但这里只跳过最后的 CRLF）
+                while (buffer.size() < pos + 2)
+                {
+                    if (!read_more())
+                        return false;
+                }
+                pos += 2;
+                // 清理已消费的数据
+                if (pos >= buffer.size())
+                {
+                    buffer.clear();
+                }
+                else
+                {
+                    buffer.erase(0, pos);
+                }
+                return true;
+            }
+
+            // 4) 确保整个 chunk + trailing CRLF 已经在 buffer 中
+            while (buffer.size() < pos + chunkSize + 2)
+            {
+                if (!read_more())
+                    return false;
+            }
+
+            // 5) 追加 chunk 数据到 outBody（避免中间字符串分配）
+            outBody.append(buffer.data() + pos, chunkSize);
+
+            // 6) 移动 pos 越过 chunk 数据和后面的 CRLF
+            pos += chunkSize + 2;
+
+            // 7) 如果已消费前缀较大，批量擦除以避免字符串无限增长和频繁移动
+            if (pos > 4096)
+            {
+                buffer.erase(0, pos);
+                pos = 0;
+            }
+        }
+    }
+    catch (...)
+    {
+        return false;
     }
 }
 
@@ -1773,370 +1949,448 @@ void cppNetworkUtilPimpl::acceptScocket_Pimpl(SOCKET server_socket, bool enable_
     }
 }
 
+// 假设这是 cppNetworkUtilPimpl 类的成员函数实现
 void cppNetworkUtilPimpl::process(SOCKET client_socket, struct sockaddr_storage client_address, ssl_st *ssl_conn,
                                   bool enable_https, int http_port, int https_port, int behavior_mode,
                                   std::uint32_t timeout, int max_request_count)
 {
-    std::string client_buffer = ""; // 持久化缓冲区
+    std::string client_buffer;
     bool keep_running = true;
     int current_request_count = 0;
 
-    // 用于跟踪并发处理的请求数量与同步（最小改动，不引入类级别同步）
-    std::mutex local_mutex;
-    std::condition_variable local_cv;
-    int inflight = 0;
+    // **注意：移除了局部 send_mutex 和 worker_pool。**
+    // **SSL I/O (read/write) 现在是串行的，无需局部锁。**
 
-    // 使用提供的 threadPool 替代直接 std::thread 创建
-    unsigned int pool_threads = std::thread::hardware_concurrency();
-    if (pool_threads == 0)
-        pool_threads = 1;
-    threadPool request_threadpool(pool_threads);
-
-    while (keep_running)
+    try
     {
-        // --- 步骤 1: 读取 Header ---
-        char temp[BUFFERSIZE];
-        if (!ensureBufferUntil_Pimpl(client_socket, ssl_conn, client_buffer, "\r\n\r\n"))
+        while (keep_running)
         {
-            if (client_buffer.empty())
+            // 1) 读取并解析请求头（同步 I/O 操作）
+            if (!ensureBufferUntil_Pimpl(client_socket, ssl_conn, client_buffer, "\r\n\r\n"))
             {
-                keep_running = false; // 连接关闭，退出循环
+                // 连接关闭或读取错误
+                break;
             }
-            break;
-        }
 
-        size_t header_end = client_buffer.find("\r\n\r\n");
-        std::string header_str = client_buffer.substr(0, header_end);
-
-        std::unordered_map<std::string, std::string> parsed_header = getParsedHeader_Pimpl(header_str);
-
-        bool is_keep_alive_connection = false;
-        std::string connection;
-        try
-        {
-            connection = parsed_header["Connection"];
-            std::transform(connection.begin(), connection.end(), connection.begin(), ::tolower);
-            if (connection == "keep-alive" || parsed_header["http_version"] == "HTTP/1.1")
+            size_t header_end = client_buffer.find("\r\n\r\n");
+            if (header_end == std::string::npos)
             {
-                is_keep_alive_connection = true;
+                // 无效的请求
+                break;
             }
-        }
-        catch (const std::exception &e)
-        {
-            log_e("Get connection error: %s\n", e.what());
-        }
-        catch (...)
-        {
-            log_e("Get connection unknown error\n");
-        }
 
-        // Header 读完立刻移出 Buffer
-        // 剩下的 Buffer 内容全是 Body (或者是下一个请求的开始)
-        client_buffer.erase(0, header_end + 4);
-
-        // --- 步骤 2: 决定如何读取 Body ---
-        std::string request_body = "";
-        bool body_read_success = true;
-
-        if (getTransferEncodingValue_Pimpl(header_str) == "chunked")
-        {
-            // A. Chunked 模式
-            body_read_success = parseChunkedBody_Pimpl(client_socket, ssl_conn, client_buffer, request_body);
-        }
-        else
-        {
-            // B. Content-Length 模式
-            int content_size = 0;
+            std::string header_str = client_buffer.substr(0, header_end);
+            std::unordered_map<std::string, std::string> parsed_header;
             try
             {
-                content_size = getPostContentSize_Pimpl(client_buffer);
+                parsed_header = getParsedHeader_Pimpl(header_str);
             }
             catch (const std::exception &e)
             {
-                log_e("Get content size error: %s\n", e.what());
+                log_e("Failed to parse request header: %s\n", e.what());
+                // 返回 400 并断开
+                std::unordered_map<std::string, std::string> err_headers;
+                err_headers["Content-Length"] = "0";
+                err_headers["connection"] = "close";
+                // I/O 串行，直接发送
+                sendDataToSocket_Pimpl(client_socket, current_request_count,
+                                       makeResponseHeader_Pimpl(400, err_headers));
+                break;
+            }
+
+            // 决定是否为 keep-alive
+            bool is_keep_alive_connection = false;
+            try
+            {
+                std::string connection = parsed_header.count("Connection") ? parsed_header["Connection"] : "";
+                std::transform(connection.begin(), connection.end(), connection.begin(), ::tolower);
+                if (connection == "keep-alive" || parsed_header["http_version"] == "HTTP/1.1")
+                    is_keep_alive_connection = true;
             }
             catch (...)
             {
-                log_e("Get content size unknown error\n");
+                // 忽略，按非 keep-alive 处理
             }
-            if (content_size > 0)
+
+            // 移除请求行+头部
+            client_buffer.erase(0, header_end + 4);
+
+            // 处理 CONNECT 方法（HTTP proxy 隧道）
+            std::string method = parsed_header.count("method") ? parsed_header["method"] : "";
+            if (!enable_https && method == "CONNECT")
             {
-                if (ensureBuffer_Pimpl(client_socket, ssl_conn, client_buffer, content_size))
+                // URL 为 host:port
+                std::string hostport = parsed_header.count("url") ? parsed_header["url"] : "";
+                std::string host;
+                int port = 443;
+                size_t colon = hostport.find(':');
+                if (colon != std::string::npos)
                 {
-                    request_body = client_buffer.substr(0, content_size);
-                    client_buffer.erase(0, content_size); // 移出 Body
+                    host = hostport.substr(0, colon);
+                    try
+                    {
+                        port = std::stoi(hostport.substr(colon + 1));
+                    }
+                    catch (...)
+                    {
+                        port = 443;
+                    }
                 }
                 else
                 {
-                    body_read_success = false;
+                    host = hostport;
                 }
-            }
-            // C. 既无 Length 也无 Chunked (GET 请求或长度为0)
-        }
 
-        if (!body_read_success)
-        {
-            log_e("Failed to read Body from client socket %d\n", client_socket);
-            keep_running = false;
-            break;
-        }
+                // 连接目标主机
+                SOCKET remote_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+                if (remote_sock == INVALID_SOCKET)
+                {
+                    log_e("Failed to create remote socket for CONNECT\n");
+                    std::unordered_map<std::string, std::string> err_headers;
+                    err_headers["Content-Length"] = "0";
+                    err_headers["connection"] = "close";
+                    sendDataToSocket_Pimpl(client_socket, current_request_count,
+                                           makeResponseHeader_Pimpl(502, err_headers));
+                    break;
+                }
 
-        if (is_keep_alive_connection)
-        {
-            current_request_count++;
-        }
+                struct hostent *remote_host = gethostbyname(host.c_str());
+                if (!remote_host)
+                {
+                    closesocket(remote_sock);
+                    std::unordered_map<std::string, std::string> err_headers;
+                    err_headers["Content-Length"] = "0";
+                    err_headers["connection"] = "close";
+                    sendDataToSocket_Pimpl(client_socket, current_request_count,
+                                           makeResponseHeader_Pimpl(502, err_headers));
+                    break;
+                }
 
-        if (!enable_https && behavior_mode == BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS &&
-            https_port != DISABLE_HTTPS_REQUEST)
-        {
-            std::string Location;
-            Location += "https://";
-            Location += parsed_header["Host"];
-            Location += parsed_header["url"];
-            if (https_port != 443)
-            {
-                Location += ":";
-                Location += std::to_string(https_port);
-            }
-            // 设置 Connection 头部
-            if (is_keep_alive_connection && current_request_count < max_request_count)
-            {
-                // 情况 A: 客户端想保持，且没到限制 -> 保持
+                struct sockaddr_in remote_addr;
+                memset(&remote_addr, 0, sizeof(remote_addr));
+                remote_addr.sin_family = AF_INET;
+                remote_addr.sin_port = htons(port);
+                memcpy(&remote_addr.sin_addr, remote_host->h_addr_list[0], remote_host->h_length);
 
-                sendDataToHttpSocket_Pimpl(
-                    client_socket,
-                    makeResponseHeader_Pimpl(
-                        301, {{"Content-Length", "0"},
-                              {"connection", "keep-alive"},
-                              {"Keep-Alive", "timeout=" + std::to_string(timeout / 1000) +
-                                                 ", max=" + std::to_string(max_request_count - current_request_count)},
-                              {"Location", Location}}));
-            }
-            else
-            {
-                // 情况 B: 客户端想关，或者已经到了限制 -> 关闭
-                sendDataToHttpSocket_Pimpl(client_socket, makeResponseHeader_Pimpl(301, {{"Content-Length", "0"},
-                                                                                         {"connection", "close"},
-                                                                                         {"Location", Location}}));
+                if (connect(remote_sock, (struct sockaddr *)&remote_addr, sizeof(remote_addr)) == SOCKET_ERROR)
+                {
+                    HANDLE_ERROR("Failed to connect remote for CONNECT");
+                    closesocket(remote_sock);
+                    std::unordered_map<std::string, std::string> err_headers;
+                    err_headers["Content-Length"] = "0";
+                    err_headers["connection"] = "close";
+                    sendDataToSocket_Pimpl(client_socket, current_request_count,
+                                           makeResponseHeader_Pimpl(502, err_headers));
+                    break;
+                }
 
-                // 标记循环结束 (发完这个响应后就退出去)
+                // 回复客户端 200 Connection Established
+                std::unordered_map<std::string, std::string> ok_headers;
+                ok_headers["Content-Length"] = "0";
+                ok_headers["connection"] = "close";
+                sendDataToSocket_Pimpl(client_socket, current_request_count, makeResponseHeader_Pimpl(200, ok_headers));
+
+                // 双向隧道转发（阻塞直到一方关闭）
+                fd_set readfds;
+                int maxfd = (int)std::max(client_socket, remote_sock) + 1;
+                while (true)
+                {
+                    FD_ZERO(&readfds);
+                    FD_SET(client_socket, &readfds);
+                    FD_SET(remote_sock, &readfds);
+                    int sel = select(maxfd, &readfds, NULL, NULL, NULL);
+                    if (sel <= 0)
+                        break;
+                    if (FD_ISSET(client_socket, &readfds))
+                    {
+                        char buf[4096];
+                        int r = recv(client_socket, buf, sizeof(buf), 0);
+                        if (r <= 0)
+                            break;
+                        int sent = 0;
+                        while (sent < r)
+                        {
+                            int s = send(remote_sock, buf + sent, r - sent, 0);
+                            if (s <= 0)
+                                break;
+                            sent += s;
+                        }
+                        if (sent < r)
+                            break;
+                    }
+                    if (FD_ISSET(remote_sock, &readfds))
+                    {
+                        char buf[4096];
+                        int r = recv(remote_sock, buf, sizeof(buf), 0);
+                        if (r <= 0)
+                            break;
+                        int sent = 0;
+                        while (sent < r)
+                        {
+                            int s = send(client_socket, buf + sent, r - sent, 0);
+                            if (s <= 0)
+                                break;
+                            sent += s;
+                        }
+                        if (sent < r)
+                            break;
+                    }
+                }
+                closesocket(remote_sock);
                 keep_running = false;
+                break;
             }
-            closesocket(client_socket);
-            return;
-        }
 
-        if (enable_https)
-        {
-            client_connections[client_socket][current_request_count].ssl =
-                ssl_conn; // 将 SSL 结构存储到 client_connections 中
-        }
-        client_connections[client_socket][current_request_count].is_https_connection = enable_https;
-        client_connections[client_socket][current_request_count].is_keep_alive_connection = is_keep_alive_connection;
-        if (client_address.ss_family == AF_INET)
-        {
-            // IPv4 连接
-            struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&client_address;
-            char ip_str[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET, &(ipv4_addr->sin_addr), ip_str, INET_ADDRSTRLEN);
-            client_connections[client_socket][current_request_count].ip = ip_str;
-            client_connections[client_socket][current_request_count].port = ntohs(ipv4_addr->sin_port);
-            client_connections[client_socket][current_request_count].family = "ipv4";
-        }
-        else if (client_address.ss_family == AF_INET6)
-        {
-            // IPv6 连接
-            struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&client_address;
-            char ip_str[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET6, &(ipv6_addr->sin6_addr), ip_str, INET_ADDRSTRLEN);
-            client_connections[client_socket][current_request_count].ip = ip_str;
-            client_connections[client_socket][current_request_count].port = ntohs(ipv6_addr->sin6_port);
-            client_connections[client_socket][current_request_count].family = "ipv6";
-        }
-        client_connections[client_socket][current_request_count].request_data =
-            client_buffer; // 将接收到的数据存储到 client_connections 中
-        client_connections[client_socket][current_request_count].request_header = header_str;
-        client_connections[client_socket][current_request_count].request_content = request_body;
-        client_connections[client_socket][current_request_count].parsed_request_headers =
-            getParsedHeader_Pimpl(header_str); // 解析请求头
-        client_connections[client_socket][current_request_count].query_params = parseUrlQueryParameters_Pimpl(
-            client_connections[client_socket][current_request_count].parsed_request_headers["url"]);
-
-        std::string url = client_connections[client_socket][current_request_count].parsed_request_headers["url"];
-        size_t query_pos = url.find('?');
-        if (query_pos != std::string::npos)
-        {
-            // 找到了 '?'，分割 URL 路径和查询参数
-            client_connections[client_socket][current_request_count].parsed_request_headers["url"] =
-                url.substr(0, query_pos);
-        }
-        else
-        {
-            // 没有查询参数，整个 URL 都是路径
-            client_connections[client_socket][current_request_count].parsed_request_headers["url"] = url;
-        }
-
-        // --- 步骤 3: 业务处理
-        requestContext req;
-        req.client_socket = client_socket;
-        req.request_count = current_request_count;
-        req.is_https_connection = client_connections[client_socket][current_request_count].is_https_connection;
-        req.is_keep_alive_connection = is_keep_alive_connection;
-        req.ip = client_connections[client_socket][current_request_count].ip;
-        req.port = client_connections[client_socket][current_request_count].port;
-        req.family = client_connections[client_socket][current_request_count].family;
-        req.request_data = client_connections[client_socket][current_request_count].request_data;
-        req.request_content = client_connections[client_socket][current_request_count].request_content;
-        req.request_headers = client_connections[client_socket][current_request_count].request_header;
-        req.parsed_request_headers = client_connections[client_socket][current_request_count].parsed_request_headers;
-        req.query_params = client_connections[client_socket][current_request_count].query_params;
-
-        // 增加并发计数
-        {
-            std::lock_guard<std::mutex> lk(local_mutex);
-            inflight++;
-        }
-
-        // 使用 threadPool 提交任务，处理完成后负责发送响应与清理该 request 的 client_connections 项
-        try
-        {
-            request_threadpool.enqueue([this, req, is_keep_alive_connection, current_request_count, timeout,
-                                        max_request_count, client_socket, &local_mutex, &local_cv,
-                                        &inflight]() mutable {
-                try
-                {
-                    std::optional<responseContext> res = handleRequest_Pimpl(req);
-                    if (res.has_value())
-                    {
-                        // 自动设置 Connection 头部和 Content-Length 头部
-                        if (is_keep_alive_connection && current_request_count < max_request_count)
-                        {
-                            // 情况 A: 客户端想保持，且没到限制 -> 保持
-                            res.value().response_headers["connection"] = "keep-alive";
-
-                            // (可选) 告诉客户端还能发多少次。
-                            // 格式: Keep-Alive: timeout=5, max=99
-                            res.value().response_headers["Keep-Alive"] =
-                                "timeout=" + std::to_string(timeout / 1000) +
-                                ", max=" + std::to_string(max_request_count - current_request_count);
-                        }
-                        else
-                        {
-                            // 情况 B: 客户端想关，或者已经到了限制 -> 关闭
-                            res.value().response_headers["connection"] = "close";
-                        }
-                        res.value().response_headers["Content-Length"] =
-                            std::to_string(res.value().response_content.size());
-
-                        // send data to client
-                        sendDataToSocket_Pimpl(
-                            client_socket, current_request_count,
-                            makeResponseHeader_Pimpl(res.value().status_code, res.value().response_headers));
-                        sendDataToSocket_Pimpl(client_socket, current_request_count, res.value().response_content);
-                    }
-                }
-                catch (const std::exception &e)
-                {
-                    log_e("Worker thread exception: %s\n", e.what());
-                }
-                catch (...)
-                {
-                    log_e("Worker thread unknown exception\n");
-                }
-
-                // 清理当前 request 的 client_connections 项
-                {
-                    std::lock_guard<std::mutex> lk(local_mutex);
-                    auto it_outer = client_connections.find(client_socket);
-                    if (it_outer != client_connections.end())
-                    {
-                        it_outer->second.erase(current_request_count);
-                        if (it_outer->second.empty())
-                        {
-                            client_connections.erase(it_outer);
-                        }
-                    }
-                    inflight--;
-                }
-                local_cv.notify_one();
-            });
-        }
-        catch (const std::exception &e)
-        {
-            log_e("Failed to enqueue task to threadPool: %s\n", e.what());
-            // 如果无法入队，回退为直接在当前线程处理（为了保证不会丢请求）
+            // 2) 读取 Body（支持 chunked 与 content-length）
+            std::string request_body;
+            bool body_ok = true;
+            std::string transfer_encoding;
             try
             {
-                std::optional<responseContext> res = handleRequest_Pimpl(req);
-                if (res.has_value())
-                {
-                    if (is_keep_alive_connection && current_request_count < max_request_count)
-                    {
-                        res.value().response_headers["connection"] = "keep-alive";
-                        res.value().response_headers["Keep-Alive"] =
-                            "timeout=" + std::to_string(timeout / 1000) +
-                            ", max=" + std::to_string(max_request_count - current_request_count);
-                    }
-                    else
-                    {
-                        res.value().response_headers["connection"] = "close";
-                    }
-                    res.value().response_headers["Content-Length"] =
-                        std::to_string(res.value().response_content.size());
-
-                    sendDataToSocket_Pimpl(
-                        client_socket, current_request_count,
-                        makeResponseHeader_Pimpl(res.value().status_code, res.value().response_headers));
-                    sendDataToSocket_Pimpl(client_socket, current_request_count, res.value().response_content);
-                }
+                transfer_encoding = parsed_header.at("Transfer-Encoding");
             }
             catch (...)
             {
+                log_e("Get Transfer-Encoding from parsed request header failed.\n");
             }
-            // 清理项
+            std::transform(transfer_encoding.begin(), transfer_encoding.end(), transfer_encoding.begin(), ::tolower);
+            if (transfer_encoding == "chunked")
             {
-                std::lock_guard<std::mutex> lk(local_mutex);
-                auto it_outer = client_connections.find(client_socket);
-                if (it_outer != client_connections.end())
+                body_ok = parseChunkedBody_Pimpl(client_socket, ssl_conn, client_buffer, request_body);
+            }
+            else
+            {
+                std::string content_length_str;
+                try
+                {
+                    content_length_str = parsed_header.at("Content-Length");
+                }
+                catch (...)
+                {
+                    log_e("Get Content-Length from parsed request header failed.\n");
+                }
+                long content_length = -1;
+                if (!content_length_str.empty())
+                {
+                    try
+                    {
+                        content_length = std::stol(content_length_str);
+                    }
+                    catch (...)
+                    {
+                        content_length = -1;
+                    }
+                }
+
+                if (content_length > 0)
+                {
+                    // 确保缓冲区包含整个请求体
+                    if (!ensureBuffer_Pimpl(client_socket, ssl_conn, client_buffer,
+                                            static_cast<size_t>(content_length)))
+                    {
+                        body_ok = false;
+                    }
+                    else
+                    {
+                        request_body = client_buffer.substr(0, content_length);
+                        client_buffer.erase(0, content_length);
+                    }
+                }
+                else
+                {
+                    // content_length <= 0 : 视为无 body（GET/HEAD 等）
+                    request_body.clear();
+                }
+            }
+
+            if (!body_ok)
+            {
+                log_e("Failed to read request body for socket %d\n", (int)client_socket);
+                break;
+            }
+
+            // 增加请求计数（用于 keep-alive 限制）
+            if (is_keep_alive_connection)
+                ++current_request_count;
+
+            // 在某些行为模式下：HTTP 重定向到 HTTPS
+            if (!enable_https && behavior_mode == BEHAVIOR_MODE_REDIRECT_HTTP_REQUEST_TO_HTTPS &&
+                https_port != DISABLE_HTTPS_REQUEST)
+            {
+                std::string Location = "https://";
+                Location += parsed_header.count("Host") ? parsed_header["Host"] : "";
+                Location += parsed_header.count("url") ? parsed_header["url"] : "";
+                if (https_port != 443)
+                {
+                    Location += ":" + std::to_string(https_port);
+                }
+
+                std::unordered_map<std::string, std::string> resp_headers;
+                resp_headers["Content-Length"] = "0";
+                if (is_keep_alive_connection && current_request_count < max_request_count)
+                {
+                    resp_headers["connection"] = "keep-alive";
+                    resp_headers["Keep-Alive"] = "timeout=" + std::to_string(timeout / 1000) +
+                                                 ", max=" + std::to_string(max_request_count - current_request_count);
+                    resp_headers["Location"] = Location;
+                }
+                else
+                {
+                    resp_headers["connection"] = "close";
+                    resp_headers["Location"] = Location;
+                    keep_running = false;
+                }
+                // I/O 串行，直接发送
+                sendDataToSocket_Pimpl(client_socket, current_request_count,
+                                       makeResponseHeader_Pimpl(301, resp_headers));
+                break; // 在重定向后关闭连接
+            }
+
+            // **修改点 1: 保护 client_connections 写入**
+            // 将请求信息放入 client_connections（便于 send 使用）
+            {
+                std::lock_guard<std::mutex> lg(this->client_connections_mutex); // 使用成员互斥锁
+
+                client_connections[client_socket][current_request_count].ssl = ssl_conn;
+                client_connections[client_socket][current_request_count].is_https_connection = enable_https;
+                client_connections[client_socket][current_request_count].is_keep_alive_connection =
+                    is_keep_alive_connection;
+
+                if (client_address.ss_family == AF_INET)
+                {
+                    struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&client_address;
+                    char ip_str[INET_ADDRSTRLEN];
+                    inet_ntop(AF_INET, &(ipv4_addr->sin_addr), ip_str, INET_ADDRSTRLEN);
+                    client_connections[client_socket][current_request_count].ip = ip_str;
+                    client_connections[client_socket][current_request_count].port = ntohs(ipv4_addr->sin_port);
+                    client_connections[client_socket][current_request_count].family = "ipv4";
+                }
+                else if (client_address.ss_family == AF_INET6)
+                {
+                    struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&client_address;
+                    char ip_str[INET6_ADDRSTRLEN];
+                    inet_ntop(AF_INET6, &(ipv6_addr->sin6_addr), ip_str, INET6_ADDRSTRLEN);
+                    client_connections[client_socket][current_request_count].ip = ip_str;
+                    client_connections[client_socket][current_request_count].port = ntohs(ipv6_addr->sin6_port);
+                    client_connections[client_socket][current_request_count].family = "ipv6";
+                }
+
+                client_connections[client_socket][current_request_count].request_data = client_buffer;
+                client_connections[client_socket][current_request_count].request_header = header_str;
+                client_connections[client_socket][current_request_count].request_content = request_body;
+                client_connections[client_socket][current_request_count].parsed_request_headers = parsed_header;
+                client_connections[client_socket][current_request_count].query_params =
+                    parseUrlQueryParameters_Pimpl(parsed_header["url"]);
+
+                // 如果 URL 包含查询字符串，移除之以作为 path
+                {
+                    std::string url =
+                        client_connections[client_socket][current_request_count].parsed_request_headers["url"];
+                    size_t q = url.find('?');
+                    if (q != std::string::npos)
+                        client_connections[client_socket][current_request_count].parsed_request_headers["url"] =
+                            url.substr(0, q);
+                }
+            } // client_connections_mutex 释放
+
+            // 3) 构造 requestContext 并 **同步处理**
+            requestContext req;
+            req.client_socket = client_socket;
+            req.request_count = current_request_count;
+            req.is_https_connection = enable_https;
+            req.is_keep_alive_connection = is_keep_alive_connection;
+
+            // 从 client_connections 复制信息（已在锁内设置）
+            {
+                std::lock_guard<std::mutex> lg(this->client_connections_mutex);
+                req.ip = client_connections[client_socket][current_request_count].ip;
+                req.port = client_connections[client_socket][current_request_count].port;
+                req.family = client_connections[client_socket][current_request_count].family;
+                req.request_data = client_connections[client_socket][current_request_count].request_data;
+                req.request_content = client_connections[client_socket][current_request_count].request_content;
+                req.request_headers = client_connections[client_socket][current_request_count].request_header;
+                req.parsed_request_headers =
+                    client_connections[client_socket][current_request_count].parsed_request_headers;
+                req.query_params = client_connections[client_socket][current_request_count].query_params;
+            }
+
+            // **同步调用处理函数** (替代 enqueue 到 worker_pool)
+            std::optional<responseContext> res = handleRequest_Pimpl(req);
+
+            // 4) 发送响应 (同步 I/O 操作)
+            if (res.has_value())
+            {
+                // 设置连接头和 Content-Length
+                if (is_keep_alive_connection && current_request_count < max_request_count)
+                {
+                    res->response_headers["connection"] = "keep-alive";
+                    res->response_headers["Keep-Alive"] = "timeout=" + std::to_string(timeout / 1000) + ", max=" +
+                                                          std::to_string(max_request_count - current_request_count);
+                }
+                else
+                {
+                    res->response_headers["connection"] = "close";
+                    keep_running = false; // 非 keep-alive 或达到限制，准备退出循环
+                }
+                res->response_headers["Content-Length"] = std::to_string(res->response_content.size());
+
+                std::string header_to_send = makeResponseHeader_Pimpl(res->status_code, res->response_headers);
+
+                // I/O 串行，直接发送
+                sendDataToSocket_Pimpl(client_socket, current_request_count, header_to_send);
+                if (!res->response_content.empty())
+                    sendDataToSocket_Pimpl(client_socket, current_request_count, res->response_content);
+            }
+            else
+            {
+                // PROCESSED_INTERNALLY
+            }
+
+            // **修改点 2: 保护 client_connections 清理**
+            // 清理 client_connections 中该请求的数据（使用成员互斥锁保护）
+            {
+                std::lock_guard<std::mutex> lg(this->client_connections_mutex);
+                auto it_outer = this->client_connections.find(client_socket);
+                if (it_outer != this->client_connections.end())
                 {
                     it_outer->second.erase(current_request_count);
                     if (it_outer->second.empty())
-                    {
-                        client_connections.erase(it_outer);
-                    }
+                        this->client_connections.erase(it_outer);
                 }
-                inflight--;
             }
-            local_cv.notify_one();
-        }
 
-        // 不在这里删除当前 request 的 client_connections 项（交由处理线程清理）
-
-        if (!(is_keep_alive_connection && current_request_count < max_request_count))
-        {
-            // 标记循环结束 (发完这个响应后就退出去)
-            keep_running = false;
-        }
+            // 检查是否应该继续（keep-alive 和请求计数）
+            if (!is_keep_alive_connection || current_request_count >= max_request_count)
+            {
+                keep_running = false;
+            }
+        } // end while keep_running
     }
-
-    // 等待所有并发处理的请求完成，再关闭连接/释放 SSL
+    catch (const std::exception &e)
     {
-        std::unique_lock<std::mutex> lk(local_mutex);
-        local_cv.wait(lk, [&inflight]() { return inflight == 0; });
+        log_e("Connection loop exception: %s\n", e.what());
     }
-
-    if (enable_https)
+    catch (...)
     {
-        if (ssl_conn)
-        {
-            SSL_shutdown(ssl_conn); // 尝试执行 SSL 关闭握手
-            SSL_free(ssl_conn);     // 释放 SSL 结构
-        }
+        log_e("Unknown exception in connection loop\n");
     }
-    closesocket(client_socket); // 关闭套接字
 
-    // 释放内存（确保所有 request 项已被 worker 清理）
-    client_connections.erase(client_socket);
+    // 清理 SSL / socket
+    if (enable_https && ssl_conn)
+    {
+        // 尝试执行 SSL 关闭握手
+        SSL_shutdown(ssl_conn);
+        SSL_free(ssl_conn);
+    }
+
+    closesocket(client_socket);
+
+    // **修改点 3: 保护 client_connections 最终清理**
+    // 最终清理 client_connections（使用成员互斥锁保护）
+    {
+        std::lock_guard<std::mutex> lg(this->client_connections_mutex);
+        this->client_connections.erase(client_socket);
+    }
 }
 
 void cppNetworkUtilPimpl::print_cppNetworkUtilVersion_Pimpl()
@@ -2378,37 +2632,38 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
     const std::string &method = req.parsed_request_headers.at("method");
     const std::string &url = req.parsed_request_headers.at("url");
 
+    // 使用基于迭代器的 match_results 避免 std::smatch 的额外分配
     auto find_and_handle_path = [&](const std::vector<routeInfo> &routes_to_check) -> std::optional<int> {
-        for (const auto &route_info : routes_to_check)
+        std::match_results<std::string::const_iterator> match_results;
+        for (const routeInfo &route_info : routes_to_check)
         {
-            // 快速过滤：状态码不匹配则跳过；仅处理以 '/' 或 '^' 开头的路径规则
+            // 快速过滤：状态码不匹配或路径模式不以 '/' 或 '^' 开头则跳过
             if (route_info.status_code != status_code)
                 continue;
-
             const std::string &pattern = route_info.path_pattern;
             if (pattern.empty() || (pattern[0] != '/' && pattern[0] != '^'))
                 continue;
 
             try
             {
-                std::smatch match_results;
-                if (!std::regex_match(url, match_results, route_info.path_regex))
+                // 使用迭代器版本的 regex_match 避免不必要的字符串临时对象
+                if (!std::regex_match(url.begin(), url.end(), match_results, route_info.path_regex))
                     continue;
 
-                // 只有在匹配时才构造 matched_req（避免不必要的拷贝）
+                // 仅在匹配成功时构造 matched_req（避免不必要的拷贝）
                 requestContext matched_req = req;
-                size_t param_count = route_info.param_names.size();
-                for (size_t i = 0; i < param_count; ++i)
+
+                // 有效参数数量 = match_results.size() - 1 (0 是完整匹配)
+                size_t available = match_results.size() ? (match_results.size() - 1) : 0;
+                size_t to_copy = std::min(route_info.param_names.size(), available);
+                for (size_t i = 0; i < to_copy; ++i)
                 {
-                    // match_results[0] 是完整匹配，参数从 1 开始
-                    if (i + 1 < match_results.size())
-                        matched_req.path_params[route_info.param_names[i]] = match_results[i + 1].str();
-                    else
-                        break;
+                    matched_req.path_params[route_info.param_names[i]] = match_results[i + 1].str();
                 }
 
-                // 调用 handler 并根据返回值决定后续行为
                 int response_is_final = route_info.handler(matched_req, res);
+
+                // 与原逻辑保持一致：这些返回值意味着处理结束或特殊处理
                 if (response_is_final == END_HANDING || response_is_final == PROCESSED_INTERNALLY ||
                     response_is_final == CONTINUE_HANDLING)
                 {
@@ -2416,9 +2671,8 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
                 }
                 else if (response_is_final == CONTINUE_ROUTING)
                 {
-                    continue; // 继续尝试下一个匹配
+                    continue;
                 }
-                // 其他返回值视为未结束（继续查找）
             }
             catch (const std::regex_error &e)
             {
@@ -2430,74 +2684,59 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
                 log_e("Handler/Match exception for pattern '%s': %s\n", pattern.c_str(), e.what());
                 continue;
             }
+            catch (...)
+            {
+                log_e("Unknown exception while processing pattern '%s'\n", pattern.c_str());
+                continue;
+            }
         }
-        return std::nullopt; // 未找到匹配
+        return std::nullopt;
     };
 
-    // First try handlers registered for the exact HTTP method (fast path)
+    // 优先尝试完全匹配的 method 分组（快速路径）
     {
         auto method_it = handlers.find(method);
         if (method_it != handlers.end())
         {
-            auto r = find_and_handle_path(method_it->second);
-            if (r.has_value())
+            if (auto r = find_and_handle_path(method_it->second); r.has_value())
             {
                 int r_value = r.value();
-                if (r_value == END_HANDING || r_value == CONTINUE_HANDLING)
-                {
+                if (r_value == END_HANDING || r_value == CONTINUE_HANDLING || r_value == PROCESSED_INTERNALLY)
                     return;
-                }
-                else if (r_value == PROCESSED_INTERNALLY)
-                {
-                    return;
-                }
             }
         }
     }
 
-    // If not matched by exact method handlers, try handlers registered with method patterns (regex/wildcards).
-    // Iterate all handler groups and test their stored method_regex against the request method.
+    // 如果 exact method 未命中，尝试带 method 正则的分组（避免对每个 route 重复构造 method regex）
     for (const auto &entry : handlers)
     {
-        // skip exact method entry already tried
         if (entry.first == method)
             continue;
-
         const std::vector<routeInfo> &routes = entry.second;
         if (routes.empty())
             continue;
 
         try
         {
-            // method_regex is stored per routeInfo; use the first one as representative for this group
-            // (on_Pimpl builds method_regex from the registration key)
             const std::regex &method_re = routes[0].method_regex;
-            if (std::regex_match(method, method_re))
+            if (!std::regex_match(method, method_re))
+                continue;
+
+            if (auto r = find_and_handle_path(routes); r.has_value())
             {
-                auto r = find_and_handle_path(routes);
-                if (r.has_value())
-                {
-                    int r_value = r.value();
-                    if (r_value == END_HANDING || r_value == CONTINUE_HANDLING)
-                    {
-                        return;
-                    }
-                    else if (r_value == PROCESSED_INTERNALLY)
-                    {
-                        return;
-                    }
-                }
+                int r_value = r.value();
+                if (r_value == END_HANDING || r_value == CONTINUE_HANDLING || r_value == PROCESSED_INTERNALLY)
+                    return;
             }
         }
         catch (const std::regex_error &e)
         {
-            // If a stored regex is somehow invalid, log and continue to next entry
             log_e("Method regex error while matching request method '%s': %s\n", method.data(), e.what());
             continue;
         }
     }
 
-    // 回退到默认处理
+    // 回退到默认处理（保持原有语义）
     if (status_code < 100 || status_code > 599)
     {
         status_code = 500; // 非法状态码，回退到 500
@@ -2514,7 +2753,6 @@ void cppNetworkUtilPimpl::invokeErrorHandler_Pimpl(int status_code, const reques
 std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const requestContext &req)
 {
     responseContext res;
-    // 设置默认的头
     res.response_headers["Content-Type"] = "*/*";
     res.status_code = 200;
     res.response_headers["connection"] = "keep-alive";
@@ -2525,27 +2763,32 @@ std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const re
     const std::string &url = req.parsed_request_headers.at("url");
 
     auto find_and_handle_path = [&](const std::vector<routeInfo> &routes_to_check) -> std::optional<int> {
-        for (const auto &route_info : routes_to_check)
+        // reuse match_results object to avoid repeated allocations
+        std::match_results<std::string::const_iterator> match_results;
+        for (const routeInfo &route_info : routes_to_check)
         {
             const std::string &pattern = route_info.path_pattern;
             const int route_status = route_info.status_code;
 
-            // 只处理以 '/' 或 '^' 开头的路径规则并保持原来的状态码过滤逻辑
             if (pattern.empty() || (pattern[0] != '/' && pattern[0] != '^'))
                 continue;
-            if (!(route_status < 400 || route_status > 600))
+
+            // keep original logic but expressed clearer and faster
+            if (route_status >= 400 && route_status <= 600)
                 continue;
 
             try
             {
-                std::smatch match_results;
-                if (!std::regex_match(url, match_results, route_info.path_regex))
+                // perform regex match using iterators (avoids extra string temporaries)
+                if (!std::regex_match(url.begin(), url.end(), match_results, route_info.path_regex))
                     continue;
 
-                // 仅在匹配成功时才构造 matched_req（避免不必要的拷贝）
+                // construct matched_req only after a successful match
                 requestContext matched_req = req;
                 const size_t param_count = route_info.param_names.size();
-                for (size_t i = 0; i < param_count && (i + 1) < match_results.size(); ++i)
+                size_t available = match_results.size() > 0 ? (match_results.size() - 1) : 0;
+                size_t to_copy = std::min(param_count, available);
+                for (size_t i = 0; i < to_copy; ++i)
                 {
                     matched_req.path_params[route_info.param_names[i]] = match_results[i + 1].str();
                 }
@@ -2553,22 +2796,14 @@ std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const re
                 int response_is_final = route_info.handler(matched_req, res);
 
                 if (response_is_final == END_HANDING || response_is_final == PROCESSED_INTERNALLY)
-                {
                     return response_is_final;
-                }
+
                 if (response_is_final == CONTINUE_ROUTING)
-                {
-                    continue; // 继续尝试下一个匹配
-                }
+                    continue;
 
-                // 对于 CONTINUE_HANDLING 或其他未明确返回的情况，
-                // 如果 handler 设置了 3xx-5xx 状态，交由错误处理器处理
                 if (res.status_code >= 300 && res.status_code < 600)
-                {
                     invokeErrorHandler_Pimpl(res.status_code, matched_req, res);
-                }
 
-                // 到此视为处理完成
                 return END_HANDING;
             }
             catch (const std::regex_error &e)
@@ -2590,32 +2825,25 @@ std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const re
         return std::nullopt;
     };
 
-    // First try handlers registered for the exact HTTP method (fast path)
+    // fast path: exact method handlers
     {
-        auto method_it = handlers.find(method);
-        if (method_it != handlers.end())
+        auto it = handlers.find(method);
+        if (it != handlers.end())
         {
-            auto r = find_and_handle_path(method_it->second);
-            if (r.has_value())
+            if (auto r = find_and_handle_path(it->second); r.has_value())
             {
-                int r_value = r.value();
-                if (r_value == END_HANDING || r_value == CONTINUE_HANDLING)
-                {
+                int v = r.value();
+                if (v == END_HANDING || v == CONTINUE_HANDLING)
                     return res;
-                }
-                else if (r_value == PROCESSED_INTERNALLY)
-                {
+                if (v == PROCESSED_INTERNALLY)
                     return std::nullopt;
-                }
             }
         }
     }
 
-    // If not matched by exact method handlers, try handlers registered with method patterns (regex/wildcards).
-    // Iterate all handler groups and test their stored method_regex against the request method.
+    // method-pattern handlers: iterate entries but avoid constructing regex repeatedly
     for (const auto &entry : handlers)
     {
-        // skip exact method entry already tried
         if (entry.first == method)
             continue;
 
@@ -2625,35 +2853,27 @@ std::optional<responseContext> cppNetworkUtilPimpl::handleRequest_Pimpl(const re
 
         try
         {
-            // method_regex is stored per routeInfo; use the first one as representative for this group
-            // (on_Pimpl builds method_regex from the registration key)
             const std::regex &method_re = routes[0].method_regex;
-            if (std::regex_match(method, method_re))
+            if (!std::regex_match(method, method_re))
+                continue;
+
+            if (auto r = find_and_handle_path(routes); r.has_value())
             {
-                auto r = find_and_handle_path(routes);
-                if (r.has_value())
-                {
-                    int r_value = r.value();
-                    if (r_value == END_HANDING || r_value == CONTINUE_HANDLING)
-                    {
-                        return res;
-                    }
-                    else if (r_value == PROCESSED_INTERNALLY)
-                    {
-                        return std::nullopt;
-                    }
-                }
+                int v = r.value();
+                if (v == END_HANDING || v == CONTINUE_HANDLING)
+                    return res;
+                if (v == PROCESSED_INTERNALLY)
+                    return std::nullopt;
             }
         }
         catch (const std::regex_error &e)
         {
-            // If a stored regex is somehow invalid, log and continue to next entry
             log_e("Method regex error while matching request method '%s': %s\n", method.data(), e.what());
             continue;
         }
     }
 
-    // 都没有匹配，调用 404
+    // fallback 404
     invokeErrorHandler_Pimpl(404, req, res);
     return res;
 }
